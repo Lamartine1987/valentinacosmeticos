@@ -22,6 +22,10 @@ const app = {
     products: [],
     user: null,
 
+    editingClientId: null,
+    editingProductId: null,
+    apiSettings: null,
+
     unsubSales: null,
     unsubClients: null,
     unsubProducts: null,
@@ -43,6 +47,7 @@ const app = {
                 this.user = user;
                 if(loginScreen) loginScreen.classList.remove('active');
                 this.listenData();
+                this.loadApiSettings();
             } else {
                 this.user = null;
                 if(loginScreen) loginScreen.classList.add('active');
@@ -87,6 +92,79 @@ const app = {
                     btn.disabled = false;
                 }
             });
+        }
+    },
+
+    async loadApiSettings() {
+        if(!db) return;
+        try {
+            const doc = await db.collection("settings").doc("whatsapp_api").get();
+            if (doc.exists) {
+                this.apiSettings = doc.data();
+                const p = document.getElementById('api-provider');
+                const u = document.getElementById('api-url');
+                const t = document.getElementById('api-token');
+                const a = document.getElementById('api-active');
+                if(p) p.value = this.apiSettings.provider || 'evolution';
+                if(u) u.value = this.apiSettings.url || '';
+                if(t) t.value = this.apiSettings.token || '';
+                if(a) a.checked = !!this.apiSettings.active;
+            }
+        } catch(e) { console.error(e); }
+    },
+
+    async sendWhatsAppMessage(phone, message) {
+        if(!this.apiSettings || !this.apiSettings.active || !this.apiSettings.url) return false;
+        try {
+            console.log("=== INICIANDO ENVIO DE WHATSAPP ===");
+            console.log("Provedor configurado:", this.apiSettings.provider);
+            
+            const cleanPhone = phone.replace(/\D/g, '');
+            let body = {};
+            let finalUrl = this.apiSettings.url;
+            
+            if(this.apiSettings.provider === 'evolution') {
+                body = { number: "55" + cleanPhone, textMessage: { text: message } };
+            } else if (this.apiSettings.provider === 'zapi') {
+                body = { phone: "55" + cleanPhone, message: message };
+                // O Z-API exige /send-text no final da URL
+                if (!finalUrl.endsWith('/send-text')) {
+                    finalUrl = finalUrl.replace(/\/$/, '') + '/send-text';
+                }
+            } else {
+                body = { phone: cleanPhone, message: message }; // webhook genérico
+            }
+            
+            const headers = { 'Content-Type': 'application/json' };
+            if (this.apiSettings.token && this.apiSettings.provider !== 'zapi') {
+                const t = this.apiSettings.token;
+                headers['Authorization'] = t.toLowerCase().startsWith('bearer') ? t : `Bearer ${t}`;
+                headers['apikey'] = t; 
+            }
+            
+            console.log("URL Final disparada:", finalUrl);
+            console.log("Headers formatados:", headers);
+            console.log("Corpo da requisição (Body):", JSON.stringify(body));
+
+            const response = await fetch(finalUrl, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify(body)
+            });
+            
+            if(!response.ok) {
+                const errBody = await response.text();
+                console.error("❌ ERRO NA API WA. Status:", response.status);
+                console.error("❌ Resposta do servidor Z-API/Evolution:", errBody);
+                return false;
+            }
+            
+            const data = await response.json();
+            console.log("✅ SUCESSO! A API retornou:", data);
+            return true;
+        } catch(e) {
+            console.error("❌ Falha crítica ao conectar com a API:", e);
+            return false;
         }
     },
 
@@ -144,6 +222,13 @@ const app = {
         
         const clientFilter = document.getElementById('filter-client-name');
         if(clientFilter) clientFilter.addEventListener('input', () => this.renderClientsList());
+
+        const ds = document.getElementById('dash-filter-start');
+        const de = document.getElementById('dash-filter-end');
+        const dt = document.getElementById('dash-filter-type');
+        if(ds) ds.addEventListener('change', () => this.renderDashboard());
+        if(de) de.addEventListener('change', () => this.renderDashboard());
+        if(dt) dt.addEventListener('change', () => this.renderDashboard());
     },
 
     async saveClient(clientData) {
@@ -183,6 +268,72 @@ const app = {
             console.error(e);
             this.showToast('Erro ao salvar venda.');
         }
+    },
+
+    async updateClient(id, clientData) {
+        try {
+            await db.collection("clients").doc(id).update(clientData);
+            this.showToast('Cliente atualizado com sucesso!');
+        } catch (e) {
+            console.error(e);
+            this.showToast('Erro ao atualizar cliente.');
+        }
+    },
+
+    async updateProduct(id, productData) {
+        try {
+            await db.collection("products").doc(id).update(productData);
+            this.showToast('Produto atualizado com sucesso!');
+        } catch (e) {
+            console.error(e);
+            this.showToast('Erro ao atualizar produto.');
+        }
+    },
+
+    editClient(id) {
+        const client = this.clients.find(c => c.id === id);
+        if(!client) return;
+        this.editingClientId = id;
+        document.getElementById('c-name').value = client.name || '';
+        document.getElementById('c-phone').value = client.phone || '';
+        document.getElementById('c-email').value = client.email || '';
+        document.getElementById('client-form-title').innerText = "Editar Cliente";
+        document.getElementById('client-form-desc').innerText = "Atualize os dados deste cliente na sua base.";
+        document.getElementById('client-submit-text').innerText = "Atualizar Cliente";
+        this.navigateTo('client-register');
+    },
+
+    cancelClientEdit() {
+        this.editingClientId = null;
+        const form = document.getElementById('form-client');
+        if(form) form.reset();
+        document.getElementById('client-form-title').innerText = "Cadastrar Cliente";
+        document.getElementById('client-form-desc').innerText = "Adicione um novo contato à sua base manualmente.";
+        document.getElementById('client-submit-text').innerText = "Salvar Cliente";
+        this.navigateTo('clients');
+    },
+
+    editProduct(id) {
+        const prod = this.products.find(p => p.id === id);
+        if(!prod) return;
+        this.editingProductId = id;
+        document.getElementById('p-name').value = prod.name || '';
+        document.getElementById('p-category').value = prod.category || '';
+        document.getElementById('p-price').value = prod.price || '';
+        document.getElementById('product-form-title').innerText = "Editar Produto";
+        document.getElementById('product-form-desc').innerText = "Atualize as informações deste item no catálogo.";
+        document.getElementById('product-submit-text').innerText = "Atualizar Produto";
+        this.navigateTo('product-register');
+    },
+
+    cancelProductEdit() {
+        this.editingProductId = null;
+        const form = document.getElementById('form-product');
+        if(form) form.reset();
+        document.getElementById('product-form-title').innerText = "Registrar Produto";
+        document.getElementById('product-form-desc').innerText = "Cadastre um novo item no seu catálogo.";
+        document.getElementById('product-submit-text').innerText = "Salvar Produto";
+        this.navigateTo('products');
     },
 
     navigateTo(pageId) {
@@ -225,7 +376,12 @@ const app = {
                     return;
                 }
 
-                const matches = this.clients.filter(c => c.name.toLowerCase().includes(val) || c.phone.replace(/\D/g, '').includes(val.replace(/\D/g, '')));
+                const matches = this.clients.filter(c => {
+                    const nameMatch = c.name && c.name.toLowerCase().includes(val);
+                    const cleanValPhone = val.replace(/\D/g, '');
+                    const phoneMatch = cleanValPhone.length > 0 && c.phone && c.phone.replace(/\D/g, '').includes(cleanValPhone);
+                    return nameMatch || phoneMatch;
+                });
                 
                 if (matches.length > 0) {
                     matches.forEach(client => {
@@ -253,6 +409,24 @@ const app = {
             });
         }
 
+        const rProduct = document.getElementById('r-product');
+        const rQuantity = document.getElementById('r-quantity');
+        const rValue = document.getElementById('r-value');
+
+        const calculateTotal = () => {
+            if (!rProduct || !rQuantity || !rValue) return;
+            const prodName = rProduct.value;
+            const qty = parseInt(rQuantity.value) || 1;
+            const product = this.products.find(p => p.name === prodName);
+            if (product && product.price) {
+                rValue.value = (parseFloat(product.price) * qty).toFixed(2);
+            }
+        };
+
+        if (rProduct) rProduct.addEventListener('input', calculateTotal);
+        if (rQuantity) rQuantity.addEventListener('input', calculateTotal);
+        if (rProduct) rProduct.addEventListener('change', calculateTotal);
+
         document.getElementById('form-sale').addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -266,6 +440,7 @@ const app = {
                 name: document.getElementById('r-name').value,
                 phone: document.getElementById('r-phone').value,
                 product: document.getElementById('r-product').value,
+                quantity: parseInt(document.getElementById('r-quantity').value) || 1,
                 value: parseFloat(document.getElementById('r-value').value),
                 date: document.getElementById('r-date').value,
             };
@@ -277,6 +452,14 @@ const app = {
             }
 
             await this.saveSale(newSale);
+            
+            // Auto send WhatsApp Message if API is active
+            if (this.apiSettings && this.apiSettings.active) {
+                const actionMsg = `Olá ${newSale.name}, aqui é da Valentina Cosméticos! Muito obrigada pela sua compra recente do ${newSale.product}. Qualquer dúvida de como usar o produto, estamos à disposição! 🥰`;
+                this.sendWhatsAppMessage(newSale.phone, actionMsg).then(success => {
+                    if(success) this.showToast('Mensagem enviada via API WhatsApp!');
+                });
+            }
             
             btn.innerHTML = originalText;
             btn.disabled = false;
@@ -299,12 +482,16 @@ const app = {
                     phone: document.getElementById('c-phone').value,
                     email: document.getElementById('c-email').value || ''
                 };
-                await this.saveClient(newClient);
+                if (this.editingClientId) {
+                    await this.updateClient(this.editingClientId, newClient);
+                } else {
+                    await this.saveClient(newClient);
+                }
                 
                 btn.innerHTML = originalText;
                 btn.disabled = false;
                 e.target.reset();
-                this.navigateTo('clients');
+                this.cancelClientEdit();
             });
         }
 
@@ -322,12 +509,45 @@ const app = {
                     category: document.getElementById('p-category').value || 'Geral',
                     price: document.getElementById('p-price').value ? parseFloat(document.getElementById('p-price').value) : 0
                 };
-                await this.saveProduct(newProduct);
+                if (this.editingProductId) {
+                    await this.updateProduct(this.editingProductId, newProduct);
+                } else {
+                    await this.saveProduct(newProduct);
+                }
                 
                 btn.innerHTML = originalText;
                 btn.disabled = false;
                 e.target.reset();
-                this.navigateTo('products');
+                this.cancelProductEdit();
+            });
+        }
+
+        const apiForm = document.getElementById('form-api-settings');
+        if (apiForm) {
+            apiForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const btn = e.target.querySelector('button[type="submit"]');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+                btn.disabled = true;
+
+                this.apiSettings = {
+                    provider: document.getElementById('api-provider').value,
+                    url: document.getElementById('api-url').value,
+                    token: document.getElementById('api-token').value,
+                    active: document.getElementById('api-active').checked
+                };
+
+                try {
+                    await db.collection("settings").doc("whatsapp_api").set(this.apiSettings);
+                    this.showToast('Integração WhatsApp salva e atualizada!');
+                } catch(err) {
+                    console.error(err);
+                    this.showToast('Erro ao salvar configuração.');
+                }
+                
+                btn.innerHTML = originalText;
+                btn.disabled = false;
             });
         }
     },
@@ -364,13 +584,47 @@ const app = {
     },
 
     renderDashboard() {
-        const totalSales = this.sales.reduce((acc, curr) => acc + curr.value, 0);
+        const fStart = (document.getElementById('dash-filter-start') || {value:''}).value;
+        const fEnd = (document.getElementById('dash-filter-end') || {value:''}).value;
+        const fType = (document.getElementById('dash-filter-type') || {value:'all'}).value;
+
+        let filteredSales = [...this.sales];
+        let actions = this.getActions();
+
+        if (fStart || fEnd) {
+            const filterDates = (item) => {
+                if(!item.date) return false;
+                const [y, m, d] = item.date.split('-');
+                const itemDate = new Date(y, m-1, d);
+                itemDate.setHours(0,0,0,0);
+                
+                if (fStart) {
+                    const [sy, sm, sd] = fStart.split('-');
+                    if (itemDate < new Date(sy, sm-1, sd)) return false;
+                }
+                if (fEnd) {
+                    const [ey, em, ed] = fEnd.split('-');
+                    if (itemDate > new Date(ey, em-1, ed)) return false;
+                }
+                return true;
+            };
+
+            filteredSales = filteredSales.filter(filterDates);
+            actions = actions.filter(filterDates);
+            
+            const uniquePhones = new Set(filteredSales.map(s => s.phone.replace(/\D/g, '')));
+            document.getElementById('stat-total-clients').innerText = uniquePhones.size;
+        } else {
+            document.getElementById('stat-total-clients').innerText = this.clients.length;
+        }
+
+        if (fType !== 'all') {
+            actions = actions.filter(a => a.type === fType);
+        }
+
+        const totalSales = filteredSales.reduce((acc, curr) => acc + curr.value, 0);
         document.getElementById('stat-total-sales').innerText = `R$ ${totalSales.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-        
-        document.getElementById('stat-total-clients').innerText = this.clients.length;
-        
-        const actions = this.getActions();
-        
+
         const badge = document.getElementById('noti-badge');
         badge.innerText = actions.length;
         if(actions.length > 0) { badge.style.display = 'block'; } else { badge.style.display = 'none'; }
@@ -467,7 +721,7 @@ const app = {
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td><strong>${sale.name}</strong><br><small style="color:#64748B">${sale.phone}</small></td>
-                <td>${sale.product}</td>
+                <td>${sale.product}${sale.quantity > 1 ? ` <small style="color:var(--text-muted); font-weight:600;">(x${sale.quantity})</small>` : ''}</td>
                 <td>${saleDate.toLocaleDateString('pt-BR')}</td>
                 <td>R$ ${sale.value.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                 <td>${timeStatus}</td>
@@ -485,7 +739,12 @@ const app = {
         
         let filtered = [...this.clients].reverse();
         if (filterName) {
-            filtered = filtered.filter(c => c.name.toLowerCase().includes(filterName) || c.phone.replace(/\D/g,'').includes(filterName.replace(/\D/g,'')));
+            filtered = filtered.filter(c => {
+                const nameMatch = c.name && c.name.toLowerCase().includes(filterName);
+                const cleanFilter = filterName.replace(/\D/g, '');
+                const phoneMatch = cleanFilter.length > 0 && c.phone && c.phone.replace(/\D/g, '').includes(cleanFilter);
+                return nameMatch || phoneMatch;
+            });
         }
 
         if (filtered.length === 0) {
@@ -503,6 +762,11 @@ const app = {
                 <td>${client.phone}</td>
                 <td>${compras.length} compra(s)</td>
                 <td style="color:var(--primary); font-weight:600;">R$ ${totalGasto.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                <td style="text-align: center;">
+                    <button class="btn-icon" style="color: var(--primary);" onclick="app.editClient('${client.id}')" title="Editar Cliente">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                </td>
             `;
             tbody.appendChild(row);
         });
@@ -536,6 +800,11 @@ const app = {
                 <td><strong>${prod.name}</strong></td>
                 <td><span class="pill" style="pointer-events:none;">${prod.category || 'Geral'}</span></td>
                 <td>${price}</td>
+                <td style="text-align: center;">
+                    <button class="btn-icon" style="color: var(--primary);" onclick="app.editProduct('${prod.id}')" title="Editar Produto">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                </td>
             `;
             tbody.appendChild(row);
         });
