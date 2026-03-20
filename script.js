@@ -25,6 +25,12 @@ const app = {
     editingClientId: null,
     editingProductId: null,
     apiSettings: null,
+    msgTemplates: {
+        thanks: "Olá {nome}, aqui é da Valentina Cosméticos! Muito obrigada pela sua compra recente do {produto}. Qualquer dúvida de como usar o produto, estamos à disposição! 🥰",
+        restock: "Oi {nome}, tudo bem? Faz cerca de 30 dias que você comprou o {produto}. Como está sendo a experiência? Já está acabando? Preparamos uma condição especial se quiser repor hoje! ✨",
+        dormant: "Oi {nome}, que saudade de você! Faz um tempinho que não nos falamos. Chegaram novidades incríveis na Valentina Cosméticos, quer dar uma olhadinha no catálogo? 💖",
+        lost: "Oi {nome}, lembrou de mim? Fizemos uma limpeza aqui e percebi que faz mais de 6 meses desde a sua última compra. Preparamos um presente muito especial caso queira voltar a ser nossa cliente VIP! ✨"
+    },
 
     unsubSales: null,
     unsubClients: null,
@@ -47,7 +53,7 @@ const app = {
                 this.user = user;
                 if(loginScreen) loginScreen.classList.remove('active');
                 this.listenData();
-                this.loadApiSettings();
+                this.loadSettings();
             } else {
                 this.user = null;
                 if(loginScreen) loginScreen.classList.add('active');
@@ -95,12 +101,12 @@ const app = {
         }
     },
 
-    async loadApiSettings() {
+    async loadSettings() {
         if(!db) return;
         try {
-            const doc = await db.collection("settings").doc("whatsapp_api").get();
-            if (doc.exists) {
-                this.apiSettings = doc.data();
+            const docApi = await db.collection("settings").doc("whatsapp_api").get();
+            if (docApi.exists) {
+                this.apiSettings = docApi.data();
                 const p = document.getElementById('api-provider');
                 const u = document.getElementById('api-url');
                 const t = document.getElementById('api-token');
@@ -110,7 +116,26 @@ const app = {
                 if(t) t.value = this.apiSettings.token || '';
                 if(a) a.checked = !!this.apiSettings.active;
             }
+            
+            const docTpl = await db.collection("settings").doc("msg_templates").get();
+            if (docTpl.exists) {
+                this.msgTemplates = { ...this.msgTemplates, ...docTpl.data() };
+                const tThanks = document.getElementById('tpl-thanks');
+                const tRestock = document.getElementById('tpl-restock');
+                const tDormant = document.getElementById('tpl-dormant');
+                const tLost = document.getElementById('tpl-lost');
+                if(tThanks) tThanks.value = this.msgTemplates.thanks;
+                if(tRestock) tRestock.value = this.msgTemplates.restock;
+                if(tDormant) tDormant.value = this.msgTemplates.dormant;
+                if(tLost) tLost.value = this.msgTemplates.lost;
+            }
         } catch(e) { console.error(e); }
+    },
+
+    parseTemplate(type, name, product) {
+        let text = this.msgTemplates[type] || "";
+        text = text.replace(/{nome}/g, name).replace(/{produto}/g, product || 'produto');
+        return text;
     },
 
     async sendWhatsAppMessage(phone, message) {
@@ -136,10 +161,13 @@ const app = {
             }
             
             const headers = { 'Content-Type': 'application/json' };
-            if (this.apiSettings.token && this.apiSettings.provider !== 'zapi') {
+            if (this.apiSettings.token) {
                 const t = this.apiSettings.token;
                 headers['Authorization'] = t.toLowerCase().startsWith('bearer') ? t : `Bearer ${t}`;
                 headers['apikey'] = t; 
+                if(this.apiSettings.provider === 'zapi') {
+                    headers['Client-Token'] = t;
+                }
             }
             
             console.log("URL Final disparada:", finalUrl);
@@ -212,6 +240,8 @@ const app = {
         if (document.getElementById('page-sales').classList.contains('active')) this.renderClientsTable();
         if (document.getElementById('page-clients').classList.contains('active')) this.renderClientsList();
         if (document.getElementById('page-products') && document.getElementById('page-products').classList.contains('active')) this.renderProductsList();
+        const historyModal = document.getElementById('history-overlay');
+        if (historyModal && historyModal.classList.contains('active')) this.renderClientHistory();
     },
 
     setupFilters() {
@@ -259,14 +289,16 @@ const app = {
 
     async saveSale(saleData) {
         try {
-            await db.collection("sales").add({
+            const docRef = await db.collection("sales").add({
                 ...saleData,
                 createdAt: new Date().toISOString()
             });
             this.showToast('Venda faturada e salva na nuvem!');
+            return docRef.id;
         } catch (e) {
             console.error(e);
             this.showToast('Erro ao salvar venda.');
+            return null;
         }
     },
 
@@ -451,12 +483,14 @@ const app = {
                 await this.saveClient({name: newSale.name, phone: newSale.phone, email: ''});
             }
 
-            await this.saveSale(newSale);
+            const saleId = await this.saveSale(newSale);
             
             // Auto send WhatsApp Message if API is active
-            if (this.apiSettings && this.apiSettings.active) {
-                const actionMsg = `Olá ${newSale.name}, aqui é da Valentina Cosméticos! Muito obrigada pela sua compra recente do ${newSale.product}. Qualquer dúvida de como usar o produto, estamos à disposição! 🥰`;
-                this.sendWhatsAppMessage(newSale.phone, actionMsg).then(success => {
+            if (this.apiSettings && this.apiSettings.active && saleId) {
+                const actionMsg = this.parseTemplate('thanks', newSale.name, newSale.product);
+                this.sendWhatsAppMessage(newSale.phone, actionMsg).then(async (success) => {
+                    const status = success ? 'sent' : 'failed';
+                    await db.collection('sales').doc(saleId).update({ msg_thanks_status: status });
                     if(success) this.showToast('Mensagem enviada via API WhatsApp!');
                 });
             }
@@ -550,6 +584,36 @@ const app = {
                 btn.disabled = false;
             });
         }
+
+        const tplForm = document.getElementById('form-templates');
+        if (tplForm) {
+            tplForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const btn = e.target.querySelector('button[type="submit"]');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+                btn.disabled = true;
+
+                this.msgTemplates = {
+                    thanks: document.getElementById('tpl-thanks').value,
+                    restock: document.getElementById('tpl-restock').value,
+                    dormant: document.getElementById('tpl-dormant').value,
+                    lost: document.getElementById('tpl-lost').value
+                };
+
+                try {
+                    await db.collection("settings").doc("msg_templates").set(this.msgTemplates);
+                    this.showToast('Modelos de mensagens salvos!');
+                    this.renderDashboard(); 
+                } catch(err) {
+                    console.error(err);
+                    this.showToast('Erro ao salvar modelos.');
+                }
+                
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            });
+        }
     },
 
     getActions() {
@@ -565,17 +629,25 @@ const app = {
             const diffTime = today - saleDate;
             const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)); 
             
-            if (diffDays >= 0 && diffDays <= 2) {
+            if (diffDays <= 2) {
                 actions.push({ ...sale, type: 'thanks', days: diffDays, label: 'Agradecimento', colorClass: 'tag-thanks',
-                    msg: `Olá ${sale.name}, aqui é da Valentina Cosméticos! Muito obrigada pela sua compra recente do ${sale.product}. Qualquer dúvida de como usar o produto, estamos à disposição! 🥰`
+                    msg: this.parseTemplate('thanks', sale.name, sale.product),
+                    status: sale.msg_thanks_status || 'pending'
                 });
             } else if (diffDays >= 30 && diffDays <= 45) {
                 actions.push({ ...sale, type: 'restock', days: diffDays, label: 'Reposição', colorClass: 'tag-restock',
-                    msg: `Oi ${sale.name}, tudo bem? Faz cerca de 30 dias que você comprou o ${sale.product}. Como está sendo a experiência? Já está acabando? Preparamos uma condição especial se quiser repor hoje! ✨`
+                    msg: this.parseTemplate('restock', sale.name, sale.product),
+                    status: sale.msg_restock_status || 'pending'
                 });
             } else if (diffDays >= 90 && diffDays <= 120) {
                  actions.push({ ...sale, type: 'dormant', days: diffDays, label: 'Saudades', colorClass: 'tag-dormant',
-                    msg: `Oi ${sale.name}, que saudade de você! Faz um tempinho que não nos falamos. Chegaram novidades incríveis na Valentina Cosméticos, quer dar uma olhadinha no catálogo? 💖`
+                    msg: this.parseTemplate('dormant', sale.name, sale.product),
+                    status: sale.msg_dormant_status || 'pending'
+                });
+            } else if (diffDays >= 180) {
+                 actions.push({ ...sale, type: 'lost', days: diffDays, label: 'Ex-cliente', colorClass: 'tag-lost',
+                    msg: this.parseTemplate('lost', sale.name, sale.product),
+                    status: sale.msg_lost_status || 'pending'
                 });
             }
         });
@@ -630,6 +702,18 @@ const app = {
         if(actions.length > 0) { badge.style.display = 'block'; } else { badge.style.display = 'none'; }
         document.getElementById('stat-pending-contact').innerText = actions.length;
 
+        this.currentDashboardActions = actions;
+        const pendingCount = actions.filter(a => a.status === 'pending' || a.status === 'failed').length;
+        const btnDispararTodos = document.getElementById('btn-disparar-todos');
+        if (btnDispararTodos) {
+            if (pendingCount > 0) {
+                btnDispararTodos.style.display = 'flex';
+                btnDispararTodos.innerHTML = `<i class="fas fa-paper-plane" style="margin-right: 6px;"></i> Disparar Pendentes (${pendingCount})`;
+            } else {
+                btnDispararTodos.style.display = 'none';
+            }
+        }
+
         const listContainer = document.getElementById('action-list-container');
         listContainer.innerHTML = '';
         if(actions.length === 0) {
@@ -650,7 +734,8 @@ const app = {
             item.className = 'action-item';
             
             let daysText = action.days === 0 ? 'Hoje' : (action.days === 1 ? 'Ontem' : `Há ${action.days} dias`);
-            item.innerHTML = `
+            
+            let actionHtml = `
                 <div class="client-info">
                     <div style="display: flex; align-items: center;">
                         <span class="c-name">${action.name}</span>
@@ -658,12 +743,68 @@ const app = {
                     </div>
                     <span class="c-meta"><strong>${action.product}</strong> • Comprou ${daysText}</span>
                 </div>
-                <button class="btn-whatsapp" onclick="window.open('${waLink}', '_blank')">
-                    <i class="fab fa-whatsapp"></i> Enviar Msg
-                </button>
             `;
+            
+            if (action.status === 'sent') {
+                actionHtml += `
+                    <div style="display: flex; align-items: center; gap: 8px; color: #10B981; font-weight: 500;">
+                        <i class="fas fa-check-double"></i><span>Enviado pela API</span>
+                    </div>
+                `;
+            } else {
+                let isFailed = action.status === 'failed';
+                let btnText = isFailed ? 'Tentar de Novo' : 'Disparar na API';
+                let btnIcon = isFailed ? 'fa-redo' : 'fa-paper-plane';
+                let btnColor = isFailed ? 'background: #EF4444; color: white;' : 'background: var(--primary); color: white;';
+                
+                actionHtml += `
+                    <div style="display:flex; flex-direction:column; gap:6px; align-items:flex-end;">
+                        ${isFailed ? '<span style="font-size:11px; color:#EF4444; font-weight:600;"><i class="fas fa-exclamation-circle"></i> Falha no Disparo Anterior</span>' : ''}
+                        <div style="display:flex; gap:8px;">
+                            <a href="${waLink}" target="_blank" class="btn-icon" style="border:1px solid var(--border); padding:6px 12px; border-radius:8px; color:var(--text-main); font-size:13px; text-decoration:none;" title="Abrir WhatsApp Web Manualmente (Fallback)">
+                                <i class="fab fa-whatsapp" style="color:#25D366; font-size:14px;"></i> Web
+                            </a>
+                            <button id="btn-resend-${action.id}-${action.type}" style="padding:6px 16px; font-size:13px; border-radius:8px; border:none; cursor:pointer; font-weight:500; display:flex; gap:6px; align-items:center; transition:0.2s; ${btnColor}" onclick="app.resendActionMsg('${action.id}', '${action.type}', '${action.phone}', \`${action.msg}\`)">
+                                <i class="fas ${btnIcon}"></i> ${btnText}
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            item.innerHTML = actionHtml;
             listContainer.appendChild(item);
         });
+    },
+
+    async dispararTodos() {
+        if (!this.currentDashboardActions) return;
+        
+        const pendingActions = this.currentDashboardActions.filter(a => a.status === 'pending' || a.status === 'failed');
+        if (pendingActions.length === 0) return;
+        
+        if (!this.apiSettings || !this.apiSettings.active) {
+            alert('Atenção: O disparo em massa funciona melhor com a API Z-API conectada. No modo gratuito (Web), o sistema tentará abrir várias abas do WhatsApp simultaneamente, o que muitas vezes é bloqueado pelo seu navegador (libere os pop-ups).');
+        }
+
+        const btn = document.getElementById('btn-disparar-todos');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right: 6px;"></i> Disparando...';
+        btn.disabled = true;
+
+        let delayInterval = (!this.apiSettings || !this.apiSettings.active) ? 600 : 2000;
+        
+        for (let i = 0; i < pendingActions.length; i++) {
+            const action = pendingActions[i];
+            app.resendActionMsg(action.id, action.type, action.phone, action.msg);
+            await new Promise(resolve => setTimeout(resolve, delayInterval));
+        }
+        
+        if (btn) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+        this.showToast(pendingActions.length + ' disparos foram processados!');
     },
 
     renderClientsTable() {
@@ -712,11 +853,12 @@ const app = {
             const saleDate = new Date(y, m-1, d);
             const diffDays = Math.floor((today - saleDate) / (1000 * 60 * 60 * 24));
             
-            let timeText = diffDays === 0 ? "Hoje" : (diffDays === 1 ? "Ontem" : `Há ${diffDays} dias`);
+            let timeText = diffDays <= 0 ? "Hoje" : (diffDays === 1 ? "Ontem" : `Há ${diffDays} dias`);
             
             let timeStatus = `<span style="color:#10B981; font-weight: 500;">Novo <small style="color:var(--text-muted);font-weight:normal; font-size:12px;">(${timeText})</small></span>`;
             if (diffDays >= 30) timeStatus = `<span style="color:#F59E0B; font-weight: 500;">Repor <small style="color:var(--text-muted);font-weight:normal; font-size:12px;">(${timeText})</small></span>`;
             if (diffDays >= 90) timeStatus = `<span style="color:#EF4444; font-weight: 500;">Inativo <small style="color:var(--text-muted);font-weight:normal; font-size:12px;">(${timeText})</small></span>`;
+            if (diffDays >= 180) timeStatus = `<span style="color:#64748B; font-weight: 500;">Ex-cliente <small style="color:var(--text-muted);font-weight:normal; font-size:12px;">(${timeText})</small></span>`;
             
             const row = document.createElement('tr');
             row.innerHTML = `
@@ -763,6 +905,9 @@ const app = {
                 <td>${compras.length} compra(s)</td>
                 <td style="color:var(--primary); font-weight:600;">R$ ${totalGasto.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                 <td style="text-align: center;">
+                    <button class="btn-icon" style="color: var(--primary); margin-right: 12px;" onclick="app.viewClientHistory('${client.id}')" title="Ver Histórico de Compras">
+                        <i class="fas fa-history"></i>
+                    </button>
                     <button class="btn-icon" style="color: var(--primary);" onclick="app.editClient('${client.id}')" title="Editar Cliente">
                         <i class="fas fa-edit"></i>
                     </button>
@@ -781,6 +926,38 @@ const app = {
             pt.value = p.name;
             datalist.appendChild(pt);
         });
+    },
+
+    async resendActionMsg(saleId, type, phone, msg) {
+        if (!this.apiSettings || !this.apiSettings.url) {
+            this.showToast("Integração API do WhatsApp não está configurada corretamente!");
+            return;
+        }
+        
+        const btnId = `btn-resend-${saleId}-${type}`;
+        const btn = document.getElementById(btnId);
+        const originalHtml = btn ? btn.innerHTML : '';
+        if(btn) { 
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...'; 
+            btn.disabled = true; 
+        }
+        
+        const success = await this.sendWhatsAppMessage(phone, msg);
+        const statusField = `msg_${type}_status`;
+        
+        try {
+            await db.collection("sales").doc(saleId).update({ [statusField]: success ? 'sent' : 'failed' });
+        } catch(e) { console.error("Erro ao atualizar status na nuvem", e); }
+        
+        if (success) {
+            this.showToast("Sucesso! Mensagem disparada pela API.");
+        } else {
+            this.showToast("Falha ao enviar via API. Verifique os logs no Console.");
+            if(btn) {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+            }
+        }
     },
 
     renderProductsList() {
@@ -815,6 +992,104 @@ const app = {
         toast.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
         toast.classList.add('show');
         setTimeout(() => toast.classList.remove('show'), 3500);
+    },
+
+    closeHistoryModal() {
+        const modal = document.getElementById('history-overlay');
+        if (modal) modal.classList.remove('active');
+    },
+
+    viewClientHistory(clientId) {
+        this.currentHistoryClientId = clientId;
+        const client = this.clients.find(c => c.id === clientId);
+        if (!client) return;
+
+        const infoContainer = document.getElementById('history-client-info');
+        infoContainer.innerHTML = `
+            <div style="font-weight: 600; font-size: 16px; color: var(--text-main);">${client.name}</div>
+            <div style="color: var(--text-muted); font-size: 14px; margin-top: 4px; display: flex; gap: 12px; align-items: center;">
+                <span><i class="fab fa-whatsapp"></i> ${client.phone}</span>
+                ${client.email ? `<span><i class="fas fa-envelope"></i> ${client.email}</span>` : ''}
+            </div>
+        `;
+        
+        const filterStart = document.getElementById('history-filter-start');
+        const filterEnd = document.getElementById('history-filter-end');
+        if (filterStart) filterStart.value = '';
+        if (filterEnd) filterEnd.value = '';
+
+        this.renderClientHistory();
+
+        const modal = document.getElementById('history-overlay');
+        if (modal) modal.classList.add('active');
+    },
+
+    renderClientHistory() {
+        if (!this.currentHistoryClientId) return;
+        const client = this.clients.find(c => c.id === this.currentHistoryClientId);
+        if (!client) return;
+        
+        const fStart = (document.getElementById('history-filter-start') || {value:''}).value;
+        const fEnd = (document.getElementById('history-filter-end') || {value:''}).value;
+
+        let compras = this.sales.filter(s => s.phone.replace(/\\D/g, '') === client.phone.replace(/\\D/g, ''));
+        
+        if (fStart || fEnd) {
+            compras = compras.filter(item => {
+                if(!item.date) return false;
+                const [y, m, d] = item.date.split('-');
+                const itemDate = new Date(y, m-1, d);
+                itemDate.setHours(0,0,0,0);
+                
+                if (fStart) {
+                    const [sy, sm, sd] = fStart.split('-');
+                    if (itemDate < new Date(sy, sm-1, sd)) return false;
+                }
+                if (fEnd) {
+                    const [ey, em, ed] = fEnd.split('-');
+                    if (itemDate > new Date(ey, em-1, ed)) return false;
+                }
+                return true;
+            });
+        }
+        
+        compras.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        const content = document.getElementById('history-modal-content');
+        if (compras.length === 0) {
+            content.innerHTML = '<div class="empty-state" style="padding: 32px;"><i class="fas fa-shopping-bag"></i><p>Nenhuma compra encontrada para os filtros selecionados.</p></div>';
+        } else {
+            let html = '<div style="display: flex; flex-direction: column; gap: 12px;">';
+            compras.forEach(sale => {
+                const [y, m, d] = sale.date.split('-');
+                const saleDate = new Date(y, m-1, d);
+                const pDate = saleDate.toLocaleDateString('pt-BR');
+                
+                const today = new Date();
+                today.setHours(0,0,0,0);
+                const diffDays = Math.floor((today - saleDate) / (1000 * 60 * 60 * 24));
+                let timeText = diffDays <= 0 ? "Hoje" : (diffDays === 1 ? "Ontem" : `Há ${diffDays} dias`);
+                
+                let timeStatus = `<span style="color:#10B981; font-weight: 500; font-size:12px;"><i class="fas fa-circle" style="font-size:8px; margin-right:4px;"></i>Novo (${timeText})</span>`;
+                if (diffDays >= 30) timeStatus = `<span style="color:#F59E0B; font-weight: 500; font-size:12px;"><i class="fas fa-circle" style="font-size:8px; margin-right:4px;"></i>Reposição (${timeText})</span>`;
+                if (diffDays >= 90) timeStatus = `<span style="color:#EF4444; font-weight: 500; font-size:12px;"><i class="fas fa-circle" style="font-size:8px; margin-right:4px;"></i>Inativo (${timeText})</span>`;
+                if (diffDays >= 180) timeStatus = `<span style="color:#64748B; font-weight: 500; font-size:12px;"><i class="fas fa-circle" style="font-size:8px; margin-right:4px;"></i>Ex-cliente (${timeText})</span>`;
+
+                html += `
+                    <div style="padding: 16px; border: 1px solid var(--border); border-radius: 8px; background: white; display: flex; justify-content: space-between; align-items: center; box-shadow: var(--shadow-sm);">
+                        <div>
+                            <div style="font-weight: 600; color: var(--text-main); margin-bottom: 4px; font-size: 15px;">${sale.product} ${sale.quantity > 1 ? `<span style="color:var(--text-muted); font-weight:500;">x${sale.quantity}</span>` : ''}</div>
+                            <div style="color: var(--text-muted); font-size: 13px; display: flex; align-items: center; gap: 8px;">${pDate} • ${timeStatus}</div>
+                        </div>
+                        <div style="font-weight: 700; color: var(--primary); font-size: 15px;">
+                            R$ ${sale.value.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            content.innerHTML = html;
+        }
     }
 };
 

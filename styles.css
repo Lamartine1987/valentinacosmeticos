@@ -148,6 +148,7 @@ body { background: var(--bg-color); color: var(--text-main); font-size: 15px; }
 .tag-thanks { background: #DEF7EC; color: #03543F; }
 .tag-restock { background: #FEF3C7; color: #92400E; }
 .tag-dormant { background: #FEE2E2; color: #991B1B; }
+.tag-lost { background: #F1F5F9; color: #475569; }
 
 /* Forms */
 .form-card { padding: 32px; }

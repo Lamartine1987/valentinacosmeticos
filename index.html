@@ -120,6 +120,7 @@
                             <option value="thanks">Somente Agradecimentos</option>
                             <option value="restock">Somente Reposições</option>
                             <option value="dormant">Somente Saudades (Recuperação)</option>
+                            <option value="lost">Somente Ex-clientes (Resgate > 180d)</option>
                         </select>
                     </div>
 
@@ -158,7 +159,10 @@
                         <div class="action-list-card">
                             <div class="card-header">
                                 <h3><i class="fab fa-whatsapp" style="color:#25D366; margin-right: 8px;"></i> Ações de Relacionamento RecomendadasHoje</h3>
-                                <div class="filter-pills">
+                                <div class="filter-pills" style="display: flex; gap: 8px; align-items: center;">
+                                    <button class="btn-primary" id="btn-disparar-todos" onclick="app.dispararTodos()" style="padding: 6px 12px; font-size: 13px; display: none; background: #8B5CF6; align-items: center;">
+                                        <i class="fas fa-paper-plane" style="margin-right: 6px;"></i> <span>Disparar Pendentes</span>
+                                    </button>
                                     <span class="pill active" data-filter="all">Todas as Tarefas</span>
                                 </div>
                             </div>
@@ -396,6 +400,37 @@
                    </div>
                    
                    <div class="form-card" style="margin-bottom: 24px;">
+                        <h3>Modelos de Mensagens (Textos)</h3>
+                        <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 16px;">Personalize o texto das mensagens usando variáveis dinâmicas: digite <strong>{nome}</strong> para o nome da cliente e <strong>{produto}</strong> para o nome do produto comprado.</p>
+                        
+                        <form id="form-templates">
+                            <div class="form-grid">
+                                <div class="form-group" style="grid-column: span 2;">
+                                    <label>Agradecimento (Disparado na nova venda ou 0 a 2 dias)</label>
+                                    <textarea id="tpl-thanks" rows="3" required style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; resize: vertical; font-family: inherit; font-size: 14px;">Olá {nome}, aqui é da Valentina Cosméticos! Muito obrigada pela sua compra recente do {produto}. Qualquer dúvida de como usar o produto, estamos à disposição! 🥰</textarea>
+                                </div>
+                                <div class="form-group" style="grid-column: span 2;">
+                                    <label>Reposição (30 a 45 dias)</label>
+                                    <textarea id="tpl-restock" rows="3" required style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; resize: vertical; font-family: inherit; font-size: 14px;">Oi {nome}, tudo bem? Faz cerca de 30 dias que você comprou o {produto}. Como está sendo a experiência? Já está acabando? Preparamos uma condição especial se quiser repor hoje! ✨</textarea>
+                                </div>
+                                <div class="form-group" style="grid-column: span 2;">
+                                    <label>Saudades / Recuperação (90 a 120 dias)</label>
+                                    <textarea id="tpl-dormant" rows="3" required style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; resize: vertical; font-family: inherit; font-size: 14px;">Oi {nome}, que saudade de você! Faz um tempinho que não nos falamos. Chegaram novidades incríveis na Valentina Cosméticos, quer dar uma olhadinha no catálogo? 💖</textarea>
+                                </div>
+                                <div class="form-group" style="grid-column: span 2;">
+                                    <label>Resgate de Ex-clientes (Acima de 6 meses / 180+ dias)</label>
+                                    <textarea id="tpl-lost" rows="3" required style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; resize: vertical; font-family: inherit; font-size: 14px;">Oi {nome}, lembrou de mim? Fizemos uma limpeza aqui e percebi que faz mais de 6 meses desde a sua última compra. Preparamos um presente muito especial caso queira voltar a ser nossa cliente VIP! ✨</textarea>
+                                </div>
+                            </div>
+                            <div class="form-actions" style="margin-top: 16px;">
+                                <button type="submit" class="btn-primary" style="padding: 12px 24px;">
+                                    <i class="fas fa-save"></i> Salvar Textos
+                                </button>
+                            </div>
+                        </form>
+                   </div>
+
+                   <div class="form-card" style="margin-bottom: 24px;">
                         <h3>Integração WhatsApp API</h3>
                         <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 16px;">Configure os dados da sua API de disparo (Evolution API, Z-API, ou qualquer webhook que receba POST).</p>
                         
@@ -436,6 +471,26 @@
 
     <!-- Toast Notification -->
     <div id="toast" class="toast">Mensagem salva!</div>
+
+    <!-- Client History Modal -->
+    <div id="history-overlay" class="login-overlay">
+        <div class="login-card" style="max-width: 600px; max-height: 80vh; display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h2 style="margin: 0; text-align: left; font-size: 20px;"><i class="fas fa-history" style="color: var(--primary); margin-right: 8px;"></i> Histórico da Cliente</h2>
+                <button class="btn-icon" onclick="app.closeHistoryModal()" style="font-size: 28px; line-height: 1;">&times;</button>
+            </div>
+            <div id="history-client-info" style="margin-bottom: 16px; padding: 16px; background: var(--bg-color); border-radius: 8px; border: 1px solid var(--border);">
+            </div>
+            <div id="history-filters" style="display: flex; gap: 8px; align-items: center; margin-bottom: 16px; flex-wrap: wrap;">
+                <input type="date" id="history-filter-start" style="padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; outline: none; color: var(--text-muted); font-size: 13px; transition: border-color 0.2s;" onchange="app.renderClientHistory()" title="Data Inicial">
+                <span style="color: var(--text-muted); font-size: 13px; font-weight: 500;">até</span>
+                <input type="date" id="history-filter-end" style="padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; outline: none; color: var(--text-muted); font-size: 13px; transition: border-color 0.2s;" onchange="app.renderClientHistory()" title="Data Final">
+                <button class="btn-primary" style="padding: 10px 16px; font-size: 13px; margin-left: auto;" onclick="document.getElementById('history-filter-start').value=''; document.getElementById('history-filter-end').value=''; app.renderClientHistory();"><i class="fas fa-eraser" style="font-size: 12px;"></i> Limpar</button>
+            </div>
+            <div id="history-modal-content" style="overflow-y: auto; flex: 1; padding-right: 4px;">
+            </div>
+        </div>
+    </div>
 
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
