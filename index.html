@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Valentina Cosméticos | CRM Pós-Venda</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Login Overlay -->
+    <div id="login-overlay" class="login-overlay active">
+        <div class="login-card">
+            <div class="brand" style="justify-content: center; margin-bottom: 24px; border:none; padding:0;">
+                <i class="fas fa-gem" style="font-size: 32px;"></i>
+                <span style="font-size: 24px;">Valentina Cosméticos</span>
+            </div>
+            <h2>Bem-vindo de volta!</h2>
+            <p>Faça login para acessar o sistema.</p>
+
+            <form id="form-login">
+                <div class="form-group">
+                    <label>E-mail</label>
+                    <input type="email" id="login-email" required placeholder="admin@valentinacosmeticos.com">
+                </div>
+                <div class="form-group" style="margin-top: 16px;">
+                    <label>Senha</label>
+                    <input type="password" id="login-password" required placeholder="••••••••">
+                </div>
+                <button type="submit" class="btn-primary" style="width: 100%; justify-content: center; margin-top: 24px; padding: 14px; font-size: 16px;">
+                    <i class="fas fa-sign-in-alt"></i> Entrar no Sistema
+                </button>
+            </form>
+            <div id="login-error" style="color: #EF4444; font-size: 14px; margin-top: 16px; display: none; text-align: center; font-weight: 500;"></div>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="brand">
+                <i class="fas fa-gem"></i>
+                <span>Valentina Cosméticos</span>
+            </div>
+            <nav class="nav-menu">
+                <a href="#" class="nav-item active" data-page="dashboard">
+                    <i class="fas fa-chart-pie"></i>
+                    <span>Visão Geral</span>
+                </a>
+                <a href="#" class="nav-item" data-page="clients">
+                    <i class="fas fa-address-book"></i>
+                    <span>Base de Clientes</span>
+                </a>
+                <a href="#" class="nav-item" data-page="sales">
+                    <i class="fas fa-shopping-bag"></i>
+                    <span>Histórico de Vendas</span>
+                </a>
+                <a href="#" class="nav-item" data-page="products">
+                    <i class="fas fa-box"></i>
+                    <span>Catálogo de Produtos</span>
+                </a>
+                <a href="#" class="nav-item" data-page="register">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>Registrar Venda</span>
+                </a>
+                <a href="#" class="nav-item" data-page="settings">
+                    <i class="fas fa-cog"></i>
+                    <span>Modelos de Msg</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-info" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                    <div style="display:flex; align-items:center; gap: 12px;">
+                        <div class="avatar">AD</div>
+                        <div style="display:flex; flex-direction: column;">
+                            <span>Admin</span>
+                            <span style="font-size: 11px; color: var(--text-muted);">Valentina Cosméticos</span>
+                        </div>
+                    </div>
+                    <button class="btn-icon" style="color: #EF4444;" onclick="app.logout()" title="Sair do Sistema">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <header class="topbar">
+                <div class="search-bar">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Buscar cliente ou produto...">
+                </div>
+                <div class="topbar-actions">
+                    <button class="btn-icon"><i class="fas fa-bell"></i><span class="badge" id="noti-badge">0</span></button>
+                    <button class="btn-primary" onclick="app.navigateTo('register')">
+                        <i class="fas fa-plus"></i> Nova Venda
+                    </button>
+                </div>
+            </header>
+
+            <div class="page-container" id="pages">
+                <!-- Dashboard Page -->
+                <section class="page active" id="page-dashboard">
+                    <div class="page-header">
+                        <h2>Visão Geral do Relacionamento</h2>
+                        <p>Acompanhe e aja sobre as oportunidades de pós-venda.</p>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon" style="background: rgba(30, 215, 96, 0.1); color: #1ed760;">
+                                <i class="fas fa-shopping-bag"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3>Total Faturado</h3>
+                                <div class="stat-value" id="stat-total-sales">R$ 0,00</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon" style="background: rgba(255, 171, 0, 0.1); color: #ffab00;">
+                                <i class="fas fa-user-clock"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3>Mensagens Pendentes</h3>
+                                <div class="stat-value" id="stat-pending-contact">0</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon" style="background: rgba(109, 40, 217, 0.1); color: #6D28D9;">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3>Total de Clientes Únicos</h3>
+                                <div class="stat-value" id="stat-total-clients">0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-content">
+                        <!-- Régua de Relacionamento (Smart Action List) -->
+                        <div class="action-list-card">
+                            <div class="card-header">
+                                <h3><i class="fab fa-whatsapp" style="color:#25D366; margin-right: 8px;"></i> Ações de Relacionamento RecomendadasHoje</h3>
+                                <div class="filter-pills">
+                                    <span class="pill active" data-filter="all">Todas as Tarefas</span>
+                                </div>
+                            </div>
+                            <div class="action-list" id="action-list-container">
+                                <!-- JS will populate this -->
+                                <div class="empty-state">
+                                    <i class="fas fa-check-circle"></i>
+                                    <p>Nenhuma ação pendente no momento!</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Register Sale Page -->
+                <section class="page" id="page-register">
+                    <div class="page-header">
+                        <h2>Registrar Nova Venda</h2>
+                        <p>Insira os dados da sua cliente para iniciar o fluxo de CRM automágico.</p>
+                    </div>
+                    
+                    <div class="form-card">
+                        <form id="form-sale">
+                            <div class="form-grid">
+                                <div class="form-group" style="position: relative;">
+                                    <label>Nome da Cliente</label>
+                                    <input type="text" id="r-name" required placeholder="Ex: Ana Clara" autocomplete="off">
+                                    <div id="client-suggestions" class="autocomplete-suggestions"></div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Número de WhatsApp</label>
+                                    <input type="text" id="r-phone" required placeholder="Ex: 11999999999">
+                                </div>
+                                <div class="form-group" style="grid-column: span 2;">
+                                    <label>Produto Comprado</label>
+                                    <input type="text" id="r-product" required placeholder="Ex: Kit Completo SkinCare Intense" list="products-datalist">
+                                    <datalist id="products-datalist"></datalist>
+                                </div>
+                                <div class="form-group">
+                                    <label>Valor da Compra (R$)</label>
+                                    <input type="number" id="r-value" required placeholder="149.90" step="0.01">
+                                </div>
+                                <div class="form-group">
+                                    <label>Data da Compra</label>
+                                    <input type="date" id="r-date" required>
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn-primary" style="width: 100%; padding: 14px; font-size: 16px; justify-content: center;">
+                                    <i class="fas fa-save"></i> Salvar e Iniciar Esteira de Relacionamento
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+
+                <!-- Clients List Page -->
+                <section class="page" id="page-clients">
+                     <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
+                        <div>
+                            <h2>Base de Clientes</h2>
+                            <p>Contatos e Lifetime Value (LTV) da sua carteira.</p>
+                        </div>
+                        <button class="btn-primary" onclick="app.navigateTo('client-register')">
+                            <i class="fas fa-user-plus"></i> Nova Cliente
+                        </button>
+                    </div>
+                    
+                    <div class="filters-bar" style="margin-bottom: 24px;">
+                        <input type="text" id="filter-client-name" placeholder="Buscar por cliente ou telefone..." style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; width: 100%; outline: none; font-size: 14px; transition: border-color 0.2s;" oninput="app.renderClientsList()">
+                    </div>
+
+                    <div class="table-card" style="overflow-x: auto;">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>WhatsApp / Contato</th>
+                                    <th>Compras Realizadas</th>
+                                    <th>Total Gasto na Loja</th>
+                                </tr>
+                            </thead>
+                            <tbody id="clients-list-body">
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Client Register Page -->
+                <section class="page" id="page-client-register">
+                    <div class="page-header">
+                        <h2>Cadastrar Cliente</h2>
+                        <p>Adicione um novo contato à sua base manualmente.</p>
+                    </div>
+                    
+                    <div class="form-card">
+                        <form id="form-client">
+                            <div class="form-grid">
+                                <div class="form-group" style="grid-column: span 2;">
+                                    <label>Nome Completo</label>
+                                    <input type="text" id="c-name" required placeholder="Ex: Maria Joana da Silva">
+                                </div>
+                                <div class="form-group">
+                                    <label>Número de WhatsApp</label>
+                                    <input type="text" id="c-phone" required placeholder="Ex: 11999999999">
+                                </div>
+                                <div class="form-group">
+                                    <label>E-mail (Opcional)</label>
+                                    <input type="email" id="c-email" placeholder="cliente@email.com">
+                                </div>
+                            </div>
+                            <div class="form-actions" style="display:flex; gap:16px;">
+                                <button type="button" class="btn-primary" style="background:#E2E8F0; color:var(--text-main); flex:1; justify-content:center; box-shadow:none;" onclick="app.navigateTo('clients')">Cancelar</button>
+                                <button type="submit" class="btn-primary" style="flex:2; padding: 14px; font-size: 16px; justify-content: center;">
+                                    <i class="fas fa-save"></i> Salvar Cliente
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+
+                <!-- Sales History Page -->
+                <section class="page" id="page-sales">
+                     <div class="page-header">
+                        <h2>Histórico de Vendas</h2>
+                        <p>Visão de todas as vendas já registradas no CRM.</p>
+                    </div>
+
+                    <div class="filters-bar" style="display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; align-items: center;">
+                        <input type="text" id="filter-name" placeholder="Buscar por cliente..." style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; flex: 1; min-width: 200px; outline: none; font-size: 14px; transition: border-color 0.2s;">
+                        
+                        <select id="filter-status" style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer; transition: border-color 0.2s;">
+                            <option value="all">Todos os Status</option>
+                            <option value="new">Novas Vendas (< 30d)</option>
+                            <option value="restock">Em Reposição (30d+)</option>
+                            <option value="dormant">Inativos (90d+)</option>
+                        </select>
+                        
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <input type="date" id="filter-date-start" style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; color: var(--text-muted); font-size: 14px; transition: border-color 0.2s;">
+                            <span style="color: var(--text-muted); font-weight: 500;">até</span>
+                            <input type="date" id="filter-date-end" style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; color: var(--text-muted); font-size: 14px; transition: border-color 0.2s;">
+                        </div>
+                    </div>
+
+                    <div class="table-card" style="overflow-x: auto;">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Cliente</th>
+                                    <th>Produto</th>
+                                    <th>Data</th>
+                                    <th>Valor</th>
+                                    <th>Status (Tempo)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="clients-table-body">
+                                <!-- JS will populate -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Products Page -->
+                <section class="page" id="page-products">
+                     <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
+                        <div>
+                            <h2>Catálogo de Produtos</h2>
+                            <p>Sua lista de produtos e serviços disponíveis.</p>
+                        </div>
+                        <button class="btn-primary" onclick="app.navigateTo('product-register')">
+                            <i class="fas fa-plus"></i> Novo Produto
+                        </button>
+                    </div>
+
+                    <div class="table-card" style="overflow-x: auto;">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Nome do Produto</th>
+                                    <th>Categoria</th>
+                                    <th>Preço Padrão</th>
+                                </tr>
+                            </thead>
+                            <tbody id="products-list-body">
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Product Register Page -->
+                <section class="page" id="page-product-register">
+                    <div class="page-header">
+                        <h2>Registrar Produto</h2>
+                        <p>Cadastre um novo item no seu catálogo.</p>
+                    </div>
+                    
+                    <div class="form-card">
+                        <form id="form-product">
+                            <div class="form-grid">
+                                <div class="form-group" style="grid-column: span 2;">
+                                    <label>Nome do Produto</label>
+                                    <input type="text" id="p-name" required placeholder="Ex: Kit SkinCare Ouro">
+                                </div>
+                                <div class="form-group">
+                                    <label>Categoria (Opcional)</label>
+                                    <input type="text" id="p-category" placeholder="Ex: Perfumaria">
+                                </div>
+                                <div class="form-group">
+                                    <label>Preço Padrão (R$)</label>
+                                    <input type="number" id="p-price" placeholder="149.90" step="0.01">
+                                </div>
+                            </div>
+                            <div class="form-actions" style="display:flex; gap:16px;">
+                                <button type="button" class="btn-primary" style="background:#E2E8F0; color:var(--text-main); flex:1; justify-content:center; box-shadow:none;" onclick="app.navigateTo('products')">Cancelar</button>
+                                <button type="submit" class="btn-primary" style="flex:2; padding: 14px; font-size: 16px; justify-content: center;">
+                                    <i class="fas fa-save"></i> Salvar Produto
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+
+                 <!-- Settings Page -->
+                 <section class="page" id="page-settings">
+                    <div class="page-header">
+                       <h2>Modelos de Mensagens</h2>
+                       <p>Configurações das mensagens automáticas do WhatsApp.</p>
+                   </div>
+                   <div class="empty-state">
+                        <i class="fas fa-wrench"></i>
+                        <p>Área em desenvolvimento para personalização livre dos textos.</p>
+                   </div>
+               </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">Mensagem salva!</div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    
+    <script src="script.js"></script>
+</body>
+</html>
