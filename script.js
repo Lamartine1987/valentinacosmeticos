@@ -725,7 +725,9 @@ const app = {
                 e.preventDefault();
                 
                 if (!this.currentFilteredClients || this.currentFilteredClients.length === 0) return;
-                let delayInterval = (!this.apiSettings || !this.apiSettings.active) ? 600 : 2500;
+                // Usa a API se a URL estiver configurada, independente do flag 'active'
+                const hasApi = this.apiSettings && this.apiSettings.url;
+                let delayInterval = hasApi ? 2500 : 600;
                 
                 const btn = document.getElementById('btn-send-promo');
                 const originalText = btn.innerHTML;
@@ -746,20 +748,8 @@ const app = {
                     const client = targetList[i];
                     if (client.phone && activeTplText) {
                         const msg = activeTplText.replace(/{nome}/g, client.name.split(' ')[0]).replace(/{produto}/g, product || 'produto').replace(/{link}/g, link);
-                        if (!this.apiSettings || !this.apiSettings.active) {
-                            const cleanPhone = client.phone.replace(/\D/g, '');
-                            window.open(`https://wa.me/55${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
-                            successCount++;
-                            db.collection("promos").add({
-                                clientId: client.id,
-                                name: client.name,
-                                phone: client.phone,
-                                product: product,
-                                msg: msg,
-                                status: 'sent',
-                                createdAt: new Date().toISOString()
-                            });
-                        } else {
+                        if (hasApi) {
+                            // Envia via API (Z-API / Evolution)
                             const success = await this.sendWhatsAppMessage(client.phone, msg);
                             if (success) {
                                 successCount++;
@@ -773,6 +763,20 @@ const app = {
                                     createdAt: new Date().toISOString()
                                 });
                             }
+                        } else {
+                            // Fallback: abre WhatsApp Web (só se não houver API configurada)
+                            const cleanPhone = client.phone.replace(/\D/g, '');
+                            window.open(`https://wa.me/55${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+                            successCount++;
+                            db.collection("promos").add({
+                                clientId: client.id,
+                                name: client.name,
+                                phone: client.phone,
+                                product: product,
+                                msg: msg,
+                                status: 'sent',
+                                createdAt: new Date().toISOString()
+                            });
                         }
                         await new Promise(resolve => setTimeout(resolve, delayInterval));
                     }
@@ -1334,10 +1338,6 @@ const app = {
 
         if (this.selectedClientsForPromo.length === 0) return;
         
-        if (!this.apiSettings || !this.apiSettings.active) {
-            alert('Atenção: A Integração de API não está ativa. O envio manual tentará abrir diversas abas do WhatsApp. Permita os Pop-ups do seu navegador.');
-        }
-
         const modal = document.getElementById('promo-overlay');
         document.getElementById('promo-target-count').innerText = this.selectedClientsForPromo.length;
         document.getElementById('promo-product').value = '';
@@ -1440,6 +1440,8 @@ const app = {
         
         const currentYear = new Date().getFullYear();
         const currentMonth = new Date().getMonth() + 1;
+        // Use o ano do filtro de data inicial, se definido; caso contrário usa o ano atual
+        const chartYear = fStart ? parseInt(fStart.split('-')[0]) : currentYear;
         
         const monthlyRevenue = Array(12).fill(0);
         const productCounts = {};
@@ -1453,10 +1455,10 @@ const app = {
                 const year = parseInt(y);
                 const month = parseInt(m);
                 
-                if (year === currentYear) {
+                if (year === chartYear) {
                     totalYear += val;
                     monthlyRevenue[month - 1] += val;
-                    if (month === currentMonth) {
+                    if (year === currentYear && month === currentMonth) {
                         totalMonth += val;
                     }
                 }
@@ -1493,7 +1495,7 @@ const app = {
                 data: {
                     labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
                     datasets: [{
-                        label: 'Faturamento (' + currentYear + ')',
+                        label: 'Faturamento (' + chartYear + ')',
                         data: monthlyRevenue,
                         backgroundColor: 'rgba(109, 40, 217, 0.7)',
                         borderColor: 'rgba(109, 40, 217, 1)',
