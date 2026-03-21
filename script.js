@@ -18,9 +18,11 @@ try {
 // App State
 const app = {
     sales: [],
+    promos: [],
     clients: [],
     products: [],
     user: null,
+    charts: { revenue: null, products: null },
 
     editingClientId: null,
     editingProductId: null,
@@ -29,10 +31,14 @@ const app = {
         thanks: "Olá {nome}, aqui é da Valentina Cosméticos! Muito obrigada pela sua compra recente do {produto}. Qualquer dúvida de como usar o produto, estamos à disposição! 🥰",
         restock: "Oi {nome}, tudo bem? Faz cerca de 30 dias que você comprou o {produto}. Como está sendo a experiência? Já está acabando? Preparamos uma condição especial se quiser repor hoje! ✨",
         dormant: "Oi {nome}, que saudade de você! Faz um tempinho que não nos falamos. Chegaram novidades incríveis na Valentina Cosméticos, quer dar uma olhadinha no catálogo? 💖",
-        lost: "Oi {nome}, lembrou de mim? Fizemos uma limpeza aqui e percebi que faz mais de 6 meses desde a sua última compra. Preparamos um presente muito especial caso queira voltar a ser nossa cliente VIP! ✨"
+        lost: "Oi {nome}, lembrou de mim? Fizemos uma limpeza aqui e percebi que faz muito tempo desde a sua última compra. Preparamos um presente muito especial caso queira voltar a ser nossa cliente VIP! ✨",
+        promo: [
+            { id: Date.now(), title: 'Campanha Padrão', text: "Oi {nome}! Temos uma novidade incrível para você: o {produto} está com uma condição super especial hoje. Garanta o seu através do link: {link} 💖" }
+        ]
     },
 
     unsubSales: null,
+    unsubPromos: null,
     unsubClients: null,
     unsubProducts: null,
     
@@ -58,6 +64,7 @@ const app = {
                 this.user = null;
                 if(loginScreen) loginScreen.classList.add('active');
                 if (this.unsubSales) this.unsubSales();
+                if (this.unsubPromos) this.unsubPromos();
                 if (this.unsubClients) this.unsubClients();
                 if (this.unsubProducts) this.unsubProducts();
             }
@@ -128,18 +135,61 @@ const app = {
                 if(tRestock) tRestock.value = this.msgTemplates.restock;
                 if(tDormant) tDormant.value = this.msgTemplates.dormant;
                 if(tLost) tLost.value = this.msgTemplates.lost;
+                
+                if (typeof this.msgTemplates.promo === 'string') {
+                    this.msgTemplates.promo = [ { id: Date.now(), title: 'Campanha Padrão', text: this.msgTemplates.promo } ];
+                } else if (!Array.isArray(this.msgTemplates.promo)) {
+                    this.msgTemplates.promo = [ { id: Date.now(), title: 'Campanha Padrão', text: "Oi {nome}! Temos uma novidade incrível para você: o {produto} está com uma condição super especial hoje. Garanta o seu através do link: {link} 💖" } ];
+                }
+                this.renderPromoTemplates();
             }
         } catch(e) { console.error(e); }
     },
 
-    parseTemplate(type, name, product) {
+    renderPromoTemplates() {
+        const container = document.getElementById('promo-templates-container');
+        if (!container) return;
+        container.innerHTML = '';
+        if (!Array.isArray(this.msgTemplates.promo)) this.msgTemplates.promo = [];
+        this.msgTemplates.promo.forEach((tpl, index) => {
+            const div = document.createElement('div');
+            div.style.cssText = "border: 1px solid var(--border); border-radius: 8px; padding: 12px; background: white; position: relative;";
+            div.innerHTML = `
+                <button type="button" class="btn-icon" style="position: absolute; top: 12px; right: 12px; font-size: 14px; color: #EF4444;" onclick="app.removePromoTemplate(${index})" title="Remover Modelo"><i class="fas fa-trash"></i></button>
+                <div class="form-group" style="margin-bottom: 8px;">
+                    <label style="font-size: 13px;">Nome da Campanha</label>
+                    <input type="text" class="promo-tpl-title" value="${tpl.title}" required style="padding: 8px 12px; font-size: 14px; border: 1px solid var(--border); border-radius: 8px; outline: none; transition: 0.2s;">
+                </div>
+                <div class="form-group">
+                    <label style="font-size: 13px;">Texto da Mensagem</label>
+                    <textarea class="promo-tpl-text" rows="3" required style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; resize: vertical; outline: none;">${tpl.text}</textarea>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    },
+
+    addPromoTemplate() {
+        if (!Array.isArray(this.msgTemplates.promo)) this.msgTemplates.promo = [];
+        this.msgTemplates.promo.push({ id: Date.now(), title: 'Nova Campanha', text: 'Temos uma novidade para {nome}! Garanta o {produto} acessando {link} ✨' });
+        this.renderPromoTemplates();
+    },
+
+    removePromoTemplate(index) {
+        if (confirm('Tem certeza que deseja remover este modelo de campanha?')) {
+            this.msgTemplates.promo.splice(index, 1);
+            this.renderPromoTemplates();
+        }
+    },
+
+    parseTemplate(type, name, product, link = "") {
         let text = this.msgTemplates[type] || "";
-        text = text.replace(/{nome}/g, name).replace(/{produto}/g, product || 'produto');
+        text = text.replace(/{nome}/g, name).replace(/{produto}/g, product || 'produto').replace(/{link}/g, link);
         return text;
     },
 
     async sendWhatsAppMessage(phone, message) {
-        if(!this.apiSettings || !this.apiSettings.active || !this.apiSettings.url) return false;
+        if(!this.apiSettings || !this.apiSettings.url) return false;
         try {
             console.log("=== INICIANDO ENVIO DE WHATSAPP ===");
             console.log("Provedor configurado:", this.apiSettings.provider);
@@ -233,10 +283,20 @@ const app = {
             this.updateActiveViews();
             this.populateProductsDatalist();
         }, (error) => console.log(error));
+
+        this.unsubPromos = db.collection("promos").orderBy("createdAt", "desc").limit(50).onSnapshot((snapshot) => {
+            this.promos = [];
+            snapshot.forEach((doc) => {
+                this.promos.push({ id: doc.id, ...doc.data() });
+            });
+            this.updateActiveViews();
+        }, (error) => console.log(error));
     },
 
     updateActiveViews() {
         this.renderDashboard();
+        this.populateReportFilters();
+        if (document.getElementById('page-reports') && document.getElementById('page-reports').classList.contains('active')) this.renderReports();
         if (document.getElementById('page-sales').classList.contains('active')) this.renderClientsTable();
         if (document.getElementById('page-clients').classList.contains('active')) this.renderClientsList();
         if (document.getElementById('page-products') && document.getElementById('page-products').classList.contains('active')) this.renderProductsList();
@@ -261,12 +321,42 @@ const app = {
         if(dt) dt.addEventListener('change', () => this.renderDashboard());
     },
 
+    async syncToBrevo(clientData) {
+        if (!clientData.email || clientData.email.trim() === '') return;
+        try {
+            const response = await fetch('https://api.brevo.com/v3/contacts', {
+                method: 'POST',
+                headers: {
+                    'accept': 'application/json',
+                    'api-key': '', // Insira a sua chave API do Brevo aqui ou via Firebase
+                    'content-type': 'application/json'
+                },
+                body: JSON.stringify({
+                    email: clientData.email,
+                    attributes: {
+                        NOME: clientData.name
+                        // Removemos o campo SMS porque o Brevo bloqueia se dois contatos tiverem o mesmo número de telefone (muito comum em testes e famílias)
+                    },
+                    updateEnabled: true 
+                })
+            });
+            if (!response.ok) {
+                console.warn('Aviso Sincronização Brevo:', await response.text());
+            } else {
+                console.log('✅ Cliente sincronizado com o Brevo (Marketing) com sucesso!');
+            }
+        } catch (error) {
+            console.error('❌ Erro na API Brevo:', error);
+        }
+    },
+
     async saveClient(clientData) {
         try {
             await db.collection("clients").add({
                 ...clientData,
                 createdAt: new Date().toISOString()
             });
+            this.syncToBrevo(clientData);
             this.showToast('Cliente salva na nuvem com sucesso!');
         } catch (e) {
             console.error(e);
@@ -305,6 +395,7 @@ const app = {
     async updateClient(id, clientData) {
         try {
             await db.collection("clients").doc(id).update(clientData);
+            this.syncToBrevo(clientData);
             this.showToast('Cliente atualizado com sucesso!');
         } catch (e) {
             console.error(e);
@@ -594,11 +685,19 @@ const app = {
                 btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
                 btn.disabled = true;
 
+                const promoTitles = document.querySelectorAll('.promo-tpl-title');
+                const promoTexts = document.querySelectorAll('.promo-tpl-text');
+                const promos = [];
+                for(let i = 0; i < promoTitles.length; i++) {
+                    promos.push({ id: Date.now() + i, title: promoTitles[i].value, text: promoTexts[i].value });
+                }
+
                 this.msgTemplates = {
                     thanks: document.getElementById('tpl-thanks').value,
                     restock: document.getElementById('tpl-restock').value,
                     dormant: document.getElementById('tpl-dormant').value,
-                    lost: document.getElementById('tpl-lost').value
+                    lost: document.getElementById('tpl-lost').value,
+                    promo: promos
                 };
 
                 try {
@@ -612,6 +711,77 @@ const app = {
                 
                 btn.innerHTML = originalText;
                 btn.disabled = false;
+            });
+        }
+
+        const promoProductInput = document.getElementById('promo-product');
+        const promoLinkInput = document.getElementById('promo-link');
+        if (promoProductInput) promoProductInput.addEventListener('input', () => this.updatePromoPreview());
+        if (promoLinkInput) promoLinkInput.addEventListener('input', () => this.updatePromoPreview());
+
+        const formPromo = document.getElementById('form-promo');
+        if (formPromo) {
+            formPromo.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                if (!this.currentFilteredClients || this.currentFilteredClients.length === 0) return;
+                let delayInterval = (!this.apiSettings || !this.apiSettings.active) ? 600 : 2500;
+                
+                const btn = document.getElementById('btn-send-promo');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Disparando...';
+                btn.disabled = true;
+
+                const product = document.getElementById('promo-product').value;
+                const link = document.getElementById('promo-link').value;
+                
+                let successCount = 0;
+                
+                const selectEl = document.getElementById('promo-template-select');
+                const promoList = Array.isArray(this.msgTemplates.promo) ? this.msgTemplates.promo : [];
+                const activeTplText = (selectEl && promoList[selectEl.value]) ? promoList[selectEl.value].text : "";
+
+                const targetList = this.selectedClientsForPromo || this.currentFilteredClients;
+                for (let i = 0; i < targetList.length; i++) {
+                    const client = targetList[i];
+                    if (client.phone && activeTplText) {
+                        const msg = activeTplText.replace(/{nome}/g, client.name.split(' ')[0]).replace(/{produto}/g, product || 'produto').replace(/{link}/g, link);
+                        if (!this.apiSettings || !this.apiSettings.active) {
+                            const cleanPhone = client.phone.replace(/\D/g, '');
+                            window.open(`https://wa.me/55${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+                            successCount++;
+                            db.collection("promos").add({
+                                clientId: client.id,
+                                name: client.name,
+                                phone: client.phone,
+                                product: product,
+                                msg: msg,
+                                status: 'sent',
+                                createdAt: new Date().toISOString()
+                            });
+                        } else {
+                            const success = await this.sendWhatsAppMessage(client.phone, msg);
+                            if (success) {
+                                successCount++;
+                                db.collection("promos").add({
+                                    clientId: client.id,
+                                    name: client.name,
+                                    phone: client.phone,
+                                    product: product,
+                                    msg: msg,
+                                    status: 'sent',
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+                        }
+                        await new Promise(resolve => setTimeout(resolve, delayInterval));
+                    }
+                }
+                
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                this.closePromoModal();
+                this.showToast(`Campanha finalizada! ${successCount} envios processados.`);
             });
         }
     },
@@ -639,12 +809,12 @@ const app = {
                     msg: this.parseTemplate('restock', sale.name, sale.product),
                     status: sale.msg_restock_status || 'pending'
                 });
-            } else if (diffDays >= 90 && diffDays <= 120) {
+            } else if (diffDays >= 46 && diffDays <= 120) {
                  actions.push({ ...sale, type: 'dormant', days: diffDays, label: 'Saudades', colorClass: 'tag-dormant',
                     msg: this.parseTemplate('dormant', sale.name, sale.product),
                     status: sale.msg_dormant_status || 'pending'
                 });
-            } else if (diffDays >= 180) {
+            } else if (diffDays >= 121) {
                  actions.push({ ...sale, type: 'lost', days: diffDays, label: 'Ex-cliente', colorClass: 'tag-lost',
                     msg: this.parseTemplate('lost', sale.name, sale.product),
                     status: sale.msg_lost_status || 'pending'
@@ -652,7 +822,41 @@ const app = {
             }
         });
         
-        return actions.reverse(); // Mostras as mais urgentes recem calculadas primeiro se houver
+        if (this.promos) {
+            this.promos.forEach(promo => {
+                const promoDate = new Date(promo.createdAt);
+                const diffTime = today - new Date(promoDate.getFullYear(), promoDate.getMonth(), promoDate.getDate());
+                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                
+                if (diffDays <= 7 && diffDays >= 0) { // Mostrar histórico recente no dashboard
+                    actions.push({
+                        id: promo.id,
+                        name: promo.name,
+                        phone: promo.phone,
+                        product: promo.product,
+                        type: 'promo',
+                        days: diffDays,
+                        label: 'Promoção',
+                        colorClass: 'tag-promo',
+                        msg: promo.msg,
+                        status: promo.status || 'sent',
+                        date: promo.createdAt ? promo.createdAt.split('T')[0] : new Date().toISOString().split('T')[0]
+                    });
+                }
+            });
+        }
+        
+        return actions.sort((a, b) => {
+            const getTs = (obj) => {
+                if (obj.createdAt) return new Date(obj.createdAt).getTime();
+                if (obj.date) {
+                    const [y, m, d] = obj.date.split('-');
+                    return new Date(y, m-1, d).getTime();
+                }
+                return 0;
+            };
+            return getTs(b) - getTs(a);
+        });
     },
 
     renderDashboard() {
@@ -697,13 +901,14 @@ const app = {
         const totalSales = filteredSales.reduce((acc, curr) => acc + curr.value, 0);
         document.getElementById('stat-total-sales').innerText = `R$ ${totalSales.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
 
-        const badge = document.getElementById('noti-badge');
-        badge.innerText = actions.length;
-        if(actions.length > 0) { badge.style.display = 'block'; } else { badge.style.display = 'none'; }
-        document.getElementById('stat-pending-contact').innerText = actions.length;
-
         this.currentDashboardActions = actions;
         const pendingCount = actions.filter(a => a.status === 'pending' || a.status === 'failed').length;
+
+        const badge = document.getElementById('noti-badge');
+        badge.innerText = pendingCount;
+        if(pendingCount > 0) { badge.style.display = 'block'; } else { badge.style.display = 'none'; }
+        document.getElementById('stat-pending-contact').innerText = pendingCount;
+
         const btnDispararTodos = document.getElementById('btn-disparar-todos');
         if (btnDispararTodos) {
             if (pendingCount > 0) {
@@ -741,7 +946,7 @@ const app = {
                         <span class="c-name">${action.name}</span>
                         <span class="c-tag ${action.colorClass}">${action.label}</span>
                     </div>
-                    <span class="c-meta"><strong>${action.product}</strong> • Comprou ${daysText}</span>
+                    <span class="c-meta"><strong>${action.product}</strong> • ${action.type === 'promo' ? 'Enviado ' + daysText : 'Comprou ' + daysText}</span>
                 </div>
             `;
             
@@ -764,7 +969,7 @@ const app = {
                             <a href="${waLink}" target="_blank" class="btn-icon" style="border:1px solid var(--border); padding:6px 12px; border-radius:8px; color:var(--text-main); font-size:13px; text-decoration:none;" title="Abrir WhatsApp Web Manualmente (Fallback)">
                                 <i class="fab fa-whatsapp" style="color:#25D366; font-size:14px;"></i> Web
                             </a>
-                            <button id="btn-resend-${action.id}-${action.type}" style="padding:6px 16px; font-size:13px; border-radius:8px; border:none; cursor:pointer; font-weight:500; display:flex; gap:6px; align-items:center; transition:0.2s; ${btnColor}" onclick="app.resendActionMsg('${action.id}', '${action.type}', '${action.phone}', \`${action.msg}\`)">
+                            <button id="btn-resend-${action.id}-${action.type}" style="padding:6px 16px; font-size:13px; border-radius:8px; border:none; cursor:pointer; font-weight:500; display:flex; gap:6px; align-items:center; transition:0.2s; ${btnColor}" onclick="app.resendActionMsg('${action.id}', '${action.type}', '${action.phone}')">
                                 <i class="fas ${btnIcon}"></i> ${btnText}
                             </button>
                         </div>
@@ -877,6 +1082,9 @@ const app = {
         if(!tbody) return;
         tbody.innerHTML = '';
         
+        const selectAllCb = document.getElementById('selectAllClients');
+        if (selectAllCb) selectAllCb.checked = false;
+        
         const filterName = (document.getElementById('filter-client-name') || {value:''}).value.toLowerCase();
         
         let filtered = [...this.clients].reverse();
@@ -889,6 +1097,8 @@ const app = {
             });
         }
 
+        this.currentFilteredClients = filtered;
+
         if (filtered.length === 0) {
             tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #64748B; padding: 32px;">Nenhuma cliente encontrada em sua base do Firebase.</td></tr>`;
             return;
@@ -900,6 +1110,7 @@ const app = {
             
             const row = document.createElement('tr');
             row.innerHTML = `
+                <td style="text-align: center;"><input type="checkbox" class="client-checkbox" value="${client.id}" style="cursor: pointer; width: 16px; height: 16px;"></td>
                 <td><strong>${client.name}</strong></td>
                 <td>${client.phone}</td>
                 <td>${compras.length} compra(s)</td>
@@ -928,7 +1139,18 @@ const app = {
         });
     },
 
-    async resendActionMsg(saleId, type, phone, msg) {
+    async resendActionMsg(saleId, type, phone, fallbackMsg) {
+        let msg = fallbackMsg;
+        if (!msg) {
+            const action = this.currentDashboardActions && this.currentDashboardActions.find(a => a.id === saleId && a.type === type);
+            if (action && action.msg) {
+                msg = action.msg;
+            } else {
+                this.showToast("Não foi possível carregar a mensagem original.");
+                return;
+            }
+        }
+
         if (!this.apiSettings || !this.apiSettings.url) {
             this.showToast("Integração API do WhatsApp não está configurada corretamente!");
             return;
@@ -1089,6 +1311,289 @@ const app = {
             });
             html += '</div>';
             content.innerHTML = html;
+        }
+    },
+
+    toggleSelectAllClients(source) {
+        const checkboxes = document.querySelectorAll('.client-checkbox');
+        checkboxes.forEach(cb => cb.checked = source.checked);
+    },
+
+    openPromoModal() {
+        const checkboxes = document.querySelectorAll('.client-checkbox:checked');
+        this.selectedClientsForPromo = [];
+        if (checkboxes.length > 0) {
+            checkboxes.forEach(cb => {
+                const client = this.clients.find(c => c.id === cb.value);
+                if (client) this.selectedClientsForPromo.push(client);
+            });
+        } else {
+            this.showToast('Por favor, selecione pelo menos uma cliente marcando a caixinha na tabela.');
+            return;
+        }
+
+        if (this.selectedClientsForPromo.length === 0) return;
+        
+        if (!this.apiSettings || !this.apiSettings.active) {
+            alert('Atenção: A Integração de API não está ativa. O envio manual tentará abrir diversas abas do WhatsApp. Permita os Pop-ups do seu navegador.');
+        }
+
+        const modal = document.getElementById('promo-overlay');
+        document.getElementById('promo-target-count').innerText = this.selectedClientsForPromo.length;
+        document.getElementById('promo-product').value = '';
+        document.getElementById('promo-link').value = '';
+        
+        const selectEl = document.getElementById('promo-template-select');
+        if (selectEl) {
+            selectEl.innerHTML = '';
+            const promoList = Array.isArray(this.msgTemplates.promo) ? this.msgTemplates.promo : [];
+            promoList.forEach((tpl, idx) => {
+                const opt = document.createElement('option');
+                opt.value = idx;
+                opt.innerText = tpl.title;
+                selectEl.appendChild(opt);
+            });
+        }
+
+        this.updatePromoPreview();
+        
+        if (modal) modal.classList.add('active');
+    },
+
+    closePromoModal() {
+        const modal = document.getElementById('promo-overlay');
+        if (modal) modal.classList.remove('active');
+    },
+
+    updatePromoPreview() {
+        const prod = document.getElementById('promo-product').value || '[Produto]';
+        const link = document.getElementById('promo-link').value || '[Link]';
+        const exampleName = this.selectedClientsForPromo && this.selectedClientsForPromo.length > 0 ? this.selectedClientsForPromo[0].name.split(' ')[0] : 'Maria';
+        const previewEl = document.getElementById('promo-preview');
+        
+        const selectEl = document.getElementById('promo-template-select');
+        const promoList = Array.isArray(this.msgTemplates.promo) ? this.msgTemplates.promo : [];
+        const activeTplText = (selectEl && promoList[selectEl.value]) ? promoList[selectEl.value].text : "Mensagem não configurada.";
+
+        let text = activeTplText.replace(/{nome}/g, exampleName).replace(/{produto}/g, prod || 'produto').replace(/{link}/g, link);
+        if (previewEl) previewEl.innerText = text;
+    },
+
+    populateReportFilters() {
+        const clientDt = document.getElementById('dt-report-clients');
+        const prodDt = document.getElementById('dt-report-products');
+        if (!clientDt || !prodDt) return;
+
+        clientDt.innerHTML = '';
+        prodDt.innerHTML = '';
+
+        const uniqueClients = [...new Set(this.sales.map(s => s.name))].filter(Boolean).sort();
+        const uniqueProducts = [...new Set(this.sales.map(s => s.product))].filter(Boolean).sort();
+
+        uniqueClients.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c;
+            clientDt.appendChild(opt);
+        });
+        
+        uniqueProducts.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p;
+            prodDt.appendChild(opt);
+        });
+    },
+
+    renderReports() {
+        const fStart = (document.getElementById('report-filter-start') || {value:''}).value;
+        const fEnd = (document.getElementById('report-filter-end') || {value:''}).value;
+        const fClient = (document.getElementById('report-filter-client') || {value:''}).value.trim().toLowerCase();
+        const fProd = (document.getElementById('report-filter-product') || {value:''}).value.trim().toLowerCase();
+
+        let filteredSales = [...this.sales];
+
+        if (fClient) filteredSales = filteredSales.filter(s => s.name && s.name.toLowerCase().includes(fClient));
+        if (fProd) filteredSales = filteredSales.filter(s => s.product && s.product.toLowerCase().includes(fProd));
+
+        if (fStart || fEnd) {
+            const filterDates = (item) => {
+                if(!item.date) return false;
+                const [y, m, d] = item.date.split('-');
+                const itemDate = new Date(y, m-1, d);
+                itemDate.setHours(0,0,0,0);
+                
+                if (fStart) {
+                    const [sy, sm, sd] = fStart.split('-');
+                    if (itemDate < new Date(sy, sm-1, sd)) return false;
+                }
+                if (fEnd) {
+                    const [ey, em, ed] = fEnd.split('-');
+                    if (itemDate > new Date(ey, em-1, ed)) return false;
+                }
+                return true;
+            };
+            filteredSales = filteredSales.filter(filterDates);
+        }
+
+        let totalYear = 0;
+        let totalMonth = 0;
+        let allTimeTotal = 0;
+        
+        const currentYear = new Date().getFullYear();
+        const currentMonth = new Date().getMonth() + 1;
+        
+        const monthlyRevenue = Array(12).fill(0);
+        const productCounts = {};
+
+        filteredSales.forEach(sale => {
+            const val = Number(sale.value) || 0;
+            allTimeTotal += val;
+
+            if (sale.date) {
+                const [y, m] = sale.date.split('-');
+                const year = parseInt(y);
+                const month = parseInt(m);
+                
+                if (year === currentYear) {
+                    totalYear += val;
+                    monthlyRevenue[month - 1] += val;
+                    if (month === currentMonth) {
+                        totalMonth += val;
+                    }
+                }
+            }
+            
+            if (sale.product) {
+                const prodName = sale.product;
+                if (!productCounts[prodName]) productCounts[prodName] = 0;
+                productCounts[prodName] += (parseInt(sale.quantity) || 1);
+            }
+        });
+
+        const sortedProducts = Object.keys(productCounts)
+            .map(p => ({ name: p, count: productCounts[p] }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 5);
+            
+        const prodLabels = sortedProducts.map(p => p.name);
+        const prodData = sortedProducts.map(p => p.count);
+
+        if (document.getElementById('report-total-year')) {
+            document.getElementById('report-total-year').innerText = allTimeTotal.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
+            document.getElementById('report-total-month').innerText = totalMonth.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
+            const realTicketAvg = filteredSales.length > 0 ? (allTimeTotal / filteredSales.length) : 0;
+            document.getElementById('report-ticket-avg').innerText = realTicketAvg.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
+        }
+
+        const revCanvas = document.getElementById('chart-revenue');
+        if (typeof Chart !== 'undefined' && revCanvas) {
+            const ctxRev = revCanvas.getContext('2d');
+            if (this.charts.revenue) this.charts.revenue.destroy();
+            this.charts.revenue = new Chart(ctxRev, {
+                type: 'bar',
+                data: {
+                    labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
+                    datasets: [{
+                        label: 'Faturamento (' + currentYear + ')',
+                        data: monthlyRevenue,
+                        backgroundColor: 'rgba(109, 40, 217, 0.7)',
+                        borderColor: 'rgba(109, 40, 217, 1)',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: { responsive: true, scales: { y: { beginAtZero: true } } }
+            });
+        }
+
+        const prodCanvas = document.getElementById('chart-products');
+        if (typeof Chart !== 'undefined' && prodCanvas) {
+            const ctxProd = prodCanvas.getContext('2d');
+            if (this.charts.products) this.charts.products.destroy();
+            
+            const hasData = prodData.length > 0;
+
+            this.charts.products = new Chart(ctxProd, {
+                type: 'doughnut',
+                data: {
+                    labels: hasData ? prodLabels : ['Nenhuma venda encontrada'],
+                    datasets: [{
+                        data: hasData ? prodData : [1],
+                        backgroundColor: hasData ? ['#8B5CF6', '#EC4899', '#10B981', '#F59E0B', '#3B82F6'] : ['#E2E8F0'],
+                        borderWidth: 0
+                    }]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { 
+                         legend: { position: 'bottom' },
+                         tooltip: {
+                             callbacks: {
+                                 label: function(context) {
+                                     if (!hasData) return ' 0 unidades vendidas';
+                                     return ' ' + context.formattedValue + ' unidades vendidas';
+                                 }
+                             }
+                         }
+                    } 
+                }
+            });
+        }
+
+        const filteredClientsContainer = document.getElementById('report-filtered-clients');
+        const filteredClientsList = document.getElementById('report-clients-list');
+
+        if ((fProd || fClient || fStart || fEnd) && filteredClientsContainer && filteredClientsList) {
+            filteredClientsContainer.style.display = 'block';
+            filteredClientsList.innerHTML = '';
+            
+            const clientAgg = {};
+            filteredSales.forEach(s => {
+                if (s.name && s.name.trim() !== '') {
+                    if (!clientAgg[s.name]) {
+                        clientAgg[s.name] = { totalQty: 0, totalValue: 0 };
+                    }
+                    clientAgg[s.name].totalQty += (parseInt(s.quantity) || 1);
+                    const val = Number(s.value) || 0;
+                    clientAgg[s.name].totalValue += val;
+                }
+            });
+            
+            const uniqueClientNames = Object.keys(clientAgg).sort((a, b) => {
+                if (clientAgg[b].totalQty !== clientAgg[a].totalQty) return clientAgg[b].totalQty - clientAgg[a].totalQty;
+                return clientAgg[b].totalValue - clientAgg[a].totalValue;
+            });
+            
+            if (uniqueClientNames.length === 0) {
+                 filteredClientsList.innerHTML = '<p style="color: var(--text-muted); font-size: 14px; padding: 12px; border: 1px dashed var(--border); text-align: center; border-radius: 8px;">Nenhum cliente atende aos filtros atuais.</p>';
+            } else {
+                 uniqueClientNames.forEach(cName => {
+                     const clientObj = this.clients.find(c => c.name === cName);
+                     const clientPhone = clientObj && clientObj.phone ? clientObj.phone : 'Não cadastrado';
+                     const qtyInfo = clientAgg[cName];
+                     
+                     const div = document.createElement('div');
+                     div.style.cssText = "display:flex; justify-content: space-between; align-items: center; padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; background: white; box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: 0.2s;";
+                     div.innerHTML = `
+                        <div style="display:flex; align-items: center; gap: 12px;">
+                            <div style="background: #E0E7FF; color: #4F46E5; width: 40px; height: 40px; border-radius: 50%; display:flex; align-items:center; justify-content:center; font-weight: bold; font-size: 16px;">
+                                ${cName.charAt(0).toUpperCase()}
+                            </div>
+                            <div style="display:flex; flex-direction: column; gap: 4px;">
+                                <h4 style="font-size: 14px; font-weight: 600; color: var(--text-main); margin: 0;">${cName}</h4>
+                                <span style="font-size: 12px; color: var(--text-muted); margin: 0;"><i class="fab fa-whatsapp" style="color: #25D366; margin-right: 4px; font-size: 12px;"></i>${clientPhone}</span>
+                            </div>
+                        </div>
+                        <div style="text-align: right; display: flex; flex-direction: column; justify-content: center; gap: 4px;">
+                            <span style="display: inline-block; background: #FEF3C7; color: #D97706; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 600;">${qtyInfo.totalQty} Unidade${qtyInfo.totalQty > 1 ? 's' : ''}</span>
+                            <span style="font-size: 12px; color: var(--text-main); font-weight: 700;">R$ ${qtyInfo.totalValue.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                        </div>
+                     `;
+                     filteredClientsList.appendChild(div);
+                 });
+            }
+        } else if (filteredClientsContainer) {
+            filteredClientsContainer.style.display = 'none';
         }
     }
 };

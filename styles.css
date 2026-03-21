@@ -106,6 +106,8 @@ body { background: var(--bg-color); color: var(--text-main); font-size: 15px; }
 
 /* Stats Grid */
 .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 32px; }
+.charts-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 32px; }
+.chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow-sm); }
 .stat-card {
     background: var(--surface); padding: 24px; border-radius: var(--radius);
     box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 20px;
@@ -149,6 +151,7 @@ body { background: var(--bg-color); color: var(--text-main); font-size: 15px; }
 .tag-restock { background: #FEF3C7; color: #92400E; }
 .tag-dormant { background: #FEE2E2; color: #991B1B; }
 .tag-lost { background: #F1F5F9; color: #475569; }
+.tag-promo { background: #F3E8FF; color: #6D28D9; }
 
 /* Forms */
 .form-card { padding: 32px; }

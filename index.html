@@ -7,6 +7,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <!-- Login Overlay -->
@@ -48,21 +49,25 @@
                     <i class="fas fa-chart-pie"></i>
                     <span>Visão Geral</span>
                 </a>
-                <a href="#" class="nav-item" data-page="clients">
-                    <i class="fas fa-address-book"></i>
-                    <span>Base de Clientes</span>
+                <a href="#" class="nav-item" data-page="reports">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Relatórios</span>
+                </a>
+                <a href="#" class="nav-item" data-page="register">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>Registrar Venda</span>
                 </a>
                 <a href="#" class="nav-item" data-page="sales">
                     <i class="fas fa-shopping-bag"></i>
                     <span>Histórico de Vendas</span>
                 </a>
+                <a href="#" class="nav-item" data-page="clients">
+                    <i class="fas fa-address-book"></i>
+                    <span>Base de Clientes</span>
+                </a>
                 <a href="#" class="nav-item" data-page="products">
                     <i class="fas fa-box"></i>
                     <span>Catálogo de Produtos</span>
-                </a>
-                <a href="#" class="nav-item" data-page="register">
-                    <i class="fas fa-plus-circle"></i>
-                    <span>Registrar Venda</span>
                 </a>
                 <a href="#" class="nav-item" data-page="settings">
                     <i class="fas fa-cog"></i>
@@ -120,7 +125,8 @@
                             <option value="thanks">Somente Agradecimentos</option>
                             <option value="restock">Somente Reposições</option>
                             <option value="dormant">Somente Saudades (Recuperação)</option>
-                            <option value="lost">Somente Ex-clientes (Resgate > 180d)</option>
+                            <option value="lost">Somente Ex-clientes (Resgate > 120d)</option>
+                            <option value="promo">Somente Promoções (Enviadas)</option>
                         </select>
                     </div>
 
@@ -173,6 +179,79 @@
                                     <p>Nenhuma ação pendente no momento!</p>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Reports Page -->
+                <section class="page" id="page-reports">
+                    <div class="page-header" style="flex-direction: column; align-items: flex-start; gap: 16px;">
+                        <div>
+                            <h2>Estatísticas e Resultados</h2>
+                            <p>Acompanhe o faturamento e os produtos mais vendidos da sua loja.</p>
+                        </div>
+                        <div class="filters-bar" style="width: 100%; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; border-top: 1px solid var(--border); padding-top: 16px;">
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <i class="fas fa-calendar-alt" style="color: var(--text-muted); font-size: 14px;"></i>
+                                <input type="date" id="report-filter-start" onchange="app.renderReports()" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; outline: none; background: white; font-size: 13px; color: var(--text-main);">
+                                <span style="color: var(--text-muted); font-size: 13px;">até</span>
+                                <input type="date" id="report-filter-end" onchange="app.renderReports()" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; outline: none; background: white; font-size: 13px; color: var(--text-main);">
+                            </div>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <i class="fas fa-users" style="color: var(--text-muted); font-size: 14px; margin-left: 8px;"></i>
+                                <input type="text" id="report-filter-client" list="dt-report-clients" placeholder="Buscar Cliente..." oninput="app.renderReports()" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; outline: none; background: white; font-size: 13px; color: var(--text-main); min-width: 150px; max-width: 200px;">
+                                <datalist id="dt-report-clients"></datalist>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <i class="fas fa-box" style="color: var(--text-muted); font-size: 14px; margin-left: 8px;"></i>
+                                <input type="text" id="report-filter-product" list="dt-report-products" placeholder="Buscar Produto..." oninput="app.renderReports()" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; outline: none; background: white; font-size: 13px; color: var(--text-main); min-width: 150px; max-width: 200px;">
+                                <datalist id="dt-report-products"></datalist>
+                            </div>
+                            <button class="btn-secondary" onclick="document.getElementById('report-filter-start').value=''; document.getElementById('report-filter-end').value=''; document.getElementById('report-filter-client').value=''; document.getElementById('report-filter-product').value=''; app.renderReports();" style="padding: 6px 12px; font-size: 12px; border-radius: 6px; background: transparent; color: #EF4444; border: 1px solid #EF4444; cursor: pointer; margin-left: auto;">Limpar Filtros</button>
+                        </div>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon" style="background: #E0E7FF; color: #4F46E5;"><i class="fas fa-calendar-alt"></i></div>
+                            <div class="stat-info">
+                                <h3>Faturamento Total</h3>
+                                <div class="stat-value" id="report-total-year">R$ 0,00</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon" style="background: #DEF7EC; color: #059669;"><i class="fas fa-chart-bar"></i></div>
+                            <div class="stat-info">
+                                <h3>Faturamento do Mês</h3>
+                                <div class="stat-value" id="report-total-month">R$ 0,00</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon" style="background: #FEF3C7; color: #D97706;"><i class="fas fa-receipt"></i></div>
+                            <div class="stat-info">
+                                <h3>Ticket Médio Geral</h3>
+                                <div class="stat-value" id="report-ticket-avg">R$ 0,00</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="charts-grid">
+                        <div class="chart-card">
+                            <h3 style="margin-bottom: 16px; font-size: 16px;">Faturamento Mensal (Anual)</h3>
+                            <canvas id="chart-revenue" height="100"></canvas>
+                        </div>
+                        <div class="chart-card">
+                            <h3 style="margin-bottom: 16px; font-size: 16px;">Top 5 Produtos Mais Vendidos</h3>
+                            <div style="height: 250px; display: flex; justify-content: center;">
+                                <canvas id="chart-products"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="report-filtered-clients" style="display: none; margin-bottom: 32px; animation: fadeIn 0.3s ease-in-out;">
+                        <h3 style="margin-bottom: 16px; margin-top: 16px; font-size: 16px; color: var(--text-main); border-bottom: 2px solid #E0E7FF; padding-bottom: 8px; display: inline-flex; align-items: center; gap: 8px;"><i class="fas fa-search" style="color: #8B5CF6;"></i> Resultados do Filtro Atual (Clientes)</h3>
+                        <div id="report-clients-list" style="display: flex; flex-direction: column; gap: 8px;">
+                            <!-- Preenchido via JS -->
                         </div>
                     </div>
                 </section>
@@ -230,9 +309,14 @@
                             <h2>Base de Clientes</h2>
                             <p>Contatos e Lifetime Value (LTV) da sua carteira.</p>
                         </div>
-                        <button class="btn-primary" onclick="app.navigateTo('client-register')">
-                            <i class="fas fa-user-plus"></i> Nova Cliente
-                        </button>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn-primary" style="background: #8B5CF6;" onclick="app.openPromoModal()">
+                                <i class="fas fa-bullhorn"></i> Disparar Promoção
+                            </button>
+                            <button class="btn-primary" onclick="app.navigateTo('client-register')">
+                                <i class="fas fa-user-plus"></i> Nova Cliente
+                            </button>
+                        </div>
                     </div>
                     
                     <div class="filters-bar" style="margin-bottom: 24px;">
@@ -243,6 +327,7 @@
                         <table class="data-table">
                             <thead>
                                 <tr>
+                                    <th style="width: 40px; text-align: center;"><input type="checkbox" id="selectAllClients" onclick="app.toggleSelectAllClients(this)" style="cursor: pointer;"></th>
                                     <th>Nome</th>
                                     <th>WhatsApp / Contato</th>
                                     <th>Compras Realizadas</th>
@@ -413,13 +498,26 @@
                                     <label>Reposição (30 a 45 dias)</label>
                                     <textarea id="tpl-restock" rows="3" required style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; resize: vertical; font-family: inherit; font-size: 14px;">Oi {nome}, tudo bem? Faz cerca de 30 dias que você comprou o {produto}. Como está sendo a experiência? Já está acabando? Preparamos uma condição especial se quiser repor hoje! ✨</textarea>
                                 </div>
-                                <div class="form-group" style="grid-column: span 2;">
-                                    <label>Saudades / Recuperação (90 a 120 dias)</label>
+                                <div class="form-group" style="border-top: 1px solid var(--border); padding-top: 16px; margin-top: 8px;">
+                                    <label style="color: #DB2777; font-weight: 600;"><i class="fas fa-heart"></i> Campanha de Recuperação (Saudades 46 a 120 dias)</label>
+                                    <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 8px; font-weight: normal;">Enviada para clientes inativas há mais de um mês e meio.</p>
                                     <textarea id="tpl-dormant" rows="3" required style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; resize: vertical; font-family: inherit; font-size: 14px;">Oi {nome}, que saudade de você! Faz um tempinho que não nos falamos. Chegaram novidades incríveis na Valentina Cosméticos, quer dar uma olhadinha no catálogo? 💖</textarea>
                                 </div>
-                                <div class="form-group" style="grid-column: span 2;">
-                                    <label>Resgate de Ex-clientes (Acima de 6 meses / 180+ dias)</label>
-                                    <textarea id="tpl-lost" rows="3" required style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; resize: vertical; font-family: inherit; font-size: 14px;">Oi {nome}, lembrou de mim? Fizemos uma limpeza aqui e percebi que faz mais de 6 meses desde a sua última compra. Preparamos um presente muito especial caso queira voltar a ser nossa cliente VIP! ✨</textarea>
+                                <div class="form-group" style="border-top: 1px solid var(--border); padding-top: 16px; margin-top: 8px;">
+                                    <label style="color: #475569; font-weight: 600;"><i class="fas fa-user-clock"></i> Campanha de Resgate (Ex-cliente > 120 dias)</label>
+                                    <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 8px; font-weight: normal;">Enviada para tentar reativar clientes perdidas (mais de 4 meses sem comprar).</p>
+                                    <textarea id="tpl-lost" rows="3" required style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; resize: vertical; font-family: inherit; font-size: 14px;">Oi {nome}, lembrou de mim? Fizemos uma limpeza aqui e percebi que faz muito tempo desde a sua última compra. Preparamos um presente muito especial caso queira voltar a ser nossa cliente VIP! ✨</textarea>
+                                </div>
+                                <div class="form-group" style="grid-column: span 2; border-top: 1px solid var(--border); padding-top: 16px; margin-top: 8px;">
+                                    <label style="color: #8B5CF6; font-weight: 600;"><i class="fas fa-bullhorn"></i> Biblioteca de Campanhas Promocionais</label>
+                                    <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 12px; font-weight: normal;">Crie diversos modelos dinâmicos para suas campanhas usando <strong>{produto}</strong> e <strong>{link}</strong>. Eles estarão disponíveis na janela de envio da Base de Clientes.</p>
+                                    
+                                    <div id="promo-templates-container" style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 16px;">
+                                        <!-- JS will populate -->
+                                    </div>
+                                    <button type="button" class="btn-primary" style="background: #F8FAFC; color: var(--primary); border: 2px dashed var(--primary-light); box-shadow: none; width: 100%; justify-content: center; padding: 12px;" onclick="app.addPromoTemplate()">
+                                        <i class="fas fa-plus"></i> Adicionar Nova Campanha
+                                    </button>
                                 </div>
                             </div>
                             <div class="form-actions" style="margin-top: 16px;">
@@ -489,6 +587,49 @@
             </div>
             <div id="history-modal-content" style="overflow-y: auto; flex: 1; padding-right: 4px;">
             </div>
+        </div>
+    </div>
+
+    <!-- Promo Modal -->
+    <div id="promo-overlay" class="login-overlay">
+        <div class="login-card" style="max-width: 600px; display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h2 style="margin: 0; text-align: left; font-size: 20px;"><i class="fas fa-bullhorn" style="color: #8B5CF6; margin-right: 8px;"></i> Disparar Campanha Promocional</h2>
+                <button class="btn-icon" onclick="app.closePromoModal()" style="font-size: 28px; line-height: 1;">&times;</button>
+            </div>
+            
+            <div style="margin-bottom: 16px; font-size: 14px; color: var(--text-muted);">
+                Esta campanha será enviada para <strong id="promo-target-count" style="color: var(--text-main);">0</strong> cliente(s) selecionada(s).
+            </div>
+
+            <form id="form-promo" style="display: flex; flex-direction: column; gap: 16px;">
+                <div class="form-group">
+                    <label>Modelo de Mensagem <span style="font-weight: normal; color: var(--text-muted); font-size: 12px;">(Edite em Configurações)</span></label>
+                    <select id="promo-template-select" required style="padding: 14px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer;" onchange="app.updatePromoPreview()">
+                        <!-- JS fills -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Produto em Promoção</label>
+                    <input type="text" id="promo-product" required placeholder="Ex: Batom Matte Vermelho" list="products-datalist">
+                </div>
+                <div class="form-group">
+                    <label>Link de Compra / Catálogo</label>
+                    <input type="url" id="promo-link" required placeholder="https://wa.me/c/..." >
+                </div>
+                
+                <div style="background: #F8FAFC; border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+                    <label style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; display: block;">Pré-visualização da Mensagem</label>
+                    <div id="promo-preview" style="font-size: 14px; color: var(--text-main); line-height: 1.5; white-space: pre-wrap;"></div>
+                </div>
+
+                <div class="form-actions" style="margin-top: 8px; display: flex; gap: 12px;">
+                    <button type="button" class="btn-primary" style="background:#E2E8F0; color:var(--text-main); flex:1; justify-content:center; box-shadow:none;" onclick="app.closePromoModal()">Cancelar</button>
+                    <button type="submit" id="btn-send-promo" class="btn-primary" style="flex:2; padding: 14px; font-size: 16px; justify-content: center; background: #8B5CF6;">
+                        <i class="fas fa-paper-plane"></i> Iniciar Disparos
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
