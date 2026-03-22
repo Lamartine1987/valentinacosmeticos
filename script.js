@@ -532,23 +532,8 @@ const app = {
             });
         }
 
-        const rProduct = document.getElementById('r-product');
-        const rQuantity = document.getElementById('r-quantity');
-        const rValue = document.getElementById('r-value');
-
-        const calculateTotal = () => {
-            if (!rProduct || !rQuantity || !rValue) return;
-            const prodName = rProduct.value;
-            const qty = parseInt(rQuantity.value) || 1;
-            const product = this.products.find(p => p.name === prodName);
-            if (product && product.price) {
-                rValue.value = (parseFloat(product.price) * qty).toFixed(2);
-            }
-        };
-
-        if (rProduct) rProduct.addEventListener('input', calculateTotal);
-        if (rQuantity) rQuantity.addEventListener('input', calculateTotal);
-        if (rProduct) rProduct.addEventListener('change', calculateTotal);
+        // Inicializar o formulário de venda com uma linha de produto
+        this.addSaleItem();
 
         document.getElementById('form-sale').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -559,11 +544,35 @@ const app = {
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
             btn.disabled = true;
 
+            // Coletar todos os itens do formulário dinâmico
+            const itemRows = document.querySelectorAll('.sale-item-row');
+            const items = [];
+            let totalQty = 0;
+            itemRows.forEach(row => {
+                const prod = row.querySelector('.sale-item-product').value.trim();
+                const qty = parseInt(row.querySelector('.sale-item-qty').value) || 1;
+                if (prod) { 
+                    const catalogProd = this.products.find(p => p.name === prod);
+                    const unitPrice = catalogProd && catalogProd.price ? catalogProd.price : 0;
+                    items.push({ product: prod, quantity: qty, price: unitPrice }); 
+                    totalQty += qty; 
+                }
+            });
+
+            if (items.length === 0) {
+                this.showToast('Adicione pelo menos um produto antes de salvar.');
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                return;
+            }
+
+            const productNames = items.map(i => i.product).join(', ');
             const newSale = {
                 name: document.getElementById('r-name').value,
                 phone: document.getElementById('r-phone').value,
-                product: document.getElementById('r-product').value,
-                quantity: parseInt(document.getElementById('r-quantity').value) || 1,
+                product: productNames,
+                quantity: totalQty,
+                items: items,
                 value: parseFloat(document.getElementById('r-value').value),
                 date: document.getElementById('r-date').value,
             };
@@ -590,6 +599,9 @@ const app = {
             btn.disabled = false;
             e.target.reset();
             document.getElementById('r-date').valueAsDate = new Date();
+            // Reinicializar lista de itens com uma linha vazia
+            const cont = document.getElementById('sale-items-container');
+            if (cont) { cont.innerHTML = ''; this.addSaleItem(); }
             this.navigateTo('dashboard');
         });
 
@@ -1068,13 +1080,52 @@ const app = {
             if (diffDays >= 30) timeStatus = `<span style="color:#F59E0B; font-weight: 500;">Repor <small style="color:var(--text-muted);font-weight:normal; font-size:12px;">(${timeText})</small></span>`;
             if (diffDays >= 90) timeStatus = `<span style="color:#EF4444; font-weight: 500;">Inativo <small style="color:var(--text-muted);font-weight:normal; font-size:12px;">(${timeText})</small></span>`;
             if (diffDays >= 180) timeStatus = `<span style="color:#64748B; font-weight: 500;">Ex-cliente <small style="color:var(--text-muted);font-weight:normal; font-size:12px;">(${timeText})</small></span>`;
-            
+            let productsHtml = '';
+            let qtyHtml = '';
+            let subtotalHtml = '';
+
+            if (sale.items && sale.items.length > 0) {
+                let mapped = sale.items.map(item => {
+                    let subTotal = 0;
+                    if (item.price !== undefined) {
+                        subTotal = item.price * item.quantity;
+                    } else {
+                        const catalogItem = this.products.find(p => p.name === item.product);
+                        if (catalogItem && catalogItem.price) subTotal = (parseFloat(catalogItem.price) || 0) * item.quantity;
+                    }
+                    return { prod: item.product, qty: item.quantity, subTotal: subTotal };
+                });
+                
+                const knownTotal = mapped.reduce((acc, curr) => acc + curr.subTotal, 0);
+                const unknownItems = mapped.filter(m => m.subTotal === 0);
+                
+                if (unknownItems.length > 0) {
+                    const remainingValue = Math.max(0, sale.value - knownTotal);
+                    if (unknownItems.length === 1) {
+                        unknownItems[0].subTotal = remainingValue;
+                    } else {
+                        const perItem = remainingValue / unknownItems.length;
+                        unknownItems.forEach(i => i.subTotal = perItem);
+                    }
+                }
+
+                productsHtml = mapped.map(m => `<div style="padding: 6px 0; border-bottom: 1px solid #F1F5F9;">${m.prod}</div>`).join('');
+                qtyHtml = mapped.map(m => `<div style="padding: 6px 0; text-align: center; border-bottom: 1px solid #F1F5F9; color: var(--text-muted); font-weight: 500;">x${m.qty}</div>`).join('');
+                subtotalHtml = mapped.map(m => `<div style="padding: 6px 0; border-bottom: 1px solid #F1F5F9; color: #64748B;">R$ ${m.subTotal.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</div>`).join('');
+            } else {
+                productsHtml = sale.product;
+                qtyHtml = `<div style="text-align: center; color: var(--text-muted); font-weight: 500;">x${sale.quantity || 1}</div>`;
+                subtotalHtml = `<div style="color: #64748B;">R$ ${(sale.value || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</div>`;
+            }
+
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td><strong>${sale.name}</strong><br><small style="color:#64748B">${sale.phone}</small></td>
-                <td>${sale.product}${sale.quantity > 1 ? ` <small style="color:var(--text-muted); font-weight:600;">(x${sale.quantity})</small>` : ''}</td>
+                <td><div style="display: flex; flex-direction: column;">${productsHtml}</div></td>
+                <td><div style="display: flex; flex-direction: column;">${qtyHtml}</div></td>
+                <td><div style="display: flex; flex-direction: column;">${subtotalHtml}</div></td>
                 <td>${saleDate.toLocaleDateString('pt-BR')}</td>
-                <td>R$ ${sale.value.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                <td><strong>R$ ${sale.value.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong></td>
                 <td>${timeStatus}</td>
             `;
             tbody.appendChild(row);
@@ -1130,6 +1181,53 @@ const app = {
             `;
             tbody.appendChild(row);
         });
+    },
+
+
+    addSaleItem() {
+        const container = document.getElementById('sale-items-container');
+        if (!container) return;
+        const row = document.createElement('div');
+        row.className = 'sale-item-row';
+        row.style.cssText = 'display:grid; grid-template-columns:1fr 90px 36px; gap:8px; align-items:center;';
+        row.innerHTML = `
+            <input type="text" class="sale-item-product" placeholder="Ex: Hidratação de Cabelo" list="products-datalist" style="padding:12px 16px; border:1px solid var(--border); border-radius:8px; font-size:14px; outline:none; font-family:inherit; width:100%; box-sizing:border-box;">
+            <input type="number" class="sale-item-qty" placeholder="Qtd" min="1" value="1" style="padding:12px 10px; border:1px solid var(--border); border-radius:8px; font-size:14px; outline:none; text-align:center; width:100%; box-sizing:border-box;">
+            <button type="button" onclick="app.removeSaleItem(this)" style="border:none; background:#FEE2E2; color:#EF4444; border-radius:8px; cursor:pointer; width:36px; height:44px; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0;"><i class="fas fa-times"></i></button>
+        `;
+        row.querySelector('.sale-item-product').addEventListener('input', () => this.calculateSaleTotal());
+        row.querySelector('.sale-item-product').addEventListener('change', () => this.calculateSaleTotal());
+        row.querySelector('.sale-item-qty').addEventListener('input', () => this.calculateSaleTotal());
+        container.appendChild(row);
+        this.updateRemoveButtons();
+    },
+
+    removeSaleItem(btn) {
+        const container = document.getElementById('sale-items-container');
+        if (!container || container.children.length <= 1) return;
+        btn.closest('.sale-item-row').remove();
+        this.updateRemoveButtons();
+        this.calculateSaleTotal();
+    },
+
+    updateRemoveButtons() {
+        const container = document.getElementById('sale-items-container');
+        if (!container) return;
+        const btns = container.querySelectorAll('button');
+        btns.forEach(b => { b.style.opacity = container.children.length <= 1 ? '0.3' : '1'; b.disabled = container.children.length <= 1; });
+    },
+
+    calculateSaleTotal() {
+        const rows = document.querySelectorAll('.sale-item-row');
+        let total = 0;
+        rows.forEach(row => {
+            const prodName = row.querySelector('.sale-item-product').value;
+            const qty = parseInt(row.querySelector('.sale-item-qty').value) || 1;
+            const prod = this.products.find(p => p.name === prodName);
+            if (prod && prod.price) total += parseFloat(prod.price) * qty;
+        });
+        const valueInput = document.getElementById('r-value');
+        if (total > 0 && valueInput) valueInput.value = total.toFixed(2);
     },
 
     populateProductsDatalist() {
@@ -1388,7 +1486,16 @@ const app = {
         prodDt.innerHTML = '';
 
         const uniqueClients = [...new Set(this.sales.map(s => s.name))].filter(Boolean).sort();
-        const uniqueProducts = [...new Set(this.sales.map(s => s.product))].filter(Boolean).sort();
+        const allProducts = [];
+        this.sales.forEach(sale => {
+            if (sale.items && sale.items.length > 0) {
+                sale.items.forEach(item => allProducts.push(item.product));
+            } else if (sale.product) {
+                const prods = sale.product.split(',').map(p => p.trim());
+                prods.forEach(p => allProducts.push(p));
+            }
+        });
+        const uniqueProducts = [...new Set(allProducts)].filter(Boolean).sort();
 
         uniqueClients.forEach(c => {
             const opt = document.createElement('option');
@@ -1440,8 +1547,21 @@ const app = {
         
         const currentYear = new Date().getFullYear();
         const currentMonth = new Date().getMonth() + 1;
-        // Use o ano do filtro de data inicial, se definido; caso contrário usa o ano atual
-        const chartYear = fStart ? parseInt(fStart.split('-')[0]) : currentYear;
+        
+        // Define o ano base para o gráfico
+        let chartYear = currentYear;
+        if (fStart) {
+            chartYear = parseInt(fStart.split('-')[0]);
+        } else if (filteredSales.length > 0) {
+            let maxYear = 0;
+            filteredSales.forEach(s => {
+                if (s.date) {
+                    const y = parseInt(s.date.split('-')[0]);
+                    if (y > maxYear) maxYear = y;
+                }
+            });
+            if (maxYear > 0) chartYear = maxYear;
+        }
         
         const monthlyRevenue = Array(12).fill(0);
         const productCounts = {};
@@ -1463,11 +1583,27 @@ const app = {
                     }
                 }
             }
-            
-            if (sale.product) {
-                const prodName = sale.product;
-                if (!productCounts[prodName]) productCounts[prodName] = 0;
-                productCounts[prodName] += (parseInt(sale.quantity) || 1);
+            if (sale.items && sale.items.length > 0) {
+                sale.items.forEach(item => {
+                    const prodName = item.product;
+                    if (fProd && !prodName.toLowerCase().includes(fProd)) return;
+                    if (!productCounts[prodName]) productCounts[prodName] = 0;
+                    productCounts[prodName] += (parseInt(item.quantity) || 1);
+                });
+            } else if (sale.product) {
+                const prods = sale.product.split(',').map(p => p.trim());
+                if (prods.length > 1) {
+                    prods.forEach(p => {
+                        if (fProd && !p.toLowerCase().includes(fProd)) return;
+                        if (!productCounts[p]) productCounts[p] = 0;
+                        productCounts[p] += 1;
+                    });
+                } else {
+                    const prodName = sale.product.trim();
+                    if (fProd && !prodName.toLowerCase().includes(fProd)) return;
+                    if (!productCounts[prodName]) productCounts[prodName] = 0;
+                    productCounts[prodName] += (parseInt(sale.quantity) || 1);
+                }
             }
         });
 

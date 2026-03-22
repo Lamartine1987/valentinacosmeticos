@@ -276,16 +276,17 @@
                                     <input type="text" id="r-phone" required placeholder="Ex: 11999999999">
                                 </div>
                                 <div class="form-group" style="grid-column: span 2;">
-                                    <label>Produto Comprado</label>
-                                    <input type="text" id="r-product" required placeholder="Ex: Kit Completo SkinCare Intense" list="products-datalist">
+                                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                                        <label style="margin:0;">Produtos Comprados</label>
+                                        <button type="button" onclick="app.addSaleItem()" class="btn-primary" style="padding:5px 14px; font-size:13px; box-shadow:none;">
+                                            <i class="fas fa-plus"></i> Adicionar Item
+                                        </button>
+                                    </div>
+                                    <div id="sale-items-container" style="display:flex; flex-direction:column; gap:8px;"></div>
                                     <datalist id="products-datalist"></datalist>
                                 </div>
-                                <div class="form-group">
-                                    <label>Quantidade</label>
-                                    <input type="number" id="r-quantity" required placeholder="1" min="1" value="1">
-                                </div>
-                                <div class="form-group">
-                                    <label>Valor Total (R$)</label>
+                                <div class="form-group" style="grid-column: span 2;">
+                                    <label>Valor Total da Venda (R$)</label>
                                     <input type="number" id="r-value" required placeholder="149.90" step="0.01">
                                 </div>
                                 <div class="form-group" style="grid-column: span 2;">
@@ -403,9 +404,11 @@
                             <thead>
                                 <tr>
                                     <th>Cliente</th>
-                                    <th>Produto</th>
+                                    <th>Produto(s)</th>
+                                    <th style="text-align: center;">Qtd</th>
+                                    <th>Subtotal</th>
                                     <th>Data</th>
-                                    <th>Valor</th>
+                                    <th>Valor da Compra</th>
                                     <th>Status (Tempo)</th>
                                 </tr>
                             </thead>
