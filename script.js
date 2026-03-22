@@ -47,9 +47,60 @@ const app = {
         this.setupForm();
         this.setupFilters();
         this.setupAuth();
+        this.setupGlobalSearch();
         
         // Setup date defaulting to today
         document.getElementById('r-date').valueAsDate = new Date();
+    },
+
+    setupGlobalSearch() {
+        const input = document.getElementById('global-search');
+        const resultsBox = document.getElementById('global-search-results');
+        if (!input || !resultsBox) return;
+
+        input.addEventListener('input', () => {
+            const val = input.value.toLowerCase().trim();
+            resultsBox.innerHTML = '';
+            
+            if (!val) {
+                resultsBox.classList.remove('show');
+                return;
+            }
+
+            const matchedClients = this.clients.filter(c => c.name.toLowerCase().includes(val) || (c.phone && c.phone.includes(val))).slice(0, 3);
+            const matchedProducts = this.products.filter(p => p.name.toLowerCase().includes(val)).slice(0, 3);
+
+            let html = '';
+            if (matchedClients.length > 0) {
+                html += `<div style="padding: 8px 12px; background: #F8FAFC; font-size: 11px; font-weight: bold; color: var(--text-muted); text-transform: uppercase;">Clientes</div>`;
+                matchedClients.forEach(c => {
+                    html += `<div class="suggestion-item" onclick="app.viewClientHistory('${c.id}'); document.getElementById('global-search-results').classList.remove('show'); document.getElementById('global-search').value = '';" style="cursor:pointer;">
+                        <i class="fas fa-user" style="color:var(--primary); margin-right:8px;"></i> ${c.name}
+                    </div>`;
+                });
+            }
+            if (matchedProducts.length > 0) {
+                html += `<div style="padding: 8px 12px; background: #F8FAFC; font-size: 11px; font-weight: bold; color: var(--text-muted); text-transform: uppercase;">Produtos</div>`;
+                matchedProducts.forEach(p => {
+                    html += `<div class="suggestion-item" onclick="app.editProduct('${p.id}'); document.getElementById('global-search-results').classList.remove('show'); document.getElementById('global-search').value = '';" style="cursor:pointer;">
+                        <i class="fas fa-box" style="color:#10B981; margin-right:8px;"></i> ${p.name}
+                    </div>`;
+                });
+            }
+
+            if (html === '') {
+                html = `<div style="padding: 12px; font-size: 13px; color: var(--text-muted); text-align: center;">Nenhum resultado encontrado.</div>`;
+            }
+
+            resultsBox.innerHTML = html;
+            resultsBox.classList.add('show');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (e.target !== input && e.target !== resultsBox && !resultsBox.contains(e.target)) {
+                resultsBox.classList.remove('show');
+            }
+        });
     },
 
     setupAuth() {

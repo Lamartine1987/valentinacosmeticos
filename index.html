@@ -93,12 +93,13 @@
         <!-- Main Content Area -->
         <main class="main-content">
             <header class="topbar">
-                <div class="search-bar">
+                <div class="search-bar" style="position: relative;">
                     <i class="fas fa-search"></i>
-                    <input type="text" placeholder="Buscar cliente ou produto...">
+                    <input type="text" id="global-search" placeholder="Buscar cliente ou produto..." autocomplete="off">
+                    <div id="global-search-results" class="autocomplete-suggestions" style="width: 100%; top: 45px; border-radius: 8px;"></div>
                 </div>
                 <div class="topbar-actions">
-                    <button class="btn-icon"><i class="fas fa-bell"></i><span class="badge" id="noti-badge">0</span></button>
+                    <button class="btn-icon" onclick="app.navigateTo('dashboard')" title="Ver pendências"><i class="fas fa-bell"></i><span class="badge" id="noti-badge" style="display:none;">0</span></button>
                     <button class="btn-primary" onclick="app.navigateTo('register')">
                         <i class="fas fa-plus"></i> Nova Venda
                     </button>

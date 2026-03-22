@@ -64,6 +64,8 @@ body { background: var(--bg-color); color: var(--text-main); font-size: 15px; }
     background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(12px);
     height: 72px; padding: 0 32px;
+    flex-shrink: 0;
+    min-height: 72px;
     display: flex; justify-content: space-between; align-items: center;
     border-bottom: 1px solid var(--border);
     position: sticky; top: 0; z-index: 5;
