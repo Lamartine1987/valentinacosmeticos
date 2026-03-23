@@ -159,6 +159,41 @@ export const apiModule = {
                 createdAt: new Date().toISOString()
             });
             this.showToast('Venda faturada e salva na nuvem!');
+            
+            try {
+                const phoneStr = (saleData.phone || "").replace(/\D/g, '');
+                if (phoneStr) {
+                    let clean = phoneStr;
+                    if (clean.startsWith('55')) clean = clean.substring(2);
+                    let with9 = clean;
+                    let without9 = clean;
+                    if (clean.length === 11) {
+                        without9 = clean.substring(0, 2) + clean.substring(3);
+                    } else if (clean.length === 10) {
+                        with9 = clean.substring(0, 2) + '9' + clean.substring(2);
+                    }
+                    const variations = [...new Set([
+                        clean, '55'+clean, 
+                        with9, '55'+with9, 
+                        without9, '55'+without9
+                    ])];
+
+                    const snap = await db.collection("leads").where("phone", "in", variations).limit(1).get();
+                    if (!snap.empty) {
+                        const leadDoc = snap.docs[0];
+                        const currentVal = parseFloat(leadDoc.data().value) || 0;
+                        const saleVal = parseFloat(saleData.value) || 0;
+                        await db.collection("leads").doc(leadDoc.id).update({
+                            value: currentVal + saleVal,
+                            status: 'won', // Marca como ganho automaticamente na venda
+                            updatedAt: new Date().toISOString()
+                        });
+                    }
+                }
+            } catch(e) {
+                console.error("Erro ao sincronizar venda com Kanban:", e);
+            }
+
             return docRef.id;
         } catch (e) {
             console.error(e);
