@@ -6,7 +6,7 @@
     <title>Valentina Cosméticos | CRM Pós-Venda</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="assets/css/styles.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -321,8 +321,21 @@
                         </div>
                     </div>
                     
-                    <div class="filters-bar" style="margin-bottom: 24px;">
-                        <input type="text" id="filter-client-name" placeholder="Buscar por cliente ou telefone..." style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; width: 100%; outline: none; font-size: 14px; transition: border-color 0.2s;" oninput="app.renderClientsList()">
+                    <div class="filters-bar" style="margin-bottom: 24px; display: flex; gap: 16px; flex-wrap: wrap;">
+                        <input type="text" id="filter-client-name" placeholder="Buscar por cliente ou telefone..." style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; flex: 1; min-width: 250px; outline: none; font-size: 14px; transition: border-color 0.2s;" oninput="app.renderClientsList()">
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <span style="font-size: 13px; color: var(--text-muted); font-weight: 500;"><i class="fas fa-filter" style="margin-right:4px;"></i> Gastou de</span>
+                            <input type="number" id="filter-client-min" placeholder="R$ Mín" step="0.01" style="padding: 12px; width: 100px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); transition: border-color 0.2s;" oninput="app.renderClientsList()">
+                            <span style="font-size: 13px; color: var(--text-muted); font-weight: 500;">a</span>
+                            <input type="number" id="filter-client-max" placeholder="R$ Máx" step="0.01" style="padding: 12px; width: 100px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); transition: border-color 0.2s;" oninput="app.renderClientsList()">
+                        </div>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <span style="font-size: 13px; color: var(--text-muted); font-weight: 500;"><i class="fas fa-shopping-bag" style="margin-right:4px;"></i> Tem de</span>
+                            <input type="number" id="filter-client-qty-min" placeholder="Qtd Mín" style="padding: 12px; width: 80px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); transition: border-color 0.2s;" oninput="app.renderClientsList()">
+                            <span style="font-size: 13px; color: var(--text-muted); font-weight: 500;">a</span>
+                            <input type="number" id="filter-client-qty-max" placeholder="Qtd Máx" style="padding: 12px; width: 80px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); transition: border-color 0.2s;" oninput="app.renderClientsList()">
+                            <span style="font-size: 13px; color: var(--text-muted); font-weight: 500;">compras</span>
+                        </div>
                     </div>
 
                     <div class="table-card" style="overflow-x: auto;">
@@ -378,13 +391,21 @@
 
                 <!-- Sales History Page -->
                 <section class="page" id="page-sales">
-                     <div class="page-header">
-                        <h2>Histórico de Vendas</h2>
-                        <p>Visão de todas as vendas já registradas no CRM.</p>
+                     <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
+                        <div>
+                            <h2>Histórico de Vendas</h2>
+                            <p>Visão de todas as vendas já registradas no CRM.</p>
+                        </div>
+                        <div style="display: flex; gap: 12px;">
+                            <button class="btn-primary" style="background: #8B5CF6;" onclick="app.openPromoModal()">
+                                <i class="fas fa-bullhorn"></i> Disparar Campanha
+                            </button>
+                        </div>
                     </div>
 
                     <div class="filters-bar" style="display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; align-items: center;">
                         <input type="text" id="filter-name" placeholder="Buscar por cliente..." style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; flex: 1; min-width: 200px; outline: none; font-size: 14px; transition: border-color 0.2s;">
+                        <input type="text" id="filter-sale-product" placeholder="Buscar por produto..." style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; flex: 1; min-width: 200px; outline: none; font-size: 14px; transition: border-color 0.2s;">
                         
                         <select id="filter-status" style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer; transition: border-color 0.2s;">
                             <option value="all">Todos os Status</option>
@@ -404,6 +425,7 @@
                         <table class="data-table">
                             <thead>
                                 <tr>
+                                    <th style="width: 40px; text-align: center;"><input type="checkbox" onclick="app.toggleSelectAllClients(this)" style="cursor: pointer;"></th>
                                     <th>Cliente</th>
                                     <th>Produto(s)</th>
                                     <th style="text-align: center;">Qtd</th>
@@ -496,32 +518,82 @@
                             <div class="form-grid">
                                 <div class="form-group" style="grid-column: span 2;">
                                     <label>Agradecimento (Disparado na nova venda ou 0 a 2 dias)</label>
-                                    <textarea id="tpl-thanks" rows="3" required style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; resize: vertical; font-family: inherit; font-size: 14px;">Olá {nome}, aqui é da Valentina Cosméticos! Muito obrigada pela sua compra recente do {produto}. Qualquer dúvida de como usar o produto, estamos à disposição! 🥰</textarea>
+                                    <textarea id="tpl-thanks" rows="3" required style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; resize: vertical; font-family: inherit; font-size: 14px; margin-bottom: 8px;">Olá {nome}, aqui é da Valentina Cosméticos! Muito obrigada pela sua compra recente do {produto}. Qualquer dúvida de como usar o produto, estamos à disposição! 🥰</textarea>
+                                    <div style="display: flex; gap: 8px;">
+                                        <input type="url" id="tpl-thanks-img" placeholder="Link de Imagem / Anexo (Opcional)" style="flex: 1; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; font-size: 13px; color: var(--text-main);">
+                                        <button type="button" class="btn-primary" style="padding: 10px 14px; background: #64748B; box-shadow: none;" onclick="document.getElementById('tpl-thanks-file').click()" title="Fazer upload do computador"><i class="fas fa-upload"></i></button>
+                                        <input type="file" id="tpl-thanks-file" accept="image/*" style="display: none;" onchange="app.uploadTemplateImage(event, 'tpl-thanks-img')">
+                                    </div>
                                 </div>
                                 <div class="form-group" style="grid-column: span 2;">
                                     <label>Reposição (30 a 45 dias)</label>
-                                    <textarea id="tpl-restock" rows="3" required style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; resize: vertical; font-family: inherit; font-size: 14px;">Oi {nome}, tudo bem? Faz cerca de 30 dias que você comprou o {produto}. Como está sendo a experiência? Já está acabando? Preparamos uma condição especial se quiser repor hoje! ✨</textarea>
+                                    <textarea id="tpl-restock" rows="3" required style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; resize: vertical; font-family: inherit; font-size: 14px; margin-bottom: 8px;">Oi {nome}, tudo bem? Faz cerca de 30 dias que você comprou o {produto}. Como está sendo a experiência? Já está acabando? Preparamos uma condição especial se quiser repor hoje! ✨</textarea>
+                                    <div style="display: flex; gap: 8px;">
+                                        <input type="url" id="tpl-restock-img" placeholder="Link de Imagem / Anexo (Opcional)" style="flex: 1; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; font-size: 13px; color: var(--text-main);">
+                                        <button type="button" class="btn-primary" style="padding: 10px 14px; background: #64748B; box-shadow: none;" onclick="document.getElementById('tpl-restock-file').click()" title="Fazer upload do computador"><i class="fas fa-upload"></i></button>
+                                        <input type="file" id="tpl-restock-file" accept="image/*" style="display: none;" onchange="app.uploadTemplateImage(event, 'tpl-restock-img')">
+                                    </div>
                                 </div>
                                 <div class="form-group" style="border-top: 1px solid var(--border); padding-top: 16px; margin-top: 8px;">
                                     <label style="color: #DB2777; font-weight: 600;"><i class="fas fa-heart"></i> Campanha de Recuperação (Saudades 46 a 120 dias)</label>
                                     <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 8px; font-weight: normal;">Enviada para clientes inativas há mais de um mês e meio.</p>
-                                    <textarea id="tpl-dormant" rows="3" required style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; resize: vertical; font-family: inherit; font-size: 14px;">Oi {nome}, que saudade de você! Faz um tempinho que não nos falamos. Chegaram novidades incríveis na Valentina Cosméticos, quer dar uma olhadinha no catálogo? 💖</textarea>
+                                    <textarea id="tpl-dormant" rows="3" required style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; resize: vertical; font-family: inherit; font-size: 14px; margin-bottom: 8px;">Oi {nome}, que saudade de você! Faz um tempinho que não nos falamos. Chegaram novidades incríveis na Valentina Cosméticos, quer dar uma olhadinha no catálogo? 💖</textarea>
+                                    <div style="display: flex; gap: 8px;">
+                                        <input type="url" id="tpl-dormant-img" placeholder="Link de Imagem / Anexo (Opcional)" style="flex: 1; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; font-size: 13px; color: var(--text-main);">
+                                        <button type="button" class="btn-primary" style="padding: 10px 14px; background: #64748B; box-shadow: none;" onclick="document.getElementById('tpl-dormant-file').click()" title="Fazer upload do computador"><i class="fas fa-upload"></i></button>
+                                        <input type="file" id="tpl-dormant-file" accept="image/*" style="display: none;" onchange="app.uploadTemplateImage(event, 'tpl-dormant-img')">
+                                    </div>
                                 </div>
                                 <div class="form-group" style="border-top: 1px solid var(--border); padding-top: 16px; margin-top: 8px;">
                                     <label style="color: #475569; font-weight: 600;"><i class="fas fa-user-clock"></i> Campanha de Resgate (Ex-cliente > 120 dias)</label>
                                     <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 8px; font-weight: normal;">Enviada para tentar reativar clientes perdidas (mais de 4 meses sem comprar).</p>
-                                    <textarea id="tpl-lost" rows="3" required style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; resize: vertical; font-family: inherit; font-size: 14px;">Oi {nome}, lembrou de mim? Fizemos uma limpeza aqui e percebi que faz muito tempo desde a sua última compra. Preparamos um presente muito especial caso queira voltar a ser nossa cliente VIP! ✨</textarea>
+                                    <textarea id="tpl-lost" rows="3" required style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; resize: vertical; font-family: inherit; font-size: 14px; margin-bottom: 8px;">Oi {nome}, lembrou de mim? Fizemos uma limpeza aqui e percebi que faz muito tempo desde a sua última compra. Preparamos um presente muito especial caso queira voltar a ser nossa cliente VIP! ✨</textarea>
+                                    <div style="display: flex; gap: 8px;">
+                                        <input type="url" id="tpl-lost-img" placeholder="Link de Imagem / Anexo (Opcional)" style="flex: 1; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; font-size: 13px; color: var(--text-main);">
+                                        <button type="button" class="btn-primary" style="padding: 10px 14px; background: #64748B; box-shadow: none;" onclick="document.getElementById('tpl-lost-file').click()" title="Fazer upload do computador"><i class="fas fa-upload"></i></button>
+                                        <input type="file" id="tpl-lost-file" accept="image/*" style="display: none;" onchange="app.uploadTemplateImage(event, 'tpl-lost-img')">
+                                    </div>
                                 </div>
                                 <div class="form-group" style="grid-column: span 2; border-top: 1px solid var(--border); padding-top: 16px; margin-top: 8px;">
                                     <label style="color: #8B5CF6; font-weight: 600;"><i class="fas fa-bullhorn"></i> Biblioteca de Campanhas Promocionais</label>
                                     <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 12px; font-weight: normal;">Crie diversos modelos dinâmicos para suas campanhas usando <strong>{produto}</strong> e <strong>{link}</strong>. Eles estarão disponíveis na janela de envio da Base de Clientes.</p>
                                     
-                                    <div id="promo-templates-container" style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 16px;">
-                                        <!-- JS will populate -->
+                                    <div class="promo-layout-grid">
+                                        <div>
+                                            <div id="promo-templates-container" style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 16px;">
+                                                <!-- JS will populate -->
+                                            </div>
+                                            <button type="button" class="btn-primary" style="background: #F8FAFC; color: var(--primary); border: 2px dashed var(--primary-light); box-shadow: none; width: 100%; justify-content: center; padding: 12px;" onclick="app.addPromoTemplate()">
+                                                <i class="fas fa-plus"></i> Adicionar Nova Campanha
+                                            </button>
+                                        </div>
+                                        
+                                        <div class="whatsapp-preview-container">
+                                            <div class="smartphone">
+                                                <div class="wa-header">
+                                                    <div class="wa-header-avatar"><i class="fas fa-user"></i></div>
+                                                    <div class="wa-header-info">
+                                                        <h4>Prévia do WhatsApp</h4>
+                                                        <p>Como o cliente verá</p>
+                                                    </div>
+                                                </div>
+                                                <div class="wa-chat-area">
+                                                    <div class="wa-bubble">
+                                                        <img id="wa-preview-img" class="wa-bubble-img" src="" alt="Anexo">
+                                                        <span id="wa-preview-text">Digite o texto da sua campanha à esquerda para ver como ficará no celular do cliente...</span>
+                                                        <div class="wa-bubble-time">
+                                                            agora <i class="fas fa-check-double"></i>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="wa-footer">
+                                                    <i class="fas fa-plus" style="color: #8BA1AD; font-size: 20px;"></i>
+                                                    <div class="wa-input-mock">Mensagem</div>
+                                                    <i class="fas fa-microphone" style="color: #8BA1AD; font-size: 20px;"></i>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <button type="button" class="btn-primary" style="background: #F8FAFC; color: var(--primary); border: 2px dashed var(--primary-light); box-shadow: none; width: 100%; justify-content: center; padding: 12px;" onclick="app.addPromoTemplate()">
-                                        <i class="fas fa-plus"></i> Adicionar Nova Campanha
-                                    </button>
                                 </div>
                             </div>
                             <div class="form-actions" style="margin-top: 16px;">
@@ -641,7 +713,8 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
     
-    <script src="script.js"></script>
+    <script type="module" src="js/app.js"></script>
 </body>
 </html>
