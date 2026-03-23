@@ -784,9 +784,9 @@
         </div>
     </div>
 
-    <!-- Kanban Lead Sidebar -->
-    <div id="lead-sidebar-overlay" class="login-overlay" style="justify-content: flex-end;">
-        <div class="login-card" style="width: 400px; max-width: 100%; height: 100vh; border-radius: 0; display: flex; flex-direction: column; overflow: hidden; padding: 0;">
+    <!-- Kanban Lead Modal -->
+    <div id="lead-sidebar-overlay" class="login-overlay" style="justify-content: center; align-items: center;">
+        <div class="login-card" style="position: relative; width: 700px; max-width: 95%; height: 85vh; border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; padding: 0; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);">
             <div class="card-header" style="background: var(--surface); z-index: 10; padding: 20px;">
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
                     <div>
@@ -805,9 +805,28 @@
                 <!-- Mensagens Renderizadas Aqui -->
                 <div style="text-align: center; font-size: 12px; color: #667781; background: rgba(255,255,255,0.8); margin: 0 auto; padding: 4px 10px; border-radius: 8px; margin-bottom: 8px;">Esta é uma prévia do Chat Integrado via Webhook</div>
             </div>
-            
+            <div id="lead-sb-reply-preview" style="display: none; padding: 10px 16px; background: white; border-top: 1px solid var(--border); border-left: 4px solid var(--primary); align-items: center; justify-content: space-between;">
+                <div style="font-size: 13px; color: var(--text-muted); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 90%;" id="lead-sb-reply-text"></div>
+                <button class="btn-icon" onclick="app.cancelReply()" style="font-size: 16px; width: 24px; height: 24px; padding:0; display:flex; align-items:center; justify-content:center;">&times;</button>
+            </div>
+
+            <div id="emoji-picker-container" style="display: none; position: absolute; bottom: 80px; left: 16px; z-index: 100; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden;">
+                <emoji-picker></emoji-picker>
+            </div>
+
+            <div id="lead-sb-upload-preview" style="display: none; padding: 10px 16px; background: white; border-top: 1px solid var(--border); align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <i class="fas fa-image" style="color: var(--primary); font-size: 24px;"></i>
+                    <div style="font-size: 13px; color: var(--text-main); font-weight: 500;" id="lead-sb-upload-name">imagem.jpg</div>
+                </div>
+                <button class="btn-icon" onclick="app.cancelUpload()" style="font-size: 16px; width: 24px; height: 24px; padding:0; display:flex; align-items:center; justify-content:center; color: #EF4444;">&times;</button>
+            </div>
+
             <div style="padding: 16px; background: #F0F2F5; border-top: 1px solid var(--border); display: flex; gap: 8px; align-items: center;">
-                <input type="text" id="lead-sb-input" placeholder="Digite uma mensagem..." style="flex: 1; padding: 12px 16px; border: none; border-radius: 20px; outline: none; font-size: 14px; box-shadow: 0 1px 1px rgba(0,0,0,0.05);">
+                <button class="btn-icon" onclick="app.toggleEmojiPicker()" title="Adicionar Emoji" style="font-size: 20px;"><i class="far fa-smile"></i></button>
+                <input type="file" id="chat-file-upload" style="display:none;" accept="image/*,application/pdf" onchange="app.handleChatFileUpload(event)">
+                <button class="btn-icon" onclick="document.getElementById('chat-file-upload').click()" title="Anexar Arquivo" style="font-size: 20px;"><i class="fas fa-paperclip"></i></button>
+                <input type="text" id="lead-sb-input" placeholder="Digite uma mensagem..." onkeydown="if(event.key === 'Enter') app.sendLeadMessage()" style="flex: 1; padding: 12px 16px; border: none; border-radius: 20px; outline: none; font-size: 14px; box-shadow: 0 1px 1px rgba(0,0,0,0.05);">
                 <button class="btn-primary" style="border-radius: 50%; width: 44px; height: 44px; padding: 0; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1);" onclick="app.sendLeadMessage()"><i class="fas fa-paper-plane" style="margin-right:2px;"></i></button>
             </div>
         </div>
@@ -818,6 +837,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+    <script type="module" src="https://unpkg.com/emoji-picker-element@1"></script>
     
     <script type="module" src="js/app.js"></script>
 </body>

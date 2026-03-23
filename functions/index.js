@@ -20,12 +20,20 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
     let senderName = "Desconhecido";
     let textBody = "";
 
+    let audioUrl = "";
+    let imageUrl = "";
+
     // 1. Tentar ler no formato Z-API
     if (payload.phone) {
         isFromMe = payload.fromMe === true;
         phoneNum = payload.phone; // ex: 5511999999999
         senderName = payload.senderName || payload.chatName || "Desconhecido";
         textBody = (payload.text && payload.text.message) ? payload.text.message : "";
+        if (payload.audio && payload.audio.audioUrl) audioUrl = payload.audio.audioUrl;
+        else if (payload.audioUrl) audioUrl = payload.audioUrl;
+        
+        if (payload.image && payload.image.imageUrl) imageUrl = payload.image.imageUrl;
+        else if (payload.imageUrl) imageUrl = payload.imageUrl;
     }
     // 2. Tentar ler no formato Evolution API (message.upsert)
     else if (payload.data && payload.data.message) {
@@ -37,12 +45,19 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
         // Tentar pegar o texto (pode vir de conversation ou extendedTextMessage)
         if (msgData.message) {
             textBody = msgData.message.conversation || (msgData.message.extendedTextMessage && msgData.message.extendedTextMessage.text) || "";
+            if (msgData.message.audioMessage) audioUrl = msgData.message.audioMessage.url || "evolution-audio";
+            if (msgData.message.imageMessage) imageUrl = msgData.message.imageMessage.url || "evolution-image";
         }
     }
 
-    // Se não houver texto, aborta.
+    if (!textBody) {
+        if (audioUrl) textBody = "🎵 *Mensagem de Áudio*";
+        else if (imageUrl) textBody = "📸 *Imagem/Arquivo*";
+    }
+
+    // Se não houver texto E não houver media, aborta.
     if (!phoneNum || textBody.trim() === "") {
-        console.log("Mensagem ignorada (sem texto ou telefone)", { phoneNum });
+        console.log("Mensagem ignorada (sem texto ou media)", { phoneNum });
         return res.status(200).send("Ignored");
     }
 
@@ -55,14 +70,37 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
             // MENSAGEM ENVIADA PELO AGENTE (VOCÊ)
             if (!snapshot.empty) {
                 const leadId = snapshot.docs[0].id;
-                await leadsRef.doc(leadId).collection('messages').add({
-                    text: textBody,
-                    sender: 'agent',
-                    timestamp: admin.firestore.FieldValue.serverTimestamp()
-                });
-                await leadsRef.doc(leadId).update({
-                    lastMessage: "Você: " + textBody.substring(0, 45) + "..."
-                });
+                // --- DEDUPLICAÇÃO ---
+                const recentMsgs = await leadsRef.doc(leadId).collection('messages')
+                    .orderBy('timestamp', 'desc').limit(1).get();
+
+                let isDuplicate = false;
+                if (!recentMsgs.empty) {
+                    const lastMsg = recentMsgs.docs[0].data();
+                    if (lastMsg.sender === 'agent' && lastMsg.text === textBody) {
+                        const now = Date.now();
+                        const msgTime = lastMsg.timestamp ? lastMsg.timestamp.toDate().getTime() : 0;
+                        if (now - msgTime < 15000) { // 15 segundos
+                            isDuplicate = true;
+                            console.log("Mensagem ignorada (já inserida pelo CRM).");
+                        }
+                    }
+                }
+
+                if (!isDuplicate) {
+                    const msgObj = {
+                        text: textBody,
+                        sender: 'agent',
+                        timestamp: admin.firestore.FieldValue.serverTimestamp()
+                    };
+                    if(audioUrl) msgObj.audioUrl = audioUrl;
+                    if(imageUrl) msgObj.imageUrl = imageUrl;
+                    
+                    await leadsRef.doc(leadId).collection('messages').add(msgObj);
+                    await leadsRef.doc(leadId).update({
+                        lastMessage: "Você: " + textBody.substring(0, 45) + "..."
+                    });
+                }
             } else {
                 // Criar o lead se você iniciou a conversa
                 const newLead = await leadsRef.add({
@@ -74,11 +112,16 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
                     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
                     lastMessage: "Você: " + textBody.substring(0, 45) + "..."
                 });
-                await leadsRef.doc(newLead.id).collection('messages').add({
+                
+                const msgObj = {
                     text: textBody,
                     sender: 'agent',
                     timestamp: admin.firestore.FieldValue.serverTimestamp()
-                });
+                };
+                if(audioUrl) msgObj.audioUrl = audioUrl;
+                if(imageUrl) msgObj.imageUrl = imageUrl;
+                
+                await leadsRef.doc(newLead.id).collection('messages').add(msgObj);
             }
             return res.status(200).send("Agent message saved.");
         }
@@ -112,11 +155,15 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
         }
 
         // SALVAR A MENSAGEM NO HISTÓRICO SECRETO DO CHAT
-        await leadsRef.doc(leadId).collection('messages').add({
+        const msgObj = {
             text: textBody,
             sender: 'client',
             timestamp: admin.firestore.FieldValue.serverTimestamp()
-        });
+        };
+        if(audioUrl) msgObj.audioUrl = audioUrl;
+        if(imageUrl) msgObj.imageUrl = imageUrl;
+
+        await leadsRef.doc(leadId).collection('messages').add(msgObj);
 
     } catch (error) {
         console.error("Erro ao processar webhook no Firestore:", error);

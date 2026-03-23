@@ -7,6 +7,7 @@ export const funnelModule = {
     activeLeadId: null,
     activeLeadPhone: null,
     sortables: [],
+    pendingChatFile: null,
 
     setupFunnel() {
         if (!db) return;
@@ -29,6 +30,25 @@ export const funnelModule = {
             });
             this.sortables.push(sortable);
         });
+
+        // Setup Emoji Picker Event Listeners
+        setTimeout(() => {
+            const picker = document.querySelector('emoji-picker');
+            if (picker) {
+                picker.addEventListener('emoji-click', event => {
+                    const input = document.getElementById('lead-sb-input');
+                    input.value += event.detail.unicode;
+                    input.focus();
+                });
+            }
+            document.addEventListener('click', e => {
+                const pickerEl = document.getElementById('emoji-picker-container');
+                const btn = document.querySelector('[title="Adicionar Emoji"]');
+                if (pickerEl && !pickerEl.contains(e.target) && e.target !== btn && (!btn || !btn.contains(e.target))) {
+                    pickerEl.style.display = 'none';
+                }
+            });
+        }, 1000);
     },
 
     listenToLeads() {
@@ -157,6 +177,9 @@ export const funnelModule = {
         this.activeLeadId = lead.id;
         this.activeLeadPhone = lead.phone;
         
+        this.cancelReply();
+        if(typeof this.cancelUpload === 'function') this.cancelUpload();
+
         // Marcar como lido imediatamente no banco
         if (lead.unread) {
             db.collection('leads').doc(lead.id).update({
@@ -197,18 +220,29 @@ export const funnelModule = {
                 const msg = doc.data();
                 const d = msg.timestamp ? msg.timestamp.toDate() : new Date();
                 const timeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+                const senderName = msg.sender === 'agent' ? 'Você' : (lead.name || 'Cliente');
+                const safeText = (msg.text || '').replace(/"/g, '&quot;');
+                let displayHtml = (msg.text || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                
+                if (msg.imageUrl) {
+                    displayHtml = `<a href="${msg.imageUrl}" target="_blank"><img src="${msg.imageUrl}" style="max-width:100%; border-radius:6px; margin-bottom:6px; max-height: 200px; object-fit: cover; display:block;"></a>` + displayHtml;
+                }
+                
+                if (msg.audioUrl) {
+                    displayHtml = `<audio controls src="${msg.audioUrl}" style="max-width: 250px; display:block; margin-bottom:6px; height: 40px; border-radius: 20px;"></audio>` + displayHtml;
+                }
                 
                 if (msg.sender === 'agent') {
                     chatArea.innerHTML += `
-                        <div class="wa-bubble wa-bubble-agent" style="animation: fadeIn 0.3s ease;">
-                            ${msg.text}
+                        <div class="wa-bubble wa-bubble-agent" onclick="app.quoteMessage(this.getAttribute('data-text'), this.getAttribute('data-sender'))" data-text="${safeText}" data-sender="${senderName}" style="cursor: pointer; animation: fadeIn 0.3s ease;">
+                            ${displayHtml}
                             <div class="wa-bubble-time">${timeStr} <i class="fas fa-check" style="color:#8BA1AD;"></i></div>
                         </div>
                     `;
                 } else {
                     chatArea.innerHTML += `
-                        <div class="wa-bubble wa-bubble-client" style="animation: fadeIn 0.3s ease;">
-                            ${msg.text}
+                        <div class="wa-bubble wa-bubble-client" onclick="app.quoteMessage(this.getAttribute('data-text'), this.getAttribute('data-sender'))" data-text="${safeText}" data-sender="${senderName}" style="cursor: pointer; animation: fadeIn 0.3s ease;">
+                            ${displayHtml}
                             <div class="wa-bubble-time" style="justify-content: flex-start;">${timeStr}</div>
                         </div>
                     `;
@@ -226,19 +260,91 @@ export const funnelModule = {
             this.unsubChat();
             this.unsubChat = null;
         }
+        this.cancelReply();
         this.activeLeadId = null;
         this.activeLeadPhone = null;
         document.getElementById('lead-sidebar-overlay').classList.remove('active');
     },
 
+    quoteMessage(text, sender) {
+        this.replyingToText = text;
+        this.replyingToSender = sender;
+        const preview = document.getElementById('lead-sb-reply-preview');
+        const textEl = document.getElementById('lead-sb-reply-text');
+        if (preview && textEl) {
+            textEl.innerHTML = `<strong>Repondendo a ${sender}:</strong><br/>${text.substring(0, 60)}${text.length > 60 ? '...' : ''}`;
+            preview.style.display = 'flex';
+        }
+        document.getElementById('lead-sb-input').focus();
+    },
+
+    cancelReply() {
+        this.replyingToText = null;
+        this.replyingToSender = null;
+        const preview = document.getElementById('lead-sb-reply-preview');
+        if (preview) preview.style.display = 'none';
+    },
+
+    toggleEmojiPicker() {
+        const picker = document.getElementById('emoji-picker-container');
+        if (picker) {
+            picker.style.display = picker.style.display === 'none' ? 'block' : 'none';
+        }
+    },
+
+    handleChatFileUpload(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        this.pendingChatFile = file;
+        const preview = document.getElementById('lead-sb-upload-preview');
+        const nameEl = document.getElementById('lead-sb-upload-name');
+        if (nameEl && preview) {
+            nameEl.textContent = file.name;
+            preview.style.display = 'flex';
+        }
+    },
+
+    cancelUpload() {
+        this.pendingChatFile = null;
+        const uploadInput = document.getElementById('chat-file-upload');
+        if (uploadInput) uploadInput.value = '';
+        const preview = document.getElementById('lead-sb-upload-preview');
+        if (preview) preview.style.display = 'none';
+    },
+
     async sendLeadMessage() {
         const input = document.getElementById('lead-sb-input');
-        const text = input.value.trim();
-        if(!text || !this.activeLeadId || !this.activeLeadPhone) return;
+        const rawText = input.value.trim();
+        if(!rawText && !this.pendingChatFile) return;
+        if(!this.activeLeadId || !this.activeLeadPhone) return;
         
+        let sentText = rawText;
+        if (this.replyingToText) {
+            sentText = `💬 *${this.replyingToSender}*:\n_${this.replyingToText}_\n\n${rawText}`;
+        }
+        
+        // Limpar visualmente rápido
+        input.value = '';
+        this.cancelReply();
+
+        let imageUrl = '';
+        if (this.pendingChatFile) {
+            if(this.showToast) this.showToast('Enviando anexo...', 'info');
+            try {
+                const fileRef = firebase.storage().ref(`chat_attachments/${this.activeLeadId}/${Date.now()}_${this.pendingChatFile.name}`);
+                const snapshot = await fileRef.put(this.pendingChatFile);
+                imageUrl = await snapshot.ref.getDownloadURL();
+            } catch (e) {
+                console.error("Erro no upload do anexo:", e);
+                if(this.showToast) this.showToast('Erro ao fazer upload do arquivo.', 'error');
+                return;
+            }
+            this.cancelUpload();
+        }
+
         // Despacha a mensagem usando a API conectada
         if (typeof this.sendWhatsAppMessage === 'function') {
-            const success = await this.sendWhatsAppMessage(this.activeLeadPhone, text);
+            const success = await this.sendWhatsAppMessage(this.activeLeadPhone, sentText, imageUrl);
             if (!success) {
                 if(this.showToast) this.showToast('Erro ao enviar mensagem pelo WhatsApp.', 'error');
                 return;
@@ -246,11 +352,14 @@ export const funnelModule = {
         }
         
         try {
-            await db.collection('leads').doc(this.activeLeadId).collection('messages').add({
-                text: text,
+            const msgObj = {
+                text: sentText,
                 sender: 'agent',
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            });
+            };
+            if (imageUrl) msgObj.imageUrl = imageUrl;
+            
+            await db.collection('leads').doc(this.activeLeadId).collection('messages').add(msgObj);
             input.value = '';
         } catch(e) {
             console.error("Erro ao salvar mensagem:", e);
