@@ -87,10 +87,15 @@ export const reportsModule = {
         
         const monthlyRevenue = Array(12).fill(0);
         const productCounts = {};
+        const clientGlobalAgg = {};
 
         filteredSales.forEach(sale => {
             const val = Number(sale.value) || 0;
             allTimeTotal += val;
+
+            const clientName = (sale.name && sale.name.trim() !== '') ? sale.name.trim() : 'Desconhecido';
+            if (!clientGlobalAgg[clientName]) clientGlobalAgg[clientName] = 0;
+            clientGlobalAgg[clientName] += val;
 
             if (sale.date) {
                 const [y, m] = sale.date.split('-');
@@ -196,6 +201,61 @@ export const reportsModule = {
                              }
                          }
                     } 
+                }
+            });
+        }
+
+        const topClientsCanvas = document.getElementById('chart-top-clients');
+        if (typeof Chart !== 'undefined' && topClientsCanvas) {
+            const ctxTopClients = topClientsCanvas.getContext('2d');
+            if (this.charts.topClients) this.charts.topClients.destroy();
+            
+            const sortedClients = Object.keys(clientGlobalAgg)
+                .filter(c => c !== 'Desconhecido')
+                .map(c => ({ name: c, value: clientGlobalAgg[c] }))
+                .sort((a, b) => b.value - a.value)
+                .slice(0, 10);
+                
+            const hasClientData = sortedClients.length > 0;
+            const clientLabels = hasClientData ? sortedClients.map(c => c.name) : ['Nenhuma venda encontrada'];
+            const clientData = hasClientData ? sortedClients.map(c => c.value) : [0];
+
+            this.charts.topClients = new Chart(ctxTopClients, {
+                type: 'bar',
+                data: {
+                    labels: clientLabels,
+                    datasets: [{
+                        label: 'Total Comprado (R$)',
+                        data: clientData,
+                        backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                        borderColor: 'rgba(16, 185, 129, 1)',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: { 
+                    responsive: true,
+                    indexAxis: 'y',
+                    scales: { 
+                        x: { 
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return 'R$ ' + value;
+                                }
+                            }
+                        } 
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    if (!hasClientData) return ' R$ 0,00';
+                                    return ' R$ ' + context.parsed.x.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+                                }
+                            }
+                        }
+                    }
                 }
             });
         }

@@ -236,8 +236,8 @@
                         </div>
                     </div>
 
-                    <div class="charts-grid">
-                        <div class="chart-card">
+                    <div class="charts-grid" style="grid-template-columns: repeat(3, 1fr);">
+                        <div class="chart-card" style="grid-column: span 2;">
                             <h3 style="margin-bottom: 16px; font-size: 16px;">Faturamento Mensal (Anual)</h3>
                             <canvas id="chart-revenue" height="100"></canvas>
                         </div>
@@ -246,6 +246,10 @@
                             <div style="height: 250px; display: flex; justify-content: center;">
                                 <canvas id="chart-products"></canvas>
                             </div>
+                        </div>
+                        <div class="chart-card" style="grid-column: span 3;">
+                            <h3 style="margin-bottom: 16px; font-size: 16px;">Top 10 Clientes Mais Valiosos (LTV)</h3>
+                            <canvas id="chart-top-clients" height="80"></canvas>
                         </div>
                     </div>
 
