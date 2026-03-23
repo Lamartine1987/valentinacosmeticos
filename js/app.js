@@ -8,6 +8,7 @@ import { authModule } from './ui/auth.js';
 import { settingsModule } from './ui/settings.js';
 import { reportsModule } from './ui/reports.js';
 import { utilsModule } from './ui/utils.js';
+import { funnelModule } from './ui/funnel.js';
 
 // App State
 const app = {
@@ -42,6 +43,7 @@ const app = {
         this.setupFilters();
         this.setupAuth();
         this.setupGlobalSearch();
+        this.setupFunnel();
         
         // Setup date defaulting to today
         document.getElementById('r-date').valueAsDate = new Date();
@@ -136,6 +138,8 @@ const app = {
             });
             this.updateActiveViews();
         }, (error) => console.log(error));
+        
+        this.listenToLeads();
     },
 
     updateActiveViews() {
@@ -145,6 +149,7 @@ const app = {
         if (document.getElementById('page-sales').classList.contains('active')) this.renderClientsTable();
         if (document.getElementById('page-clients').classList.contains('active')) this.renderClientsList();
         if (document.getElementById('page-products') && document.getElementById('page-products').classList.contains('active')) this.renderProductsList();
+        if (document.getElementById('page-funnel') && document.getElementById('page-funnel').classList.contains('active')) this.renderFunnelBoard();
         const historyModal = document.getElementById('history-overlay');
         if (historyModal && historyModal.classList.contains('active')) this.renderClientHistory();
     },
@@ -583,7 +588,8 @@ const app = {
     ...authModule,
     ...settingsModule,
     ...reportsModule,
-    ...utilsModule
+    ...utilsModule,
+    ...funnelModule
 };
 
 window.app = app; // Manda pro window pro HTML (onclick) conseguir achar
