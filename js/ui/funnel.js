@@ -266,6 +266,21 @@ export const funnelModule = {
         document.getElementById('lead-sidebar-overlay').classList.remove('active');
     },
 
+    async deleteLead() {
+        if (!this.activeLeadId) return;
+        const confirmDelete = confirm("Tem certeza que deseja excluir esta conversa do funil?\n\nEsta ação não poderá ser desfeita.");
+        if (confirmDelete) {
+            try {
+                await db.collection('leads').doc(this.activeLeadId).delete();
+                if (typeof this.showToast === 'function') this.showToast('Conversa excluída com sucesso!', 'info');
+                this.closeLeadSidebar();
+            } catch (e) {
+                console.error("Erro ao excluir lead:", e);
+                if (typeof this.showToast === 'function') this.showToast('Erro ao excluir a conversa.', 'error');
+            }
+        }
+    },
+
     quoteMessage(text, sender) {
         this.replyingToText = text;
         this.replyingToSender = sender;

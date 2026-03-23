@@ -25,7 +25,7 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
 
     // 1. Tentar ler no formato Z-API
     if (payload.phone) {
-        isFromMe = payload.fromMe === true;
+        isFromMe = payload.fromMe === true || payload.fromMe === "true" || (payload.fromMe === undefined && payload.status !== undefined);
         phoneNum = payload.phone; // ex: 5511999999999
         senderName = payload.senderName || payload.chatName || "Desconhecido";
         textBody = (payload.text && payload.text.message) ? payload.text.message : "";
@@ -48,6 +48,12 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
             if (msgData.message.audioMessage) audioUrl = msgData.message.audioMessage.url || "evolution-audio";
             if (msgData.message.imageMessage) imageUrl = msgData.message.imageMessage.url || "evolution-image";
         }
+    }
+
+    // Ignorar Grupos, Status e LIDs
+    if (phoneNum.includes('-group') || phoneNum.includes('@g.us') || phoneNum.includes('@broadcast') || phoneNum.includes('@lid')) {
+        console.log("Mensagem ignorada (grupo/status/lid)", { phoneNum });
+        return res.status(200).send("Ignored group/status/lid");
     }
 
     if (!textBody) {

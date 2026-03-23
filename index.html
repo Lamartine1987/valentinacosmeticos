@@ -793,7 +793,10 @@
                         <h2 id="lead-sb-name" style="margin: 0; font-size: 18px; color: var(--text-main);">...</h2>
                         <span id="lead-sb-status" style="font-size: 11px; background: #E2E8F0; padding: 2px 6px; border-radius: 4px; font-weight: 600;">...</span>
                     </div>
-                    <button class="btn-icon" onclick="app.closeLeadSidebar()" style="font-size: 24px;">&times;</button>
+                    <div style="display: flex; gap: 12px; align-items: center;">
+                        <button class="btn-icon" onclick="app.deleteLead()" style="font-size: 16px; color: #EF4444;" title="Excluir Conversa"><i class="fas fa-trash"></i></button>
+                        <button class="btn-icon" onclick="app.closeLeadSidebar()" style="font-size: 24px;">&times;</button>
+                    </div>
                 </div>
                 <div style="font-size: 13px; color: var(--text-muted); display: flex; gap: 12px; margin-top: 8px;">
                     <span id="lead-sb-phone"><i class="fab fa-whatsapp" style="color:#25D366;"></i> </span>
