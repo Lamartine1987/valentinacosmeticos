@@ -529,137 +529,183 @@
                  <!-- Settings Page -->
                  <section class="page" id="page-settings">
                     <div class="page-header">
-                       <h2>Modelos de Mensagens e Integrações</h2>
-                       <p>Configurações de envio automático de WhatsApp via API.</p>
+                       <h2>Configurações do CRM</h2>
+                       <p>Gerencie suas automações, campanhas promocionais e integrações.</p>
                    </div>
                    
-                   <div class="form-card" style="margin-bottom: 24px;">
-                        <h3>Modelos de Mensagens (Textos)</h3>
-                        <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 16px;">Personalize o texto das mensagens usando variáveis dinâmicas: digite <strong>{nome}</strong> para o nome da cliente e <strong>{produto}</strong> para o nome do produto comprado.</p>
-                        
-                        <form id="form-templates">
-                            <div class="form-grid">
-                                <div class="form-group" style="grid-column: span 2;">
-                                    <label>Agradecimento (Disparado na nova venda ou 0 a 2 dias)</label>
-                                    <textarea id="tpl-thanks" rows="3" required style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; resize: vertical; font-family: inherit; font-size: 14px; margin-bottom: 8px;">Olá {nome}, aqui é da Valentina Cosméticos! Muito obrigada pela sua compra recente do {produto}. Qualquer dúvida de como usar o produto, estamos à disposição! 🥰</textarea>
-                                    <div style="display: flex; gap: 8px;">
-                                        <input type="url" id="tpl-thanks-img" placeholder="Link de Imagem / Anexo (Opcional)" style="flex: 1; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; font-size: 13px; color: var(--text-main);">
-                                        <button type="button" class="btn-primary" style="padding: 10px 14px; background: #64748B; box-shadow: none;" onclick="document.getElementById('tpl-thanks-file').click()" title="Fazer upload do computador"><i class="fas fa-upload"></i></button>
-                                        <input type="file" id="tpl-thanks-file" accept="image/*" style="display: none;" onchange="app.uploadTemplateImage(event, 'tpl-thanks-img')">
-                                    </div>
-                                </div>
-                                <div class="form-group" style="grid-column: span 2;">
-                                    <label>Reposição (30 a 45 dias)</label>
-                                    <textarea id="tpl-restock" rows="3" required style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; resize: vertical; font-family: inherit; font-size: 14px; margin-bottom: 8px;">Oi {nome}, tudo bem? Faz cerca de 30 dias que você comprou o {produto}. Como está sendo a experiência? Já está acabando? Preparamos uma condição especial se quiser repor hoje! ✨</textarea>
-                                    <div style="display: flex; gap: 8px;">
-                                        <input type="url" id="tpl-restock-img" placeholder="Link de Imagem / Anexo (Opcional)" style="flex: 1; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; font-size: 13px; color: var(--text-main);">
-                                        <button type="button" class="btn-primary" style="padding: 10px 14px; background: #64748B; box-shadow: none;" onclick="document.getElementById('tpl-restock-file').click()" title="Fazer upload do computador"><i class="fas fa-upload"></i></button>
-                                        <input type="file" id="tpl-restock-file" accept="image/*" style="display: none;" onchange="app.uploadTemplateImage(event, 'tpl-restock-img')">
-                                    </div>
-                                </div>
-                                <div class="form-group" style="border-top: 1px solid var(--border); padding-top: 16px; margin-top: 8px;">
-                                    <label style="color: #DB2777; font-weight: 600;"><i class="fas fa-heart"></i> Campanha de Recuperação (Saudades 46 a 120 dias)</label>
-                                    <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 8px; font-weight: normal;">Enviada para clientes inativas há mais de um mês e meio.</p>
-                                    <textarea id="tpl-dormant" rows="3" required style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; resize: vertical; font-family: inherit; font-size: 14px; margin-bottom: 8px;">Oi {nome}, que saudade de você! Faz um tempinho que não nos falamos. Chegaram novidades incríveis na Valentina Cosméticos, quer dar uma olhadinha no catálogo? 💖</textarea>
-                                    <div style="display: flex; gap: 8px;">
-                                        <input type="url" id="tpl-dormant-img" placeholder="Link de Imagem / Anexo (Opcional)" style="flex: 1; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; font-size: 13px; color: var(--text-main);">
-                                        <button type="button" class="btn-primary" style="padding: 10px 14px; background: #64748B; box-shadow: none;" onclick="document.getElementById('tpl-dormant-file').click()" title="Fazer upload do computador"><i class="fas fa-upload"></i></button>
-                                        <input type="file" id="tpl-dormant-file" accept="image/*" style="display: none;" onchange="app.uploadTemplateImage(event, 'tpl-dormant-img')">
-                                    </div>
-                                </div>
-                                <div class="form-group" style="border-top: 1px solid var(--border); padding-top: 16px; margin-top: 8px;">
-                                    <label style="color: #475569; font-weight: 600;"><i class="fas fa-user-clock"></i> Campanha de Resgate (Ex-cliente > 120 dias)</label>
-                                    <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 8px; font-weight: normal;">Enviada para tentar reativar clientes perdidas (mais de 4 meses sem comprar).</p>
-                                    <textarea id="tpl-lost" rows="3" required style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; resize: vertical; font-family: inherit; font-size: 14px; margin-bottom: 8px;">Oi {nome}, lembrou de mim? Fizemos uma limpeza aqui e percebi que faz muito tempo desde a sua última compra. Preparamos um presente muito especial caso queira voltar a ser nossa cliente VIP! ✨</textarea>
-                                    <div style="display: flex; gap: 8px;">
-                                        <input type="url" id="tpl-lost-img" placeholder="Link de Imagem / Anexo (Opcional)" style="flex: 1; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; font-size: 13px; color: var(--text-main);">
-                                        <button type="button" class="btn-primary" style="padding: 10px 14px; background: #64748B; box-shadow: none;" onclick="document.getElementById('tpl-lost-file').click()" title="Fazer upload do computador"><i class="fas fa-upload"></i></button>
-                                        <input type="file" id="tpl-lost-file" accept="image/*" style="display: none;" onchange="app.uploadTemplateImage(event, 'tpl-lost-img')">
-                                    </div>
-                                </div>
-                                <div class="form-group" style="grid-column: span 2; border-top: 1px solid var(--border); padding-top: 16px; margin-top: 8px;">
-                                    <label style="color: #8B5CF6; font-weight: 600;"><i class="fas fa-bullhorn"></i> Biblioteca de Campanhas Promocionais</label>
-                                    <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 12px; font-weight: normal;">Crie diversos modelos dinâmicos para suas campanhas usando <strong>{produto}</strong> e <strong>{link}</strong>. Eles estarão disponíveis na janela de envio da Base de Clientes.</p>
-                                    
-                                    <div class="promo-layout-grid">
-                                        <div>
-                                            <div id="promo-templates-container" style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 16px;">
-                                                <!-- JS will populate -->
-                                            </div>
-                                            <button type="button" class="btn-primary" style="background: #F8FAFC; color: var(--primary); border: 2px dashed var(--primary-light); box-shadow: none; width: 100%; justify-content: center; padding: 12px;" onclick="app.addPromoTemplate()">
-                                                <i class="fas fa-plus"></i> Adicionar Nova Campanha
-                                            </button>
-                                        </div>
-                                        
-                                        <div class="whatsapp-preview-container">
-                                            <div class="smartphone">
-                                                <div class="wa-header">
-                                                    <div class="wa-header-avatar"><i class="fas fa-user"></i></div>
-                                                    <div class="wa-header-info">
-                                                        <h4>Prévia do WhatsApp</h4>
-                                                        <p>Como o cliente verá</p>
-                                                    </div>
-                                                </div>
-                                                <div class="wa-chat-area">
-                                                    <div class="wa-bubble wa-bubble-agent">
-                                                        <img id="wa-preview-img" class="wa-bubble-img" src="" alt="Anexo">
-                                                        <span id="wa-preview-text">Digite o texto da sua campanha à esquerda para ver como ficará no celular do cliente...</span>
-                                                        <div class="wa-bubble-time">
-                                                            agora <i class="fas fa-check-double"></i>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div class="wa-footer">
-                                                    <i class="fas fa-plus" style="color: #8BA1AD; font-size: 20px;"></i>
-                                                    <div class="wa-input-mock">Mensagem</div>
-                                                    <i class="fas fa-microphone" style="color: #8BA1AD; font-size: 20px;"></i>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="form-actions" style="margin-top: 16px;">
-                                <button type="submit" class="btn-primary" style="padding: 12px 24px;">
-                                    <i class="fas fa-save"></i> Salvar Textos
-                                </button>
-                            </div>
-                        </form>
+                   <!-- TAB SYSTEM NAVIGATION -->
+                   <div class="tabs-container" style="display: flex; gap: 32px; border-bottom: 2px solid var(--border); margin-bottom: 24px;">
+                       <button type="button" class="tab-btn active" id="tab-btn-funnel" onclick="app.switchSettingsTab('funnel')" style="background: none; border: none; padding: 12px 4px; font-size: 15px; font-weight: 600; color: var(--primary); border-bottom: 2px solid var(--primary); cursor: pointer; margin-bottom: -2px;">
+                           <i class="fas fa-magic"></i> Mensagens Automáticas
+                       </button>
+                       <button type="button" class="tab-btn" id="tab-btn-promo" onclick="app.switchSettingsTab('promo')" style="background: none; border: none; padding: 12px 4px; font-size: 15px; font-weight: 500; color: var(--text-muted); border-bottom: 2px solid transparent; cursor: pointer; margin-bottom: -2px;">
+                           <i class="fas fa-bullhorn"></i> Campanhas Manuais
+                       </button>
+                       <button type="button" class="tab-btn" id="tab-btn-api" onclick="app.switchSettingsTab('api')" style="background: none; border: none; padding: 12px 4px; font-size: 15px; font-weight: 500; color: var(--text-muted); border-bottom: 2px solid transparent; cursor: pointer; margin-bottom: -2px;">
+                           <i class="fas fa-plug"></i> Integração WhatsApp
+                       </button>
                    </div>
 
-                   <div class="form-card" style="margin-bottom: 24px;">
-                        <h3>Integração WhatsApp API</h3>
-                        <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 16px;">Configure os dados da sua API de disparo (Evolution API, Z-API, ou qualquer webhook que receba POST).</p>
+                   <form id="form-templates">
+                        <!-- TAB 1: FUNNEL -->
+                        <div id="tab-content-funnel" class="settings-tab-content" style="display: block;">
+                            <div class="form-card" style="margin-bottom: 24px;">
+                                <h3>Modelos do Funil de Relacionamento</h3>
+                                <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 16px;">
+                                    Textos enviados automaticamente de acordo com do ciclo de vida da cliente.<br>
+                                    Variáveis aceitas: <strong>{nome}</strong>, <strong>{produto}</strong>.
+                                </p>
+                                
+                                <!-- Accordion 1 -->
+                                <details style="margin-bottom: 12px; border: 1px solid var(--border); border-radius: 8px; background: white;" open>
+                                    <summary style="padding: 16px; font-weight: 600; cursor: pointer; outline: none; background: #F8FAFC; border-bottom: 1px solid var(--border); color: #0F172A; list-style-type: none;">
+                                        <div style="display: flex; align-items: center;"><i class="fas fa-handshake" style="color: #10B981; margin-right: 8px; width: 20px; text-align: center;"></i> <span>Agradecimento (Pós-Venda)</span></div>
+                                    </summary>
+                                    <div style="padding: 16px;">
+                                        <textarea id="tpl-thanks" rows="3" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; resize: vertical; font-family: inherit; font-size: 14px; margin-bottom: 12px;"></textarea>
+                                        <div style="display: flex; align-items: center; gap: 12px;">
+                                            <button type="button" class="btn-primary" style="padding: 8px 16px; background: #64748B; font-size: 13px; box-shadow: none;" onclick="document.getElementById('tpl-thanks-file').click()" title="Fazer upload de nova mídia">
+                                                <i class="fas fa-paperclip"></i> Adicionar Imagem/Anexo
+                                            </button>
+                                            <input type="url" id="tpl-thanks-img" placeholder="Sem anexo carregado..." style="flex: 1; padding: 8px 12px; border: 1px dashed var(--border); border-radius: 8px; outline: none; font-size: 12px; color: var(--text-muted); background: #F8FAFC;" readonly>
+                                            <input type="file" id="tpl-thanks-file" accept="image/*" style="display: none;" onchange="app.uploadTemplateImage(event, 'tpl-thanks-img')">
+                                        </div>
+                                    </div>
+                                </details>
+
+                                <!-- Accordion 2 -->
+                                <details style="margin-bottom: 12px; border: 1px solid var(--border); border-radius: 8px; background: white;">
+                                    <summary style="padding: 16px; font-weight: 600; cursor: pointer; outline: none; background: #F8FAFC; border-bottom: 1px solid var(--border); color: #0F172A; list-style-type: none;">
+                                        <div style="display: flex; align-items: center;"><i class="fas fa-box-open" style="color: #3B82F6; margin-right: 8px; width: 20px; text-align: center;"></i> <span>Reposição (30 a 45 dias)</span></div>
+                                    </summary>
+                                    <div style="padding: 16px;">
+                                        <textarea id="tpl-restock" rows="3" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; resize: vertical; font-family: inherit; font-size: 14px; margin-bottom: 12px;"></textarea>
+                                        <div style="display: flex; align-items: center; gap: 12px;">
+                                            <button type="button" class="btn-primary" style="padding: 8px 16px; background: #64748B; font-size: 13px; box-shadow: none;" onclick="document.getElementById('tpl-restock-file').click()"><i class="fas fa-paperclip"></i> Adicionar Imagem/Anexo</button>
+                                            <input type="url" id="tpl-restock-img" placeholder="Sem anexo carregado..." style="flex: 1; padding: 8px 12px; border: 1px dashed var(--border); border-radius: 8px; outline: none; font-size: 12px; color: var(--text-muted); background: #F8FAFC;" readonly>
+                                            <input type="file" id="tpl-restock-file" accept="image/*" style="display: none;" onchange="app.uploadTemplateImage(event, 'tpl-restock-img')">
+                                        </div>
+                                    </div>
+                                </details>
+
+                                <!-- Accordion 3 -->
+                                <details style="margin-bottom: 12px; border: 1px solid var(--border); border-radius: 8px; background: white;">
+                                    <summary style="padding: 16px; font-weight: 600; cursor: pointer; outline: none; background: #F8FAFC; border-bottom: 1px solid var(--border); color: #0F172A; list-style-type: none;">
+                                        <div style="display: flex; align-items: center;"><i class="fas fa-heart" style="color: #DB2777; margin-right: 8px; width: 20px; text-align: center;"></i> <span>Recuperação (Saudades > 45 dias)</span></div>
+                                    </summary>
+                                    <div style="padding: 16px;">
+                                        <textarea id="tpl-dormant" rows="3" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; resize: vertical; font-family: inherit; font-size: 14px; margin-bottom: 12px;"></textarea>
+                                        <div style="display: flex; align-items: center; gap: 12px;">
+                                            <button type="button" class="btn-primary" style="padding: 8px 16px; background: #64748B; font-size: 13px; box-shadow: none;" onclick="document.getElementById('tpl-dormant-file').click()"><i class="fas fa-paperclip"></i> Adicionar Imagem/Anexo</button>
+                                            <input type="url" id="tpl-dormant-img" placeholder="Sem anexo carregado..." style="flex: 1; padding: 8px 12px; border: 1px dashed var(--border); border-radius: 8px; outline: none; font-size: 12px; color: var(--text-muted); background: #F8FAFC;" readonly>
+                                            <input type="file" id="tpl-dormant-file" accept="image/*" style="display: none;" onchange="app.uploadTemplateImage(event, 'tpl-dormant-img')">
+                                        </div>
+                                    </div>
+                                </details>
+
+                                <!-- Accordion 4 -->
+                                <details style="border: 1px solid var(--border); border-radius: 8px; background: white;">
+                                    <summary style="padding: 16px; font-weight: 600; cursor: pointer; outline: none; background: #F8FAFC; border-bottom: 1px solid var(--border); color: #0F172A; list-style-type: none;">
+                                        <div style="display: flex; align-items: center;"><i class="fas fa-user-clock" style="color: #475569; margin-right: 8px; width: 20px; text-align: center;"></i> <span>Resgate Estratégico (> 120 dias)</span></div>
+                                    </summary>
+                                    <div style="padding: 16px;">
+                                        <textarea id="tpl-lost" rows="3" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; resize: vertical; font-family: inherit; font-size: 14px; margin-bottom: 12px;"></textarea>
+                                        <div style="display: flex; align-items: center; gap: 12px;">
+                                            <button type="button" class="btn-primary" style="padding: 8px 16px; background: #64748B; font-size: 13px; box-shadow: none;" onclick="document.getElementById('tpl-lost-file').click()"><i class="fas fa-paperclip"></i> Adicionar Imagem/Anexo</button>
+                                            <input type="url" id="tpl-lost-img" placeholder="Sem anexo carregado..." style="flex: 1; padding: 8px 12px; border: 1px dashed var(--border); border-radius: 8px; outline: none; font-size: 12px; color: var(--text-muted); background: #F8FAFC;" readonly>
+                                            <input type="file" id="tpl-lost-file" accept="image/*" style="display: none;" onchange="app.uploadTemplateImage(event, 'tpl-lost-img')">
+                                        </div>
+                                    </div>
+                                </details>
+                            </div>
+                            
+                            <div class="form-actions" style="display: flex; justify-content: flex-end;">
+                                <button type="submit" class="btn-primary" style="padding: 12px 32px;"><i class="fas fa-save"></i> Salvar Automações</button>
+                            </div>
+                        </div>
                         
-                        <form id="form-api-settings">
-                            <div class="form-grid">
-                                <div class="form-group" style="grid-column: span 2;">
-                                    <label>Provedor da API</label>
-                                    <select id="api-provider" required>
-                                        <option value="evolution">Evolution API / WhaConnect</option>
-                                        <option value="zapi">Z-API / ChatPro</option>
-                                        <option value="webhook">Webhook Genérico (JSON)</option>
-                                    </select>
-                                </div>
-                                <div class="form-group" style="grid-column: span 2;">
-                                    <label>URL / Endpoint de Envio de Mensagem</label>
-                                    <input type="url" id="api-url" placeholder="https://api.exemplo.com/message/sendText">
-                                </div>
-                                <div class="form-group" style="grid-column: span 2;">
-                                    <label>Token de Autenticação / Global API Key</label>
-                                    <input type="text" id="api-token" placeholder="Insira o seu token aqui">
-                                </div>
-                                <div class="form-group" style="display: flex; align-items: center; gap: 8px; grid-column: span 2;">
-                                    <input type="checkbox" id="api-active" style="width: 20px; height: 20px;">
-                                    <label for="api-active" style="margin: 0; cursor: pointer; font-weight: 500;">Ativar Disparo Automático de Agradecimento (ao salvar Nova Venda)</label>
+                        <!-- TAB 2: PROMOS -->
+                        <div id="tab-content-promo" class="settings-tab-content" style="display: none;">
+                            <div class="form-card" style="margin-bottom: 24px;">
+                                <h3>Biblioteca de Promoções</h3>
+                                <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 16px;">
+                                    Crie pacotes promocionais para disparar em massa.<br>
+                                    Variáveis aceitas: <strong>{nome}</strong>, <strong>{produto}</strong>, <strong>{link}</strong>.
+                                </p>
+                                
+                                <div class="promo-layout-grid">
+                                    <div>
+                                        <div id="promo-templates-container" style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 16px;">
+                                            <!-- JS will populate -->
+                                        </div>
+                                        <button type="button" class="btn-primary" style="background: #F8FAFC; color: var(--primary); border: 2px dashed var(--primary-light); box-shadow: none; width: 100%; justify-content: center; padding: 12px;" onclick="app.addPromoTemplate()">
+                                            <i class="fas fa-plus"></i> Adicionar Configuração de Disparo
+                                        </button>
+                                    </div>
+                                    
+                                    <div class="whatsapp-preview-container">
+                                        <div class="smartphone" style="position: sticky; top: 16px;">
+                                            <div class="wa-header">
+                                                <div class="wa-header-avatar"><i class="fas fa-user"></i></div>
+                                                <div class="wa-header-info">
+                                                    <h4>Prévia do WhatsApp</h4>
+                                                    <p>Como o cliente verá</p>
+                                                </div>
+                                            </div>
+                                            <div class="wa-chat-area">
+                                                <div class="wa-bubble wa-bubble-agent">
+                                                    <img id="wa-preview-img" class="wa-bubble-img" src="" alt="Anexo">
+                                                    <span id="wa-preview-text">Selecione uma campanha e edite os campos para visualizar...</span>
+                                                    <div class="wa-bubble-time">agora <i class="fas fa-check-double"></i></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="form-actions" style="margin-top: 24px;">
-                                <button type="submit" class="btn-primary" style="justify-content: center; width: 100%; padding: 14px; font-size: 16px;">
-                                    <i class="fas fa-save"></i> Salvar Integração
-                                </button>
+                            
+                            <div class="form-actions" style="display: flex; justify-content: flex-end;">
+                                <button type="submit" class="btn-primary" style="padding: 12px 32px;"><i class="fas fa-save"></i> Salvar Campanhas</button>
                             </div>
-                        </form>
+                        </div>
+                    </form>
+
+                    <!-- TAB 3: API -->
+                    <div id="tab-content-api" class="settings-tab-content" style="display: none;">
+                        <div class="form-card" style="margin-bottom: 24px;">
+                            <h3>Provedor de Conexão WhatsApp</h3>
+                            <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 16px;">Configure a API que disparará as mensagens silenciosamente (Evolution API, Z-API, ou compatíveis).</p>
+                            
+                            <form id="form-api-settings">
+                                <div class="form-grid">
+                                    <div class="form-group" style="grid-column: span 2;">
+                                        <label>Serviço da API</label>
+                                        <select id="api-provider" required>
+                                            <option value="evolution">Evolution API / WhaConnect</option>
+                                            <option value="zapi">Z-API / ChatPro</option>
+                                            <option value="webhook">Webhook Genérico Externo</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group" style="grid-column: span 2;">
+                                        <label>URL / Webhook Endpoint de Disparo</label>
+                                        <input type="url" id="api-url" placeholder="https://api.empresa.com/message/sendText">
+                                    </div>
+                                    <div class="form-group" style="grid-column: span 2;">
+                                        <label>Token Global de Autenticação</label>
+                                        <input type="text" id="api-token" placeholder="Bearer Token ou API Key">
+                                    </div>
+                                    <div class="form-group" style="display: flex; align-items: center; gap: 8px; grid-column: span 2;">
+                                        <input type="checkbox" id="api-active" style="width: 20px; height: 20px;">
+                                        <label for="api-active" style="margin: 0; cursor: pointer; font-weight: 500;">Habilitar o disparo automático do Funil</label>
+                                    </div>
+                                </div>
+                                <div class="form-actions" style="margin-top: 24px;">
+                                    <button type="submit" class="btn-primary" style="justify-content: center; width: 100%; padding: 14px; font-size: 16px;">
+                                        <i class="fas fa-plug"></i> Conectar e Salvar
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                </section>
 

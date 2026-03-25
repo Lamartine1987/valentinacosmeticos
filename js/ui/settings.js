@@ -62,14 +62,16 @@ export const settingsModule = {
                 <button type="button" class="btn-icon" style="position: absolute; top: 12px; right: 12px; font-size: 14px; color: #EF4444;" onclick="app.removePromoTemplate(${index})" title="Remover Modelo"><i class="fas fa-trash"></i></button>
                 <div class="form-group" style="margin-bottom: 8px;">
                     <label style="font-size: 13px;">Nome da Campanha</label>
-                    <input type="text" class="promo-tpl-title" value="${tpl.title}" required style="padding: 8px 12px; font-size: 14px; border: 1px solid var(--border); border-radius: 8px; outline: none; transition: 0.2s;">
+                    <input type="text" class="promo-tpl-title" value="${tpl.title}" style="padding: 8px 12px; font-size: 14px; border: 1px solid var(--border); border-radius: 8px; outline: none; transition: 0.2s;">
                 </div>
                 <div class="form-group">
                     <label style="font-size: 13px;">Texto da Mensagem</label>
-                    <textarea class="promo-tpl-text" rows="3" required style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; resize: vertical; outline: none; margin-bottom: 8px;" onkeyup="app.updateLivePreview(this.value, document.getElementById('promo-img-${index}').value)">${tpl.text}</textarea>
-                    <div style="display: flex; gap: 8px;">
-                        <input type="url" class="promo-tpl-img" id="promo-img-${index}" value="${tpl.imageUrl || ''}" placeholder="Link de Imagem / Anexo (Opcional)" style="flex: 1; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; outline: none; color: var(--text-main);" oninput="app.updateLivePreview(this.parentElement.previousElementSibling.value, this.value)">
-                        <button type="button" class="btn-primary" style="padding: 8px 14px; background: #64748B; box-shadow: none;" onclick="document.getElementById('promo-file-${index}').click()" title="Fazer upload do computador"><i class="fas fa-upload"></i></button>
+                    <textarea class="promo-tpl-text" rows="3" style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; resize: vertical; outline: none; margin-bottom: 8px;" onkeyup="app.updateLivePreview(this.value, document.getElementById('promo-img-${index}').value)">${tpl.text}</textarea>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <button type="button" class="btn-primary" style="padding: 8px 16px; background: #64748B; font-size: 13px; box-shadow: none;" onclick="document.getElementById('promo-file-${index}').click()">
+                            <i class="fas fa-paperclip"></i> Adicionar Imagem/Anexo
+                        </button>
+                        <input type="url" class="promo-tpl-img" id="promo-img-${index}" value="${tpl.imageUrl || ''}" placeholder="Sem anexo carregado..." style="flex: 1; padding: 8px 12px; border: 1px dashed var(--border); border-radius: 8px; font-size: 12px; outline: none; color: var(--text-muted); background: #F8FAFC;" readonly oninput="app.updateLivePreview(this.parentElement.previousElementSibling.value, this.value)">
                         <input type="file" id="promo-file-${index}" accept="image/*" style="display: none;" onchange="app.uploadTemplateImage(event, 'promo-img-${index}')">
                     </div>
                 </div>
@@ -105,12 +107,45 @@ export const settingsModule = {
         
         if (previewImg) {
             if (imageUrl && imageUrl.trim() !== '') {
-                previewImg.src = imageUrl;
-                previewImg.style.display = 'block';
+                const img = new Image();
+                img.onload = () => {
+                    previewImg.src = imageUrl;
+                    previewImg.style.display = 'block';
+                };
+                img.onerror = () => {
+                    previewImg.style.display = 'none';
+                    previewImg.src = '';
+                };
+                img.src = imageUrl;
             } else {
                 previewImg.style.display = 'none';
                 previewImg.src = '';
             }
+        }
+    },
+
+    switchSettingsTab(tabId) {
+        document.querySelectorAll('.settings-tab-content').forEach(el => el.style.display = 'none');
+        const tabContents = {
+            'funnel': 'tab-content-funnel',
+            'promo': 'tab-content-promo',
+            'api': 'tab-content-api'
+        };
+        const contentId = tabContents[tabId];
+        const contentEl = document.getElementById(contentId);
+        if(contentEl) contentEl.style.display = 'block';
+
+        document.querySelectorAll('#page-settings .tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+            btn.style.color = 'var(--text-muted)';
+            btn.style.borderBottomColor = 'transparent';
+        });
+        
+        const activeBtn = document.getElementById('tab-btn-' + tabId);
+        if(activeBtn) {
+            activeBtn.classList.add('active');
+            activeBtn.style.color = 'var(--primary)';
+            activeBtn.style.borderBottomColor = 'var(--primary)';
         }
     },
 
