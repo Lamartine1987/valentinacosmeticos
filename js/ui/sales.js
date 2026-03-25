@@ -1,3 +1,5 @@
+import { db } from '../config/firebase.js';
+
 export const salesModule = {
     addSaleItem() {
         const container = document.getElementById('sale-items-container');
@@ -57,11 +59,60 @@ export const salesModule = {
         
         const valueInput = document.getElementById('r-value');
         if (valueInput) {
-            // Se encontrar algum produto, atualiza o campo automaticamente
-            // Se total for 0 (apagou os itens), e o campo de valor não estiver vazio, zera.
             if (foundAny || document.querySelectorAll('.sale-item-row').length > 0) {
                 valueInput.value = total.toFixed(2);
             }
         }
+    },
+
+    deleteSale(id) {
+        this.confirmAction(
+            "Excluir Venda",
+            "Tem certeza que deseja excluir esta venda do histórico? Esta ação não pode ser desfeita.",
+            async () => {
+                try {
+                    await db.collection("sales").doc(id).delete();
+                    this.showToast('Venda excluída do histórico com sucesso!');
+                } catch(e) {
+                    console.error(e);
+                    this.showToast('Erro ao excluir venda.', 'error');
+                }
+            }
+        );
+    },
+
+    toggleSelectAllSales(checkbox) {
+        const checkboxes = document.querySelectorAll('.sale-checkbox');
+        checkboxes.forEach(cb => cb.checked = checkbox.checked);
+    },
+
+    deleteSelectedSales() {
+        const checkboxes = document.querySelectorAll('.sale-checkbox:checked');
+        const idsToDelete = Array.from(checkboxes).map(cb => cb.value);
+        if (idsToDelete.length === 0) {
+            this.showToast('Nenhuma venda selecionada para exclusão.');
+            return;
+        }
+
+        this.confirmAction(
+            "Excluir Histórico Opcional",
+            `Tem certeza que deseja excluir as ${idsToDelete.length} venda(s) selecionada(s)? Esta ação não pode ser desfeita.`,
+            async () => {
+                try {
+                    const batch = db.batch();
+                    idsToDelete.forEach(id => {
+                        const ref = db.collection("sales").doc(id);
+                        batch.delete(ref);
+                    });
+                    await batch.commit();
+                    this.showToast(`${idsToDelete.length} venda(s) excluída(s) com sucesso!`);
+                    const selectAll = document.getElementById('selectAllSales');
+                    if(selectAll) selectAll.checked = false;
+                } catch(e) {
+                    console.error(e);
+                    this.showToast('Erro na exclusão em massa.', 'error');
+                }
+            }
+        );
     }
 };

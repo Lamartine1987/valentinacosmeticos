@@ -70,7 +70,25 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
     // --- LÓGICA DO FUNIL ---
     try {
         const leadsRef = db.collection('leads');
-        const snapshot = await leadsRef.where('phone', '==', phoneNum).limit(1).get();
+        
+        let cleanPhone = phoneNum.replace(/\D/g, '');
+        let base = cleanPhone.startsWith('55') ? cleanPhone.substring(2) : cleanPhone;
+        let pWith9 = base;
+        let pWithout9 = base;
+
+        if (base.length === 11) {
+            pWithout9 = base.substring(0, 2) + base.substring(3);
+        } else if (base.length === 10) {
+            pWith9 = base.substring(0, 2) + '9' + base.substring(2);
+        }
+
+        const variations = [...new Set([
+            base, '55' + base,
+            pWith9, '55' + pWith9,
+            pWithout9, '55' + pWithout9
+        ])];
+
+        const snapshot = await leadsRef.where('phone', 'in', variations).limit(1).get();
 
         if (isFromMe) {
             // MENSAGEM ENVIADA PELO AGENTE (VOCÊ)

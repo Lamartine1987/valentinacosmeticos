@@ -25,16 +25,19 @@ export const clientsModule = {
     },
 
     async deleteClient(id) {
-        const confirmDelete = confirm("Tem certeza que deseja excluir este cliente? Toda a relação será perdida definitivamente.");
-        if (confirmDelete) {
-            try {
-                await db.collection('clients').doc(id).delete();
-                if (typeof this.showToast === 'function') this.showToast('Cliente excluído com sucesso!', 'info');
-            } catch(e) {
-                console.error("Erro ao excluir cliente:", e);
-                if (typeof this.showToast === 'function') this.showToast('Erro ao excluir cliente.', 'error');
+        this.confirmAction(
+            "Excluir Cliente",
+            "Tem certeza que deseja excluir este cliente? Toda a relação será perdida definitivamente.",
+            async () => {
+                try {
+                    await db.collection('clients').doc(id).delete();
+                    if (typeof this.showToast === 'function') this.showToast('Cliente excluído com sucesso!', 'info');
+                } catch(e) {
+                    console.error("Erro ao excluir cliente:", e);
+                    if (typeof this.showToast === 'function') this.showToast('Erro ao excluir cliente.', 'error');
+                }
             }
-        }
+        );
     },
 
     async deleteSelectedClients() {
@@ -44,24 +47,27 @@ export const clientsModule = {
             return;
         }
 
-        const confirmDelete = confirm(`Tem certeza que deseja excluir ${checkboxes.length} cliente(s)? Esta ação não pode ser desfeita.`);
-        if (confirmDelete) {
-            try {
-                const batch = db.batch();
-                checkboxes.forEach(cb => {
-                    const docRef = db.collection('clients').doc(cb.value);
-                    batch.delete(docRef);
-                });
-                await batch.commit();
-                if (typeof this.showToast === 'function') this.showToast(`${checkboxes.length} cliente(s) excluído(s)!`, 'info');
-                
-                const selectAllCb = document.getElementById('selectAllClients');
-                if (selectAllCb) selectAllCb.checked = false;
-            } catch(e) {
-                console.error("Erro exclusão em massa:", e);
-                if (typeof this.showToast === 'function') this.showToast('Erro ao excluir clientes.', 'error');
+        this.confirmAction(
+            "Excluir Clientes em Massa",
+            `Tem certeza que deseja excluir ${checkboxes.length} cliente(s)? Esta ação não pode ser desfeita.`,
+            async () => {
+                try {
+                    const batch = db.batch();
+                    checkboxes.forEach(cb => {
+                        const docRef = db.collection('clients').doc(cb.value);
+                        batch.delete(docRef);
+                    });
+                    await batch.commit();
+                    if (typeof this.showToast === 'function') this.showToast(`${checkboxes.length} cliente(s) excluído(s)!`, 'info');
+                    
+                    const selectAllCb = document.getElementById('selectAllClients');
+                    if (selectAllCb) selectAllCb.checked = false;
+                } catch(e) {
+                    console.error("Erro exclusão em massa:", e);
+                    if (typeof this.showToast === 'function') this.showToast('Erro ao excluir clientes.', 'error');
+                }
             }
-        }
+        );
     },
 
     renderClientsTable() {
@@ -171,7 +177,7 @@ export const clientsModule = {
 
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td style="text-align: center;"><input type="checkbox" class="client-checkbox" value="${clientIdAttr}" style="cursor: pointer; width: 16px; height: 16px;"></td>
+                <td style="text-align: center;"><input type="checkbox" class="sale-checkbox" value="${sale.id}" style="cursor: pointer; width: 16px; height: 16px;"></td>
                 <td><strong>${sale.name}</strong><br><small style="color:#64748B">${sale.phone}</small></td>
                 <td><div style="display: flex; flex-direction: column;">${productsHtml}</div></td>
                 <td><div style="display: flex; flex-direction: column;">${qtyHtml}</div></td>
@@ -179,6 +185,13 @@ export const clientsModule = {
                 <td>${saleDate.toLocaleDateString('pt-BR')}</td>
                 <td><strong>R$ ${sale.value.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong></td>
                 <td>${timeStatus}</td>
+                <td style="text-align: center;">
+                    <div style="display: flex; justify-content: center; gap: 8px;">
+                        <button class="btn-icon" style="color: #EF4444;" onclick="app.deleteSale('${sale.id}')" title="Excluir Venda">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
             `;
             tbody.appendChild(row);
         });

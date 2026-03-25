@@ -77,17 +77,31 @@ export const funnelModule = {
             if(newStatus === 'won') {
                 const lead = this.leadsList.find(l => l.id === leadId);
                 if(lead) {
-                    if(confirm(`Oba! Negócio com ${lead.name} ganho!\nDeseja registrar a venda agora?`)) {
-                        this.navigateTo('register');
-                        setTimeout(() => {
-                            if(document.getElementById('r-name')) {
-                                document.getElementById('r-name').value = lead.name || '';
-                            }
-                            if(document.getElementById('r-phone')) {
-                                document.getElementById('r-phone').value = lead.phone || '';
-                            }
-                        }, 100);
-                    }
+                    this.confirmAction(
+                        "Negócio Ganho! 🎉", 
+                        `Oba! Negócio com ${lead.name} ganho!\nDeseja registrar a venda agora?`, 
+                        () => {
+                            return new Promise(resolve => {
+                                this.navigateTo('register');
+                                setTimeout(() => {
+                                    if(document.getElementById('r-name')) {
+                                        document.getElementById('r-name').value = lead.name || '';
+                                    }
+                                    if(document.getElementById('r-phone')) {
+                                        document.getElementById('r-phone').value = lead.phone || '';
+                                    }
+                                    resolve();
+                                }, 100);
+                            });
+                        },
+                        {
+                            confirmText: "Sim, Registrar",
+                            confirmColor: "#10B981",
+                            iconClass: "fas fa-check-circle",
+                            iconBg: "#D1FAE5",
+                            iconColor: "#10B981"
+                        }
+                    );
                 }
             }
         } catch(e) {
@@ -137,9 +151,14 @@ export const funnelModule = {
             else if(status === 'waiting') tagHtml = '<span class="k-card-tag" style="background:#FEF3C7; color:#D97706;">Pendente</span>';
 
             card.innerHTML = `
-                <div class="k-card-title">
-                    ${lead.name || 'Desconhecido'}
-                    ${lead.unread ? '<i class="fas fa-circle" style="color:#EF4444; font-size:10px; margin-left:6px; animation: pulse 1s infinite alternate;" title="Nova mensagem não lida"></i>' : ''}
+                <div class="k-card-title" style="display:flex; justify-content:space-between; align-items:flex-start;">
+                    <span>
+                        ${lead.name || 'Desconhecido'}
+                        ${lead.unread ? '<i class="fas fa-circle" style="color:#EF4444; font-size:10px; margin-left:6px; animation: pulse 1s infinite alternate;" title="Nova mensagem não lida"></i>' : ''}
+                    </span>
+                    <button class="btn-icon" style="color: #EF4444; padding: 2px;" onclick="event.stopPropagation(); app.deleteLeadCard('${lead.id}')" title="Excluir Conversa">
+                        <i class="fas fa-trash" style="font-size: 13px;"></i>
+                    </button>
                 </div>
                 <div class="k-card-meta" style="margin-bottom: 8px;">
                     <span><i class="fab fa-whatsapp" style="color:#25D366;"></i> ${phoneStr}</span>
@@ -229,7 +248,26 @@ export const funnelModule = {
                 }
                 
                 if (msg.audioUrl) {
-                    displayHtml = `<audio controls src="${msg.audioUrl}" style="max-width: 250px; display:block; margin-bottom:6px; height: 40px; border-radius: 20px;"></audio>` + displayHtml;
+                    const avatarSrc = `https://ui-avatars.com/api/?name=${encodeURIComponent(senderName)}&background=random&color=fff`;
+                    const micColor = msg.sender === 'agent' ? '#53BDEB' : '#8BA1AD';
+                    displayHtml = `
+                        <div class="wa-audio-player" style="display: flex; align-items: center; gap: 12px; min-width: 240px; margin-bottom: 4px;">
+                            <div style="position: relative; width: 44px; height: 44px; flex-shrink: 0;">
+                                <img src="${avatarSrc}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
+                                <i class="fas fa-microphone" style="position: absolute; bottom: 0; right: -4px; color: ${micColor}; font-size: 14px; text-shadow: 0 1px 1px rgba(255,255,255,0.8);"></i>
+                            </div>
+                            <button class="btn-icon" onclick="event.stopPropagation(); app.toggleWaAudio(this)" style="color: #667781; font-size: 20px; padding:0; width: 30px; height: 30px; display:flex; justify-content:center; align-items:center; flex-shrink: 0;">
+                                <i class="fas fa-play"></i>
+                            </button>
+                            <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+                                <input type="range" class="wa-audio-slider" value="0" max="100" style="width: 100%; height: 4px; accent-color: #25D366; cursor: pointer; margin-bottom: 6px;" onchange="event.stopPropagation(); app.seekWaAudio(this)">
+                                <div style="display: flex; justify-content: space-between; font-size: 11px; color: #667781;">
+                                    <span class="wa-audio-time">0:00</span>
+                                </div>
+                            </div>
+                            <audio src="${msg.audioUrl}" ontimeupdate="app.updateWaAudioTime(this)" onloadedmetadata="app.loadedWaAudio(this)" onended="app.endedWaAudio(this)" style="display: none;"></audio>
+                        </div>
+                    ` + displayHtml;
                 }
                 
                 if (msg.sender === 'agent') {
@@ -266,19 +304,22 @@ export const funnelModule = {
         document.getElementById('lead-sidebar-overlay').classList.remove('active');
     },
 
-    async deleteLead() {
-        if (!this.activeLeadId) return;
-        const confirmDelete = confirm("Tem certeza que deseja excluir esta conversa do funil?\n\nEsta ação não poderá ser desfeita.");
-        if (confirmDelete) {
-            try {
-                await db.collection('leads').doc(this.activeLeadId).delete();
-                if (typeof this.showToast === 'function') this.showToast('Conversa excluída com sucesso!', 'info');
-                this.closeLeadSidebar();
-            } catch (e) {
-                console.error("Erro ao excluir lead:", e);
-                if (typeof this.showToast === 'function') this.showToast('Erro ao excluir a conversa.', 'error');
+    async deleteLeadCard(id) {
+        if (!id) return;
+        this.confirmAction(
+            "Excluir Conversa",
+            "Tem certeza que deseja excluir esta conversa do funil?\n\nEsta ação não poderá ser desfeita.",
+            async () => {
+                try {
+                    await db.collection('leads').doc(id).delete();
+                    if (typeof this.showToast === 'function') this.showToast('Conversa excluída com sucesso!', 'info');
+                    if (this.activeLeadId === id) this.closeLeadSidebar();
+                } catch (e) {
+                    console.error("Erro ao excluir lead:", e);
+                    if (typeof this.showToast === 'function') this.showToast('Erro ao excluir a conversa.', 'error');
+                }
             }
-        }
+        );
     },
 
     quoteMessage(text, sender) {
@@ -379,5 +420,80 @@ export const funnelModule = {
         } catch(e) {
             console.error("Erro ao salvar mensagem:", e);
         }
+    },
+    
+    toggleWaAudio(btn) {
+        const container = btn.parentElement;
+        const audio = container.querySelector('audio');
+        if (!audio) return;
+        const icon = btn.querySelector('i');
+        
+        document.querySelectorAll('.wa-audio-player audio').forEach(a => {
+            if (a !== audio && !a.paused) {
+                a.pause();
+                const b = a.parentElement.querySelector('.btn-icon i');
+                if (b) {
+                    b.classList.remove('fa-pause');
+                    b.classList.add('fa-play');
+                }
+            }
+        });
+
+        if (audio.paused) {
+            audio.play();
+            icon.classList.remove('fa-play');
+            icon.classList.add('fa-pause');
+        } else {
+            audio.pause();
+            icon.classList.remove('fa-pause');
+            icon.classList.add('fa-play');
+        }
+    },
+    
+    updateWaAudioTime(audio) {
+        const container = audio.parentElement;
+        const slider = container.querySelector('.wa-audio-slider');
+        const timeLabel = container.querySelector('.wa-audio-time');
+        
+        if (audio.duration) {
+            const percent = (audio.currentTime / audio.duration) * 100;
+            if (slider && document.activeElement !== slider) slider.value = percent;
+        }
+        
+        const currentMins = Math.floor(audio.currentTime / 60);
+        const currentSecs = Math.floor(audio.currentTime % 60);
+        if (timeLabel) timeLabel.textContent = `${currentMins}:${currentSecs.toString().padStart(2, '0')}`;
+    },
+    
+    seekWaAudio(slider) {
+        const container = slider.parentElement.parentElement;
+        const audio = container.querySelector('audio');
+        if (audio && audio.duration) {
+            const time = (slider.value / 100) * audio.duration;
+            audio.currentTime = time;
+        }
+    },
+    
+    loadedWaAudio(audio) {
+        const container = audio.parentElement;
+        const timeLabel = container.querySelector('.wa-audio-time');
+        if (!audio.duration || !isFinite(audio.duration)) return;
+        const MathMins = Math.floor(audio.duration / 60);
+        const MathSecs = Math.floor(audio.duration % 60);
+        if (timeLabel) {
+            timeLabel.textContent = `${MathMins}:${MathSecs.toString().padStart(2, '0')}`;
+        }
+    },
+    
+    endedWaAudio(audio) {
+        const container = audio.parentElement;
+        const icon = container.querySelector('.btn-icon i');
+        if (icon) {
+            icon.classList.remove('fa-pause');
+            icon.classList.add('fa-play');
+        }
+        const slider = container.querySelector('.wa-audio-slider');
+        if (slider) slider.value = 0;
+        app.loadedWaAudio(audio);
     }
 };

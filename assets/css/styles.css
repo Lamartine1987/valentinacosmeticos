@@ -282,9 +282,9 @@ body { background: var(--bg-color); color: var(--text-main); font-size: 15px; }
     background-size: cover; display: flex; flex-direction: column; gap: 8px;
 }
 .wa-bubble {
-    border-radius: 8px; padding: 8px 10px;
-    max-width: 90%; box-shadow: 0 1px 1px rgba(0,0,0,0.1);
-    position: relative; font-size: 14px; color: #111B21; line-height: 1.4; word-break: break-word; white-space: pre-wrap; margin-bottom: 4px;
+    border-radius: 7.5px; padding: 6px 7px 8px 9px;
+    max-width: 75%; box-shadow: 0 1px 0.5px rgba(11,20,26,.13);
+    position: relative; font-size: 14.2px; color: #111B21; line-height: 19px; word-break: break-word; white-space: pre-wrap; margin-bottom: 2px;
 }
 .wa-bubble-agent {
     background: #D9FDD3; align-self: flex-end; border-top-right-radius: 0;
@@ -304,8 +304,9 @@ body { background: var(--bg-color); color: var(--text-main); font-size: 15px; }
     width: 100%; border-radius: 6px; margin-bottom: 6px; display: none; max-height: 200px; object-fit: cover;
 }
 .wa-bubble-time {
-    font-size: 11px; color: #667781; text-align: right; margin-top: 4px;
-    display: flex; justify-content: flex-end; align-items: center; gap: 4px;
+    font-size: 11px; color: #667781;
+    float: right; position: relative; bottom: -4px; margin-left: 14px;
+    display: inline-flex; align-items: center; gap: 4px;
 }
 .wa-bubble-time i { color: #53BDEB; }
 .wa-footer {

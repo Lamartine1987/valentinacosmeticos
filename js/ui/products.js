@@ -26,16 +26,19 @@ export const productsModule = {
     },
 
     async deleteProduct(id) {
-        const confirmDelete = confirm("Tem certeza que deseja excluir este produto do catálogo? Esta ação não pode ser desfeita.");
-        if (confirmDelete) {
-            try {
-                await db.collection('products').doc(id).delete();
-                if (typeof this.showToast === 'function') this.showToast('Produto excluído com sucesso!', 'info');
-            } catch(e) {
-                console.error("Erro ao excluir produto:", e);
-                if (typeof this.showToast === 'function') this.showToast('Erro ao excluir produto.', 'error');
+        this.confirmAction(
+            "Excluir Produto",
+            "Tem certeza que deseja excluir este produto do catálogo? Esta ação não pode ser desfeita.",
+            async () => {
+                try {
+                    await db.collection('products').doc(id).delete();
+                    if (typeof this.showToast === 'function') this.showToast('Produto excluído com sucesso!', 'info');
+                } catch(e) {
+                    console.error("Erro ao excluir produto:", e);
+                    if (typeof this.showToast === 'function') this.showToast('Erro ao excluir produto.', 'error');
+                }
             }
-        }
+        );
     },
 
     async deleteSelectedProducts() {
@@ -45,24 +48,27 @@ export const productsModule = {
             return;
         }
 
-        const confirmDelete = confirm(`Tem certeza que deseja excluir ${checkboxes.length} produto(s)? Esta ação não pode ser desfeita.`);
-        if (confirmDelete) {
-            try {
-                const batch = db.batch();
-                checkboxes.forEach(cb => {
-                    const docRef = db.collection('products').doc(cb.value);
-                    batch.delete(docRef);
-                });
-                await batch.commit();
-                if (typeof this.showToast === 'function') this.showToast(`${checkboxes.length} produto(s) excluído(s)!`, 'info');
-                
-                const selectAllCb = document.querySelector('.page.active th input[type="checkbox"]');
-                if (selectAllCb) selectAllCb.checked = false;
-            } catch(e) {
-                console.error("Erro exclusão de produtos em massa:", e);
-                if (typeof this.showToast === 'function') this.showToast('Erro ao excluir produtos.', 'error');
+        this.confirmAction(
+            "Excluir Produtos em Massa",
+            `Tem certeza que deseja excluir ${checkboxes.length} produto(s)? Esta ação não pode ser desfeita.`,
+            async () => {
+                try {
+                    const batch = db.batch();
+                    checkboxes.forEach(cb => {
+                        const docRef = db.collection('products').doc(cb.value);
+                        batch.delete(docRef);
+                    });
+                    await batch.commit();
+                    if (typeof this.showToast === 'function') this.showToast(`${checkboxes.length} produto(s) excluído(s)!`, 'info');
+                    
+                    const selectAllCb = document.querySelector('.page.active th input[type="checkbox"]');
+                    if (selectAllCb) selectAllCb.checked = false;
+                } catch(e) {
+                    console.error("Erro exclusão de produtos em massa:", e);
+                    if (typeof this.showToast === 'function') this.showToast('Erro ao excluir produtos.', 'error');
+                }
             }
-        }
+        );
     },
 
     toggleSelectAllProducts(source) {
