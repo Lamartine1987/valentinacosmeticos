@@ -322,6 +322,9 @@
                             <p>Contatos e Lifetime Value (LTV) da sua carteira.</p>
                         </div>
                         <div style="display: flex; gap: 8px;">
+                            <button class="btn-primary" style="background: #EF4444;" onclick="app.deleteSelectedClients()">
+                                <i class="fas fa-trash"></i> Excluir Selecionados
+                            </button>
                             <button class="btn-primary" style="background: #8B5CF6;" onclick="app.openPromoModal()">
                                 <i class="fas fa-bullhorn"></i> Disparar Promoção
                             </button>
@@ -459,15 +462,21 @@
                             <h2>Catálogo de Produtos</h2>
                             <p>Sua lista de produtos e serviços disponíveis.</p>
                         </div>
-                        <button class="btn-primary" onclick="app.navigateTo('product-register')">
-                            <i class="fas fa-plus"></i> Novo Produto
-                        </button>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn-primary" style="background: #EF4444;" onclick="app.deleteSelectedProducts()">
+                                <i class="fas fa-trash"></i> Excluir Selecionados
+                            </button>
+                            <button class="btn-primary" onclick="app.navigateTo('product-register')">
+                                <i class="fas fa-plus"></i> Novo Produto
+                            </button>
+                        </div>
                     </div>
 
                     <div class="table-card" style="overflow-x: auto;">
                         <table class="data-table">
                             <thead>
                                 <tr>
+                                    <th style="width: 40px; text-align: center;"><input type="checkbox" onclick="app.toggleSelectAllProducts(this)" style="cursor: pointer;"></th>
                                     <th>Nome do Produto</th>
                                     <th>Categoria</th>
                                     <th>Preço Padrão</th>

@@ -1,3 +1,5 @@
+import { db } from '../config/firebase.js';
+
 export const clientsModule = {
     editClient(id) {
         const client = this.clients.find(c => c.id === id);
@@ -20,6 +22,46 @@ export const clientsModule = {
         document.getElementById('client-form-desc').innerText = "Adicione um novo contato à sua base manualmente.";
         document.getElementById('client-submit-text').innerText = "Salvar Cliente";
         this.navigateTo('clients');
+    },
+
+    async deleteClient(id) {
+        const confirmDelete = confirm("Tem certeza que deseja excluir este cliente? Toda a relação será perdida definitivamente.");
+        if (confirmDelete) {
+            try {
+                await db.collection('clients').doc(id).delete();
+                if (typeof this.showToast === 'function') this.showToast('Cliente excluído com sucesso!', 'info');
+            } catch(e) {
+                console.error("Erro ao excluir cliente:", e);
+                if (typeof this.showToast === 'function') this.showToast('Erro ao excluir cliente.', 'error');
+            }
+        }
+    },
+
+    async deleteSelectedClients() {
+        const checkboxes = document.querySelectorAll('.page.active .client-checkbox:checked');
+        if (checkboxes.length === 0) {
+            if (typeof this.showToast === 'function') this.showToast('Selecione pelo menos um cliente para excluir.', 'warning');
+            return;
+        }
+
+        const confirmDelete = confirm(`Tem certeza que deseja excluir ${checkboxes.length} cliente(s)? Esta ação não pode ser desfeita.`);
+        if (confirmDelete) {
+            try {
+                const batch = db.batch();
+                checkboxes.forEach(cb => {
+                    const docRef = db.collection('clients').doc(cb.value);
+                    batch.delete(docRef);
+                });
+                await batch.commit();
+                if (typeof this.showToast === 'function') this.showToast(`${checkboxes.length} cliente(s) excluído(s)!`, 'info');
+                
+                const selectAllCb = document.getElementById('selectAllClients');
+                if (selectAllCb) selectAllCb.checked = false;
+            } catch(e) {
+                console.error("Erro exclusão em massa:", e);
+                if (typeof this.showToast === 'function') this.showToast('Erro ao excluir clientes.', 'error');
+            }
+        }
     },
 
     renderClientsTable() {
@@ -213,8 +255,11 @@ export const clientsModule = {
                     <button class="btn-icon" style="color: var(--primary); margin-right: 12px;" onclick="app.viewClientHistory('${client.id}')" title="Ver Histórico de Compras">
                         <i class="fas fa-history"></i>
                     </button>
-                    <button class="btn-icon" style="color: var(--primary);" onclick="app.editClient('${client.id}')" title="Editar Cliente">
+                    <button class="btn-icon" style="color: var(--primary); margin-right: 12px;" onclick="app.editClient('${client.id}')" title="Editar Cliente">
                         <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn-icon" style="color: #EF4444;" onclick="app.deleteClient('${client.id}')" title="Excluir Cliente">
+                        <i class="fas fa-trash"></i>
                     </button>
                 </td>
             `;
