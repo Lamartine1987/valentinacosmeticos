@@ -149,6 +149,40 @@ export const settingsModule = {
         }
     },
 
+    async triggerDailyFunnels() {
+        const btn = document.getElementById('btn-trigger-funnels');
+        if (!btn) return;
+
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Executando Varredura...';
+        btn.disabled = true;
+
+        try {
+            // Se o projeto for servido via Firebase Hosting, usa a URL oficial de nuvem
+            const functionUrl = "https://us-central1-valentinacosmeticos-5f239.cloudfunctions.net/triggerDailyFunnels";
+
+            const payloadOptions = {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            };
+
+            const response = await fetch(functionUrl, payloadOptions);
+            const data = await response.json();
+
+            if (response.ok) {
+                app.showToast(`Varredura concluída! ${data.sent} mensagens de funil enviadas hoje.`);
+            } else {
+                throw new Error(data.error || "Erro desconhecido na Cloud Function.");
+            }
+        } catch (error) {
+            console.error("Erro ao forçar disparo do funil:", error);
+            app.showToast("Falha ao executar o recálculo do funil diário.");
+        } finally {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    },
+
     async uploadTemplateImage(event, targetInputId) {
         const file = event.target.files[0];
         if (!file) return;
