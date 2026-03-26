@@ -21,21 +21,25 @@ export const settingsModule = {
             if (docTpl.exists) {
                 this.msgTemplates = { ...this.msgTemplates, ...docTpl.data() };
                 const tThanks = document.getElementById('tpl-thanks');
+                const t15d = document.getElementById('tpl-15d');
                 const tRestock = document.getElementById('tpl-restock');
                 const tDormant = document.getElementById('tpl-dormant');
                 const tLost = document.getElementById('tpl-lost');
                 
                 const tThanksImg = document.getElementById('tpl-thanks-img');
+                const t15dImg = document.getElementById('tpl-15d-img');
                 const tRestockImg = document.getElementById('tpl-restock-img');
                 const tDormantImg = document.getElementById('tpl-dormant-img');
                 const tLostImg = document.getElementById('tpl-lost-img');
 
                 if(tThanks) tThanks.value = this.msgTemplates.thanks || '';
+                if(t15d) t15d.value = this.msgTemplates.d15 || '';
                 if(tRestock) tRestock.value = this.msgTemplates.restock || '';
                 if(tDormant) tDormant.value = this.msgTemplates.dormant || '';
                 if(tLost) tLost.value = this.msgTemplates.lost || '';
 
                 if(tThanksImg) tThanksImg.value = this.msgTemplates.thanksImg || '';
+                if(t15dImg) t15dImg.value = this.msgTemplates.d15Img || '';
                 if(tRestockImg) tRestockImg.value = this.msgTemplates.restockImg || '';
                 if(tDormantImg) tDormantImg.value = this.msgTemplates.dormantImg || '';
                 if(tLostImg) tLostImg.value = this.msgTemplates.lostImg || '';
@@ -62,16 +66,19 @@ export const settingsModule = {
                 <button type="button" class="btn-icon" style="position: absolute; top: 12px; right: 12px; font-size: 14px; color: #EF4444;" onclick="app.removePromoTemplate(${index})" title="Remover Modelo"><i class="fas fa-trash"></i></button>
                 <div class="form-group" style="margin-bottom: 8px;">
                     <label style="font-size: 13px;">Nome da Campanha</label>
-                    <input type="text" class="promo-tpl-title" value="${tpl.title}" style="padding: 8px 12px; font-size: 14px; border: 1px solid var(--border); border-radius: 8px; outline: none; transition: 0.2s;">
+                    <input type="text" class="promo-tpl-title" value="${tpl.title}" style="width: 100%; box-sizing: border-box; padding: 8px 12px; font-size: 14px; border: 1px solid var(--border); border-radius: 8px; outline: none; transition: 0.2s;">
                 </div>
                 <div class="form-group">
                     <label style="font-size: 13px;">Texto da Mensagem</label>
                     <textarea class="promo-tpl-text" rows="3" style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; resize: vertical; outline: none; margin-bottom: 8px;" onkeyup="app.updateLivePreview(this.value, document.getElementById('promo-img-${index}').value)">${tpl.text}</textarea>
-                    <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
                         <button type="button" class="btn-primary" style="padding: 8px 16px; background: #64748B; font-size: 13px; box-shadow: none;" onclick="document.getElementById('promo-file-${index}').click()">
                             <i class="fas fa-paperclip"></i> Adicionar Imagem/Anexo
                         </button>
-                        <input type="url" class="promo-tpl-img" id="promo-img-${index}" value="${tpl.imageUrl || ''}" placeholder="Sem anexo carregado..." style="flex: 1; padding: 8px 12px; border: 1px dashed var(--border); border-radius: 8px; font-size: 12px; outline: none; color: var(--text-muted); background: #F8FAFC;" readonly oninput="app.updateLivePreview(this.parentElement.previousElementSibling.value, this.value)">
+                        <div style="display: flex; flex: 1; min-width: 200px; gap: 4px; align-items: center; background: #F8FAFC; border: 1px dashed var(--border); border-radius: 8px; padding-right: 4px;">    
+                            <input type="url" class="promo-tpl-img" id="promo-img-${index}" value="${tpl.imageUrl || ''}" placeholder="Sem anexo..." style="flex: 1; min-width: 0; padding: 8px 12px; border: none; outline: none; font-size: 12px; color: var(--text-muted); background: transparent; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;" readonly oninput="app.updateLivePreview(this.parentElement.parentElement.previousElementSibling.value, this.value)">
+                            <button type="button" class="btn-icon" style="color: #EF4444; font-size: 14px; padding: 4px; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 4px; background: transparent; border: none; cursor: pointer;" onclick="app.removeTemplateImage('promo-img-${index}')" title="Remover anexo"><i class="fas fa-trash"></i></button>
+                        </div>
                         <input type="file" id="promo-file-${index}" accept="image/*" style="display: none;" onchange="app.uploadTemplateImage(event, 'promo-img-${index}')">
                     </div>
                 </div>
@@ -187,10 +194,17 @@ export const settingsModule = {
         const file = event.target.files[0];
         if (!file) return;
 
-        const btn = event.target.previousElementSibling;
-        const originalIcon = btn.innerHTML;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-        btn.disabled = true;
+        // The input file is now inside a flex container with the button and the url input div
+        // We can find the button relative to the input file id:
+        const fileInputId = event.target.id;
+        const btn = event.target.parentElement.querySelector('button.btn-primary') || event.target.previousElementSibling;
+        
+        let originalIcon = '';
+        if (btn) {
+            originalIcon = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            btn.disabled = true;
+        }
 
         try {
             const firebase = window.firebase;
@@ -199,8 +213,8 @@ export const settingsModule = {
             await fileRef.put(file);
             const url = await fileRef.getDownloadURL();
             const urlInput = document.getElementById(targetInputId);
-            urlInput.value = url;
-            this.showToast('Imagem carregada com sucesso!');
+            if (urlInput) urlInput.value = url;
+            this.showToast('Imagem adicionada com sucesso!');
 
             if(targetInputId.startsWith('promo-')) {
                 const textArea = urlInput.parentElement.previousElementSibling;
@@ -211,8 +225,20 @@ export const settingsModule = {
             this.showToast('Erro ao carregar imagem: ' + e.message);
         }
 
-        btn.innerHTML = originalIcon;
-        btn.disabled = false;
+        if (btn) {
+            btn.innerHTML = originalIcon;
+            btn.disabled = false;
+        }
         event.target.value = ''; 
+    },
+
+    removeTemplateImage(targetInputId) {
+        const input = document.getElementById(targetInputId);
+        if (input) {
+            input.value = '';
+            if (this.showToast) {
+                this.showToast('Mídia removida. Lembre-se de clicar em Editar/Salvar.');
+            }
+        }
     }
 };

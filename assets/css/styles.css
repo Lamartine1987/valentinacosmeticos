@@ -52,6 +52,7 @@ body { background: var(--bg-color); color: var(--text-main); font-size: 15px; }
     background: var(--primary-light);
     color: var(--primary);
 }
+
 .sidebar-footer { padding: 24px; border-top: 1px solid var(--border); }
 .user-info { display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 14px;}
 .avatar { background: var(--primary); color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold;}
@@ -125,7 +126,7 @@ body { background: var(--bg-color); color: var(--text-main); font-size: 15px; }
 /* Custom Cards */
 .action-list-card, .form-card, .table-card {
     background: var(--surface); border-radius: var(--radius);
-    box-shadow: var(--shadow-md); border: 1px solid var(--border); overflow: hidden;
+    box-shadow: var(--shadow-md); border: 1px solid var(--border); overflow-x: auto;
 }
 .card-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
 .card-header h3 { font-size: 16px; font-weight: 600;}
@@ -417,4 +418,87 @@ body { background: var(--bg-color); color: var(--text-main); font-size: 15px; }
 .sortable-ghost {
     opacity: 0.4;
     background: #E2E8F0;
+}
+
+/* Responsividade Mobile Correta (Fim do Arquivo) */
+@media (max-width: 900px) {
+    .app-container { position: relative; }
+    
+    .sidebar {
+        position: absolute; left: -260px; top: 0; bottom: 0;
+        transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: var(--shadow-lg); z-index: 20;
+    }
+    body.sidebar-open .sidebar { left: 0; }
+    
+    .topbar { padding: 0 16px; }
+    .mobile-menu-toggle { display: block !important; margin-right: 12px; }
+    .search-bar { width: auto; flex: 1; margin-right: 16px; }
+    
+    .sidebar-overlay {
+        display: none; position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.5); z-index: 15;
+    }
+    body.sidebar-open .sidebar-overlay { display: block; }
+
+    /* Forçar Grids para 1 coluna */
+    .stats-grid, .charts-grid, .form-grid, .promo-layout-grid {
+        grid-template-columns: 1fr !important;
+    }
+    .chart-card, .form-group {
+        grid-column: 1 / -1 !important; /* Fix charts/forms overflow */
+    }
+    
+    .page-container { padding: 16px; }
+    
+    /* Headers & Buttons */
+    .page-header { 
+        flex-direction: column !important; 
+        align-items: stretch !important; 
+        gap: 16px; 
+    }
+    .page-header > div:last-child {
+        flex-direction: column !important;
+        width: 100%;
+    }
+    .page-header button {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* Filters Bar */
+    .filters-bar { 
+        flex-direction: column !important; 
+        align-items: stretch !important; 
+        gap: 12px !important;
+    }
+    .filters-bar > div { 
+        width: 100% !important; 
+        flex-wrap: nowrap !important;
+        justify-content: space-between;
+    }
+    .filters-bar select, .filters-bar input { 
+        width: 100% !important; 
+    }
+    .filters-bar input[type="date"], .filters-bar input[type="number"] {
+        flex: 1;
+        min-width: 0;
+        width: auto !important;
+        padding: 10px 8px !important;
+    }
+    
+    .action-item { flex-direction: column; align-items: flex-start; gap: 12px; }
+    
+    /* Formulários e Modais */
+    .form-card { padding: 16px; }
+    .login-card { padding: 24px; margin: 16px; }
+    .modal-content { padding: 24px; width: 90%; margin: 16px; max-height: 90vh; overflow-y: auto;}
+    .history-card { flex-direction: column; align-items: flex-start; gap: 12px; }
+    
+    /* Chat/Whatsapp sidebar expansão total */
+    .chat-sidebar { 
+        position: fixed; top: 0; right: -100%; bottom: 0; width: 100%; max-width: 100%; z-index: 30;
+    }
+    .chat-sidebar.open { right: 0; }
 }

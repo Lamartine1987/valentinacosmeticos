@@ -39,6 +39,7 @@
     </div>
 
     <div class="app-container">
+        <div class="sidebar-overlay" onclick="document.body.classList.remove('sidebar-open')"></div>
         <!-- Sidebar Navigation -->
         <aside class="sidebar">
             <div class="brand">
@@ -99,6 +100,9 @@
         <!-- Main Content Area -->
         <main class="main-content">
             <header class="topbar">
+                <button class="btn-icon mobile-menu-toggle" style="display: none;" onclick="document.body.classList.toggle('sidebar-open')">
+                    <i class="fas fa-bars"></i>
+                </button>
                 <div class="search-bar" style="position: relative;">
                     <i class="fas fa-search"></i>
                     <input type="text" id="global-search" placeholder="Buscar cliente ou produto..." autocomplete="off">
@@ -130,6 +134,7 @@
                         <select id="dash-filter-type" style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer; transition: border-color 0.2s; flex: 1; min-width: 200px;">
                             <option value="all">Todas as Ações Recomendadas</option>
                             <option value="thanks">Somente Agradecimentos</option>
+                            <option value="d15">Somente Acompanhamento (15d)</option>
                             <option value="restock">Somente Reposições</option>
                             <option value="dormant">Somente Saudades (Recuperação)</option>
                             <option value="lost">Somente Ex-clientes (Resgate > 120d)</option>
@@ -563,27 +568,35 @@
                                     </summary>
                                     <div style="padding: 16px;">
                                         <textarea id="tpl-thanks" rows="3" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; resize: vertical; font-family: inherit; font-size: 14px; margin-bottom: 12px;"></textarea>
-                                        <div style="display: flex; align-items: center; gap: 12px;">
+                                        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
                                             <button type="button" class="btn-primary" style="padding: 8px 16px; background: #64748B; font-size: 13px; box-shadow: none;" onclick="document.getElementById('tpl-thanks-file').click()" title="Fazer upload de nova mídia">
                                                 <i class="fas fa-paperclip"></i> Adicionar Imagem/Anexo
                                             </button>
-                                            <input type="url" id="tpl-thanks-img" placeholder="Sem anexo carregado..." style="flex: 1; padding: 8px 12px; border: 1px dashed var(--border); border-radius: 8px; outline: none; font-size: 12px; color: var(--text-muted); background: #F8FAFC;" readonly>
+                                            <div style="display: flex; flex: 1; min-width: 200px; gap: 4px; align-items: center; background: #F8FAFC; border: 1px dashed var(--border); border-radius: 8px; padding-right: 4px;">
+                                                <input type="url" id="tpl-thanks-img" placeholder="Sem anexo..." style="flex: 1; min-width: 0; padding: 8px 12px; border: none; outline: none; font-size: 12px; color: var(--text-muted); background: transparent; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;" readonly>
+                                                <button type="button" class="btn-icon" style="color: #EF4444; font-size: 14px; padding: 4px; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 4px; background: transparent; border: none; cursor: pointer;" onclick="app.removeTemplateImage('tpl-thanks-img')" title="Remover anexo"><i class="fas fa-trash"></i></button>
+                                            </div>
                                             <input type="file" id="tpl-thanks-file" accept="image/*" style="display: none;" onchange="app.uploadTemplateImage(event, 'tpl-thanks-img')">
                                         </div>
                                     </div>
                                 </details>
 
-                                <!-- Accordion 2 -->
+                                <!-- Accordion 2 (Novo 15 dias) -->
                                 <details style="margin-bottom: 12px; border: 1px solid var(--border); border-radius: 8px; background: white;">
                                     <summary style="padding: 16px; font-weight: 600; cursor: pointer; outline: none; background: #F8FAFC; border-bottom: 1px solid var(--border); color: #0F172A; list-style-type: none;">
-                                        <div style="display: flex; align-items: center;"><i class="fas fa-box-open" style="color: #3B82F6; margin-right: 8px; width: 20px; text-align: center;"></i> <span>Reposição (30 a 45 dias)</span></div>
+                                        <div style="display: flex; align-items: center;"><i class="fas fa-calendar-check" style="color: #8B5CF6; margin-right: 8px; width: 20px; text-align: center;"></i> <span>Acompanhamento (15 dias)</span></div>
                                     </summary>
                                     <div style="padding: 16px;">
-                                        <textarea id="tpl-restock" rows="3" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; resize: vertical; font-family: inherit; font-size: 14px; margin-bottom: 12px;"></textarea>
-                                        <div style="display: flex; align-items: center; gap: 12px;">
-                                            <button type="button" class="btn-primary" style="padding: 8px 16px; background: #64748B; font-size: 13px; box-shadow: none;" onclick="document.getElementById('tpl-restock-file').click()"><i class="fas fa-paperclip"></i> Adicionar Imagem/Anexo</button>
-                                            <input type="url" id="tpl-restock-img" placeholder="Sem anexo carregado..." style="flex: 1; padding: 8px 12px; border: 1px dashed var(--border); border-radius: 8px; outline: none; font-size: 12px; color: var(--text-muted); background: #F8FAFC;" readonly>
-                                            <input type="file" id="tpl-restock-file" accept="image/*" style="display: none;" onchange="app.uploadTemplateImage(event, 'tpl-restock-img')">
+                                        <textarea id="tpl-15d" rows="3" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; resize: vertical; font-family: inherit; font-size: 14px; margin-bottom: 12px;"></textarea>
+                                        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                                            <button type="button" class="btn-primary" style="padding: 8px 16px; background: #64748B; font-size: 13px; box-shadow: none;" onclick="document.getElementById('tpl-15d-file').click()">
+                                                <i class="fas fa-paperclip"></i> Adicionar Imagem/Anexo
+                                            </button>
+                                            <div style="display: flex; flex: 1; min-width: 200px; gap: 4px; align-items: center; background: #F8FAFC; border: 1px dashed var(--border); border-radius: 8px; padding-right: 4px;">
+                                                <input type="url" id="tpl-15d-img" placeholder="Sem anexo..." style="flex: 1; min-width: 0; padding: 8px 12px; border: none; outline: none; font-size: 12px; color: var(--text-muted); background: transparent; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;" readonly>
+                                                <button type="button" class="btn-icon" style="color: #EF4444; font-size: 14px; padding: 4px; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 4px; background: transparent; border: none; cursor: pointer;" onclick="app.removeTemplateImage('tpl-15d-img')" title="Remover anexo"><i class="fas fa-trash"></i></button>
+                                            </div>
+                                            <input type="file" id="tpl-15d-file" accept="image/*" style="display: none;" onchange="app.uploadTemplateImage(event, 'tpl-15d-img')">
                                         </div>
                                     </div>
                                 </details>
@@ -591,28 +604,58 @@
                                 <!-- Accordion 3 -->
                                 <details style="margin-bottom: 12px; border: 1px solid var(--border); border-radius: 8px; background: white;">
                                     <summary style="padding: 16px; font-weight: 600; cursor: pointer; outline: none; background: #F8FAFC; border-bottom: 1px solid var(--border); color: #0F172A; list-style-type: none;">
-                                        <div style="display: flex; align-items: center;"><i class="fas fa-heart" style="color: #DB2777; margin-right: 8px; width: 20px; text-align: center;"></i> <span>Recuperação (Saudades > 45 dias)</span></div>
+                                        <div style="display: flex; align-items: center;"><i class="fas fa-box-open" style="color: #3B82F6; margin-right: 8px; width: 20px; text-align: center;"></i> <span>Reposição (30 a 45 dias)</span></div>
                                     </summary>
                                     <div style="padding: 16px;">
-                                        <textarea id="tpl-dormant" rows="3" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; resize: vertical; font-family: inherit; font-size: 14px; margin-bottom: 12px;"></textarea>
-                                        <div style="display: flex; align-items: center; gap: 12px;">
-                                            <button type="button" class="btn-primary" style="padding: 8px 16px; background: #64748B; font-size: 13px; box-shadow: none;" onclick="document.getElementById('tpl-dormant-file').click()"><i class="fas fa-paperclip"></i> Adicionar Imagem/Anexo</button>
-                                            <input type="url" id="tpl-dormant-img" placeholder="Sem anexo carregado..." style="flex: 1; padding: 8px 12px; border: 1px dashed var(--border); border-radius: 8px; outline: none; font-size: 12px; color: var(--text-muted); background: #F8FAFC;" readonly>
-                                            <input type="file" id="tpl-dormant-file" accept="image/*" style="display: none;" onchange="app.uploadTemplateImage(event, 'tpl-dormant-img')">
+                                        <textarea id="tpl-restock" rows="3" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; resize: vertical; font-family: inherit; font-size: 14px; margin-bottom: 12px;"></textarea>
+                                        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                                            <button type="button" class="btn-primary" style="padding: 8px 16px; background: #64748B; font-size: 13px; box-shadow: none;" onclick="document.getElementById('tpl-restock-file').click()">
+                                                <i class="fas fa-paperclip"></i> Adicionar Imagem/Anexo
+                                            </button>
+                                            <div style="display: flex; flex: 1; min-width: 200px; gap: 4px; align-items: center; background: #F8FAFC; border: 1px dashed var(--border); border-radius: 8px; padding-right: 4px;">
+                                                <input type="url" id="tpl-restock-img" placeholder="Sem anexo..." style="flex: 1; min-width: 0; padding: 8px 12px; border: none; outline: none; font-size: 12px; color: var(--text-muted); background: transparent; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;" readonly>
+                                                <button type="button" class="btn-icon" style="color: #EF4444; font-size: 14px; padding: 4px; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 4px; background: transparent; border: none; cursor: pointer;" onclick="app.removeTemplateImage('tpl-restock-img')" title="Remover anexo"><i class="fas fa-trash"></i></button>
+                                            </div>
+                                            <input type="file" id="tpl-restock-file" accept="image/*" style="display: none;" onchange="app.uploadTemplateImage(event, 'tpl-restock-img')">
                                         </div>
                                     </div>
                                 </details>
 
                                 <!-- Accordion 4 -->
+                                <details style="margin-bottom: 12px; border: 1px solid var(--border); border-radius: 8px; background: white;">
+                                    <summary style="padding: 16px; font-weight: 600; cursor: pointer; outline: none; background: #F8FAFC; border-bottom: 1px solid var(--border); color: #0F172A; list-style-type: none;">
+                                        <div style="display: flex; align-items: center;"><i class="fas fa-heart" style="color: #DB2777; margin-right: 8px; width: 20px; text-align: center;"></i> <span>Recuperação (Saudades > 45 dias)</span></div>
+                                    </summary>
+                                    <div style="padding: 16px;">
+                                        <textarea id="tpl-dormant" rows="3" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; resize: vertical; font-family: inherit; font-size: 14px; margin-bottom: 12px;"></textarea>
+                                        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                                            <button type="button" class="btn-primary" style="padding: 8px 16px; background: #64748B; font-size: 13px; box-shadow: none;" onclick="document.getElementById('tpl-dormant-file').click()">
+                                                <i class="fas fa-paperclip"></i> Adicionar Imagem/Anexo
+                                            </button>
+                                            <div style="display: flex; flex: 1; min-width: 200px; gap: 4px; align-items: center; background: #F8FAFC; border: 1px dashed var(--border); border-radius: 8px; padding-right: 4px;">
+                                                <input type="url" id="tpl-dormant-img" placeholder="Sem anexo..." style="flex: 1; min-width: 0; padding: 8px 12px; border: none; outline: none; font-size: 12px; color: var(--text-muted); background: transparent; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;" readonly>
+                                                <button type="button" class="btn-icon" style="color: #EF4444; font-size: 14px; padding: 4px; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 4px; background: transparent; border: none; cursor: pointer;" onclick="app.removeTemplateImage('tpl-dormant-img')" title="Remover anexo"><i class="fas fa-trash"></i></button>
+                                            </div>
+                                            <input type="file" id="tpl-dormant-file" accept="image/*" style="display: none;" onchange="app.uploadTemplateImage(event, 'tpl-dormant-img')">
+                                        </div>
+                                    </div>
+                                </details>
+
+                                <!-- Accordion 5 -->
                                 <details style="border: 1px solid var(--border); border-radius: 8px; background: white;">
                                     <summary style="padding: 16px; font-weight: 600; cursor: pointer; outline: none; background: #F8FAFC; border-bottom: 1px solid var(--border); color: #0F172A; list-style-type: none;">
                                         <div style="display: flex; align-items: center;"><i class="fas fa-user-clock" style="color: #475569; margin-right: 8px; width: 20px; text-align: center;"></i> <span>Resgate Estratégico (> 120 dias)</span></div>
                                     </summary>
                                     <div style="padding: 16px;">
                                         <textarea id="tpl-lost" rows="3" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; resize: vertical; font-family: inherit; font-size: 14px; margin-bottom: 12px;"></textarea>
-                                        <div style="display: flex; align-items: center; gap: 12px;">
-                                            <button type="button" class="btn-primary" style="padding: 8px 16px; background: #64748B; font-size: 13px; box-shadow: none;" onclick="document.getElementById('tpl-lost-file').click()"><i class="fas fa-paperclip"></i> Adicionar Imagem/Anexo</button>
-                                            <input type="url" id="tpl-lost-img" placeholder="Sem anexo carregado..." style="flex: 1; padding: 8px 12px; border: 1px dashed var(--border); border-radius: 8px; outline: none; font-size: 12px; color: var(--text-muted); background: #F8FAFC;" readonly>
+                                        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                                            <button type="button" class="btn-primary" style="padding: 8px 16px; background: #64748B; font-size: 13px; box-shadow: none;" onclick="document.getElementById('tpl-lost-file').click()">
+                                                <i class="fas fa-paperclip"></i> Adicionar Imagem/Anexo
+                                            </button>
+                                            <div style="display: flex; flex: 1; min-width: 200px; gap: 4px; align-items: center; background: #F8FAFC; border: 1px dashed var(--border); border-radius: 8px; padding-right: 4px;">
+                                                <input type="url" id="tpl-lost-img" placeholder="Sem anexo..." style="flex: 1; min-width: 0; padding: 8px 12px; border: none; outline: none; font-size: 12px; color: var(--text-muted); background: transparent; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;" readonly>
+                                                <button type="button" class="btn-icon" style="color: #EF4444; font-size: 14px; padding: 4px; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 4px; background: transparent; border: none; cursor: pointer;" onclick="app.removeTemplateImage('tpl-lost-img')" title="Remover anexo"><i class="fas fa-trash"></i></button>
+                                            </div>
                                             <input type="file" id="tpl-lost-file" accept="image/*" style="display: none;" onchange="app.uploadTemplateImage(event, 'tpl-lost-img')">
                                         </div>
                                     </div>

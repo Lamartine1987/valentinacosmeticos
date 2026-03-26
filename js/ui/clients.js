@@ -286,21 +286,33 @@ export const clientsModule = {
     },
 
     openPromoModal() {
-        const checkboxes = document.querySelectorAll('.page.active .client-checkbox:checked');
+        const checkboxes = document.querySelectorAll('.page.active .client-checkbox:checked, .page.active .sale-checkbox:checked');
         this.selectedClientsForPromo = [];
         if (checkboxes.length > 0) {
             checkboxes.forEach(cb => {
-                const client = this.clients.find(c => c.id === cb.value || (c.phone && c.phone.replace(/\D/g, '') === cb.value.replace(/\D/g, '')));
-                if (client && !this.selectedClientsForPromo.find(x => x.id === client.id)) {
+                let client = null;
+                if (cb.classList.contains('client-checkbox')) {
+                    client = this.clients.find(c => c.id === cb.value || (c.phone && c.phone.replace(/\D/g, '') === cb.value.replace(/\D/g, '')));
+                } else if (cb.classList.contains('sale-checkbox')) {
+                    const sale = this.sales.find(s => s.id === cb.value);
+                    if (sale) {
+                        client = this.clients.find(c => c.phone && sale.phone && c.phone.replace(/\D/g, '') === sale.phone.replace(/\D/g, ''));
+                        if (!client && sale.name && sale.phone) {
+                            client = { id: sale.phone, name: sale.name, phone: sale.phone };
+                        }
+                    }
+                }
+
+                if (client && !this.selectedClientsForPromo.find(x => (x.id === client.id) || (x.phone === client.phone))) {
                     this.selectedClientsForPromo.push(client);
                 }
             });
-        } else {
-            this.showToast('Por favor, selecione pelo menos uma cliente marcando a caixinha na tabela.');
+        }
+        
+        if (this.selectedClientsForPromo.length === 0) {
+            this.showToast('Por favor, selecione pelo menos um cliente válido marcando a caixinha na tabela.');
             return;
         }
-
-        if (this.selectedClientsForPromo.length === 0) return;
         
         const modal = document.getElementById('promo-overlay');
         document.getElementById('promo-target-count').innerText = this.selectedClientsForPromo.length;

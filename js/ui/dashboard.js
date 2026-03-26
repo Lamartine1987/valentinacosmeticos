@@ -19,6 +19,11 @@ export const dashboardModule = {
                     msg: this.parseTemplate('thanks', sale.name, sale.product),
                     status: sale.msg_thanks_status || 'pending'
                 });
+            } else if (diffDays >= 15 && diffDays < 30) {
+                actions.push({ ...sale, type: 'd15', days: diffDays, label: 'Acompanhamento', colorClass: 'tag-promo',
+                    msg: this.parseTemplate('d15', sale.name, sale.product),
+                    status: sale.msg_d15_status || 'pending'
+                });
             } else if (diffDays >= 30 && diffDays <= 45) {
                 actions.push({ ...sale, type: 'restock', days: diffDays, label: 'Reposição', colorClass: 'tag-restock',
                     msg: this.parseTemplate('restock', sale.name, sale.product),

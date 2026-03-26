@@ -231,11 +231,13 @@ exports.triggerDailyFunnels = functions.https.onRequest((req, res) => {
                 return `${yyyy}-${mm}-${dd}`;
             };
 
+            const d15 = new Date(today.getTime() - (15 * 24 * 60 * 60 * 1000));
             const d30 = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
             const d45 = new Date(today.getTime() - (45 * 24 * 60 * 60 * 1000));
             const d120 = new Date(today.getTime() - (120 * 24 * 60 * 60 * 1000));
 
             const targetDates = [
+                { days: 15, dateStr: formatDate(d15), tplName: 'd15', text: templates.d15, img: templates.d15Img },
                 { days: 30, dateStr: formatDate(d30), tplName: 'restock', text: templates.restock, img: templates.restockImg },
                 { days: 45, dateStr: formatDate(d45), tplName: 'dormant', text: templates.dormant, img: templates.dormantImg },
                 { days: 120, dateStr: formatDate(d120), tplName: 'lost', text: templates.lost, img: templates.lostImg }

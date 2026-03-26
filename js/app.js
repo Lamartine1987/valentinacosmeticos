@@ -229,6 +229,7 @@ const app = {
         });
         document.getElementById(`page-${pageId}`).classList.add('active');
         
+        document.body.classList.remove('sidebar-open');
         this.updateActiveViews();
     },
 
@@ -472,6 +473,8 @@ const app = {
                 this.msgTemplates = {
                     thanks: document.getElementById('tpl-thanks').value,
                     thanksImg: document.getElementById('tpl-thanks-img') ? document.getElementById('tpl-thanks-img').value : '',
+                    d15: document.getElementById('tpl-15d') ? document.getElementById('tpl-15d').value : '',
+                    d15Img: document.getElementById('tpl-15d-img') ? document.getElementById('tpl-15d-img').value : '',
                     restock: document.getElementById('tpl-restock').value,
                     restockImg: document.getElementById('tpl-restock-img') ? document.getElementById('tpl-restock-img').value : '',
                     dormant: document.getElementById('tpl-dormant').value,
