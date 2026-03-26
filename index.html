@@ -340,7 +340,13 @@
                     </div>
                     
                     <div class="filters-bar" style="margin-bottom: 24px; display: flex; gap: 16px; flex-wrap: wrap;">
-                        <input type="text" id="filter-client-name" placeholder="Buscar por cliente ou telefone..." style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; flex: 1; min-width: 250px; outline: none; font-size: 14px; transition: border-color 0.2s;" oninput="app.renderClientsList()">
+                        <input type="text" id="filter-client-name" placeholder="Pesquisar por nome ou telefone..." style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; flex: 1; min-width: 250px; outline: none; font-size: 14px; transition: border-color 0.2s;" oninput="app.renderClientsList()">
+                        
+                        <select id="filter-client-sort" style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer; transition: border-color 0.2s;" onchange="app.renderClientsList()">
+                            <option value="recent">Maior Valor em Compras (Padrão)</option>
+                            <option value="az">Ordem Alfabética (A-Z)</option>
+                            <option value="za">Ordem Alfabética (Z-A)</option>
+                        </select>
                         <div style="display: flex; gap: 8px; align-items: center;">
                             <span style="font-size: 13px; color: var(--text-muted); font-weight: 500;"><i class="fas fa-filter" style="margin-right:4px;"></i> Gastou de</span>
                             <input type="number" id="filter-client-min" placeholder="R$ Mín" step="0.01" style="padding: 12px; width: 100px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); transition: border-color 0.2s;" oninput="app.renderClientsList()">
@@ -893,8 +899,8 @@
                     <input type="text" id="promo-product" required placeholder="Ex: Batom Matte Vermelho" list="products-datalist">
                 </div>
                 <div class="form-group">
-                    <label>Link de Compra / Catálogo</label>
-                    <input type="url" id="promo-link" required placeholder="https://wa.me/c/..." >
+                    <label>Link de Compra / Catálogo <span style="font-weight: normal; color: var(--text-muted); font-size: 12px;">(Opcional)</span></label>
+                    <input type="url" id="promo-link" placeholder="https://wa.me/c/..." >
                 </div>
                 
                 <div style="background: #F8FAFC; border: 1px solid var(--border); border-radius: 8px; padding: 16px;">

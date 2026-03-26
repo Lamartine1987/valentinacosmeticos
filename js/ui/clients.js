@@ -226,18 +226,25 @@ export const clientsModule = {
                 totalGasto: totalGasto
             };
         });
+        
+        const searchVal = document.getElementById('filter-client-name') ? document.getElementById('filter-client-name').value.toLowerCase().trim() : '';
 
-        if (filterName) {
-            clientsWithStats = clientsWithStats.filter(c => {
-                const nameMatch = c.name && c.name.toLowerCase().includes(filterName);
-                const cleanFilter = filterName.replace(/\D/g, '');
-                const phoneMatch = cleanFilter.length > 0 && c.phone && c.phone.replace(/\D/g, '').includes(cleanFilter);
+        const sortSelect = document.getElementById('filter-client-sort');
+        const sortVal = sortSelect ? sortSelect.value : 'recent';
+
+        let displayClients = [...clientsWithStats]; // Start with clientsWithStats
+
+        if (searchVal) {
+            const cleanSearchPhone = searchVal.replace(/\D/g, '');
+            displayClients = displayClients.filter(c => {
+                const nameMatch = c.name && c.name.toLowerCase().includes(searchVal);
+                const phoneMatch = cleanSearchPhone.length > 0 && c.phone && c.phone.replace(/\D/g, '').includes(cleanSearchPhone);
                 return nameMatch || phoneMatch;
             });
         }
         
         if (!isNaN(filterMin) || !isNaN(filterMax) || !isNaN(filterQtyMin) || !isNaN(filterQtyMax)) {
-            clientsWithStats = clientsWithStats.filter(c => {
+            displayClients = displayClients.filter(c => {
                 if (!isNaN(filterMin) && c.totalGasto < filterMin) return false;
                 if (!isNaN(filterMax) && c.totalGasto > filterMax) return false;
                 if (!isNaN(filterQtyMin) && c.compras.length < filterQtyMin) return false;
@@ -246,17 +253,23 @@ export const clientsModule = {
             });
         }
         
-        // Ordena por quem gastou mais (descrescente)
-        clientsWithStats.sort((a, b) => b.totalGasto - a.totalGasto);
+        // Aplicar Ordenação
+        if (sortVal === 'recent') {
+            displayClients.sort((a, b) => b.totalGasto - a.totalGasto);
+        } else if (sortVal === 'az') {
+            displayClients.sort((a,b) => (a.name || '').localeCompare(b.name || '', 'pt-BR'));
+        } else if (sortVal === 'za') {
+            displayClients.sort((a,b) => (b.name || '').localeCompare(a.name || '', 'pt-BR'));
+        }
 
-        this.currentFilteredClients = clientsWithStats;
+        this.currentFilteredClients = displayClients;
 
-        if (clientsWithStats.length === 0) {
+        if (displayClients.length === 0) {
             tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #64748B; padding: 32px;">Nenhuma cliente encontrada em sua base do Firebase.</td></tr>`;
             return;
         }
 
-        clientsWithStats.forEach(client => {
+        displayClients.forEach(client => {
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td style="text-align: center;"><input type="checkbox" class="client-checkbox" value="${client.id}" style="cursor: pointer; width: 16px; height: 16px;"></td>
