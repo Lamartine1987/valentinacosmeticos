@@ -27,6 +27,13 @@ body { background: var(--bg-color); color: var(--text-main); font-size: 15px; }
     display: flex;
     flex-direction: column;
     z-index: 10;
+    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1), left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (min-width: 901px) {
+    body.sidebar-collapsed .sidebar {
+        margin-left: -260px;
+    }
 }
 .brand {
     padding: 24px;

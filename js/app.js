@@ -47,6 +47,13 @@ const app = {
         
         // Setup date defaulting to today
         document.getElementById('r-date').valueAsDate = new Date();
+
+        // Apply Sidebar Desktop preference
+        if (window.innerWidth > 900) {
+            if (localStorage.getItem('sidebarPref') === 'collapsed') {
+                document.body.classList.add('sidebar-collapsed');
+            }
+        }
     },
 
     setupGlobalSearch() {
@@ -97,6 +104,15 @@ const app = {
                 resultsBox.classList.remove('show');
             }
         });
+    },
+
+    toggleSidebar() {
+        if (window.innerWidth <= 900) {
+            document.body.classList.toggle('sidebar-open');
+        } else {
+            const isCollapsed = document.body.classList.toggle('sidebar-collapsed');
+            localStorage.setItem('sidebarPref', isCollapsed ? 'collapsed' : 'open');
+        }
     },
 
 
