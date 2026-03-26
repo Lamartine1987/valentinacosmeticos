@@ -115,6 +115,16 @@ const app = {
         }
     },
 
+    registerUnknownBarcode(barcode) {
+        this.cancelProductEdit();
+        setTimeout(() => {
+            const inputName = document.getElementById('p-name');
+            const inputBarcode = document.getElementById('p-barcode');
+            if(inputBarcode) inputBarcode.value = barcode;
+            if(inputName) inputName.focus();
+        }, 100);
+    },
+
 
 
     listenData() {
@@ -179,6 +189,9 @@ const app = {
         
         const clientFilter = document.getElementById('filter-client-name');
         if(clientFilter) clientFilter.addEventListener('input', () => this.renderClientsList());
+
+        const productFilter = document.getElementById('filter-product-catalog');
+        if(productFilter) productFilter.addEventListener('input', () => this.renderProductsList());
 
         const ds = document.getElementById('dash-filter-start');
         const de = document.getElementById('dash-filter-end');
@@ -325,18 +338,32 @@ const app = {
             const items = [];
             let totalQty = 0;
             itemRows.forEach(row => {
-                const prod = row.querySelector('.sale-item-product').value.trim();
+                const prodInput = row.querySelector('.sale-item-product').value.trim();
                 const qty = parseInt(row.querySelector('.sale-item-qty').value) || 1;
-                if (prod) { 
-                    const catalogProd = this.products.find(p => p.name === prod);
+                if (prodInput) { 
+                    const catalogProd = this.products.find(p => p.name === prodInput || p.barcode === prodInput);
+                    const finalName = catalogProd ? catalogProd.name : prodInput;
                     const unitPrice = catalogProd && catalogProd.price ? catalogProd.price : 0;
-                    items.push({ product: prod, quantity: qty, price: unitPrice }); 
+                    items.push({ product: finalName, quantity: qty, price: unitPrice }); 
                     totalQty += qty; 
                 }
             });
 
             if (items.length === 0) {
                 this.showToast('Adicione pelo menos um produto antes de salvar.');
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                return;
+            }
+
+            // Unrecognized product lock
+            const hasUnknown = Array.from(itemRows).some(row => {
+                const prodInput = row.querySelector('.sale-item-product').value.trim();
+                return prodInput && !this.products.find(p => p.name === prodInput || p.barcode === prodInput);
+            });
+
+            if (hasUnknown) {
+                this.showToast('Você tem produtos órfãos (não cadastrados) nesta venda. Remova-os ou cadastre primeiro.', 'error');
                 btn.innerHTML = originalText;
                 btn.disabled = false;
                 return;
@@ -419,6 +446,7 @@ const app = {
 
                 const newProduct = {
                     name: document.getElementById('p-name').value,
+                    barcode: document.getElementById('p-barcode').value.trim(),
                     category: document.getElementById('p-category').value || 'Geral',
                     price: document.getElementById('p-price').value ? parseFloat(document.getElementById('p-price').value) : 0
                 };

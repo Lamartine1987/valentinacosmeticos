@@ -48,7 +48,29 @@ export const salesModule = {
                 const qty = parseInt(qtyInput.value) || 1;
                 
                 // Try case-insensitive exact match
-                const prod = this.products.find(p => p.name && p.name.trim().toLowerCase() === prodName.toLowerCase());
+                const prod = this.products.find(p => 
+                    (p.name && p.name.trim().toLowerCase() === prodName.toLowerCase()) ||
+                    (p.barcode && p.barcode.trim() === prodName.trim())
+                );
+                
+                let warningDiv = row.querySelector('.unrecognized-warning');
+
+                if (prodName.length > 0 && !prod) {
+                    prodInput.style.borderColor = '#EF4444';
+                    
+                    if (!warningDiv) {
+                        warningDiv = document.createElement('div');
+                        warningDiv.className = 'unrecognized-warning';
+                        warningDiv.style.cssText = 'grid-column: 1 / -1; font-size: 13px; color: #EF4444; padding-left: 4px;';
+                        row.appendChild(warningDiv);
+                    }
+                    warningDiv.innerHTML = `⚠️ Produto não cadastrado. <a href="#" onclick="app.registerUnknownBarcode('${prodName}'); return false;" style="color:var(--primary); font-weight:bold; margin-left:8px;">Cadastrar Agora</a>`;
+                } else {
+                    prodInput.style.borderColor = 'var(--border)';
+                    if (warningDiv) {
+                        warningDiv.remove();
+                    }
+                }
                 
                 if (prod && prod.price) {
                     total += parseFloat(prod.price) * qty;

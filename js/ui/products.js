@@ -6,6 +6,7 @@ export const productsModule = {
         if(!prod) return;
         this.editingProductId = id;
         document.getElementById('p-name').value = prod.name || '';
+        document.getElementById('p-barcode').value = prod.barcode || '';
         document.getElementById('p-category').value = prod.category || '';
         document.getElementById('p-price').value = prod.price || '';
         document.getElementById('product-form-title').innerText = "Editar Produto";
@@ -92,17 +93,28 @@ export const productsModule = {
         if(!tbody) return;
         tbody.innerHTML = '';
         
-        if (this.products.length === 0) {
+        const filterInput = document.getElementById('filter-product-catalog');
+        const filterVal = filterInput ? filterInput.value.toLowerCase().trim() : '';
+
+        let displayProducts = this.products;
+        if (filterVal) {
+            displayProducts = this.products.filter(p => 
+                (p.name && p.name.toLowerCase().includes(filterVal)) || 
+                (p.barcode && p.barcode.includes(filterVal))
+            );
+        }
+
+        if (displayProducts.length === 0) {
             tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #64748B; padding: 32px;">Nenhum produto cadastrado no catálogo.</td></tr>`;
             return;
         }
 
-        this.products.forEach(prod => {
+        displayProducts.forEach(prod => {
             const row = document.createElement('tr');
             const price = prod.price ? `R$ ${parseFloat(prod.price).toLocaleString('pt-BR', {minimumFractionDigits: 2})}` : '-';
             row.innerHTML = `
                 <td style="text-align: center;"><input type="checkbox" class="product-checkbox" value="${prod.id}" style="cursor: pointer; width: 16px; height: 16px;"></td>
-                <td><strong>${prod.name}</strong></td>
+                <td><strong>${prod.name}</strong><br><small style="color:var(--text-muted);">${prod.barcode || ''}</small></td>
                 <td><span class="pill" style="pointer-events:none;">${prod.category || 'Geral'}</span></td>
                 <td>${price}</td>
                 <td style="text-align: center;">

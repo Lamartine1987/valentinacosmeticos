@@ -481,6 +481,10 @@
                         </div>
                     </div>
 
+                    <div class="filters-bar" style="display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; align-items: center;">
+                        <input type="text" id="filter-product-catalog" placeholder="Buscar por Nome ou Código de Barras..." style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); transition: border-color 0.2s; flex: 1; min-width: 200px;">
+                    </div>
+
                     <div class="table-card" style="overflow-x: auto;">
                         <table class="data-table">
                             <thead>
@@ -511,6 +515,10 @@
                                 <div class="form-group" style="grid-column: span 2;">
                                     <label>Nome do Produto</label>
                                     <input type="text" id="p-name" required placeholder="Ex: Kit SkinCare Ouro">
+                                </div>
+                                <div class="form-group">
+                                    <label>Código de Barras (Opcional)</label>
+                                    <input type="text" id="p-barcode" placeholder="Ex: 7890123456" autocomplete="off">
                                 </div>
                                 <div class="form-group">
                                     <label>Categoria (Opcional)</label>
