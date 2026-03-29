@@ -80,6 +80,10 @@
                     <i class="fas fa-cog"></i>
                     <span>Configurações</span>
                 </a>
+                <a href="#" class="nav-item admin-only" data-page="audit" style="display: none;">
+                    <i class="fas fa-clipboard-list"></i>
+                    <span>Auditoria</span>
+                </a>
             </nav>
             <div class="sidebar-footer">
                 <div class="user-info" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
@@ -329,9 +333,15 @@
                                     </select>
                                 </div>
                             </div>
-                            <div class="form-actions">
-                                <button type="submit" class="btn-primary" style="width: 100%; padding: 14px; font-size: 16px; justify-content: center;">
-                                    <i class="fas fa-save"></i> Salvar e Iniciar Esteira de Relacionamento
+                            <div class="form-actions" style="display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap;">
+                                <button type="button" class="btn-primary" style="background: white; color: var(--text-muted); border: 1px solid var(--border); box-shadow: none; justify-content: center; flex: 1; min-width: 120px; font-size: 15px;" onclick="app.clearSaleForm()">
+                                    <i class="fas fa-eraser"></i> Limpar
+                                </button>
+                                <button type="button" id="btn-cancel-sale" class="btn-primary" style="background: #FFF1F2; color: #E11D48; border: 1px solid #FECDD3; box-shadow: none; justify-content: center; flex: 1; min-width: 150px; font-size: 15px; display: none;" onclick="app.cancelSaleProcess()">
+                                    <i class="fas fa-undo"></i> Cancelar Ganho
+                                </button>
+                                <button type="submit" class="btn-primary" style="flex: 2; min-width: 250px; padding: 14px; font-size: 16px; justify-content: center;">
+                                    <i class="fas fa-save"></i> Registrar Venda
                                 </button>
                             </div>
                         </form>
@@ -773,31 +783,16 @@
                             <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 16px;">Configure a API que disparará as mensagens silenciosamente (Evolution API, Z-API, ou compatíveis).</p>
                             
                             <form id="form-api-settings">
-                                <div class="form-grid">
-                                    <div class="form-group" style="grid-column: span 2;">
-                                        <label>Serviço da API</label>
-                                        <select id="api-provider" required>
-                                            <option value="evolution">Evolution API / WhaConnect</option>
-                                            <option value="zapi">Z-API / ChatPro</option>
-                                            <option value="webhook">Webhook Genérico Externo</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group" style="grid-column: span 2;">
-                                        <label>URL / Webhook Endpoint de Disparo</label>
-                                        <input type="url" id="api-url" placeholder="https://api.empresa.com/message/sendText">
-                                    </div>
-                                    <div class="form-group" style="grid-column: span 2;">
-                                        <label>Token Global de Autenticação</label>
-                                        <input type="text" id="api-token" placeholder="Bearer Token ou API Key">
-                                    </div>
-                                    <div class="form-group" style="display: flex; align-items: center; gap: 8px; grid-column: span 2;">
-                                        <input type="checkbox" id="api-active" style="width: 20px; height: 20px;">
-                                        <label for="api-active" style="margin: 0; cursor: pointer; font-weight: 500;">Habilitar o disparo automático do Funil</label>
-                                    </div>
+                                <div id="api-instances-container" style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px;">
+                                    <!-- JS will populate -->
                                 </div>
-                                <div class="form-actions" style="margin-top: 24px;">
+                                <button type="button" class="btn-primary" style="background: #F8FAFC; color: var(--primary); border: 2px dashed var(--primary-light); box-shadow: none; width: 100%; justify-content: center; padding: 12px; margin-bottom: 24px;" onclick="app.addApiInstance()">
+                                    <i class="fas fa-plus"></i> Adicionar Configuração de WhatsApp
+                                </button>
+                                
+                                <div class="form-actions" style="margin-top: 24px; border-top: 1px solid var(--border); padding-top: 24px;">
                                     <button type="submit" class="btn-primary" style="justify-content: center; width: 100%; padding: 14px; font-size: 16px;">
-                                        <i class="fas fa-plug"></i> Conectar e Salvar
+                                        <i class="fas fa-plug"></i> Salvar Conexões
                                     </button>
                                 </div>
                             </form>
@@ -834,6 +829,57 @@
                         </div>
                     </div>
                </section>
+
+                <!-- Auditoria Page -->
+                <section class="page admin-only" id="page-audit" style="display: none;">
+                    <div class="page-header" style="flex-direction: column; align-items: flex-start; gap: 16px;">
+                        <div>
+                            <h2>Logs de Auditoria</h2>
+                            <p>Rastreio ativo de alterações de dados de clientes, vendas e configurações.</p>
+                        </div>
+                        <div class="filters-bar" style="width: 100%; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; border-top: 1px solid var(--border); padding-top: 16px;">
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <i class="fas fa-calendar-alt" style="color: var(--text-muted); font-size: 14px;"></i>
+                                <input type="date" id="audit-filter-start" onchange="app.loadAuditLogs()" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; outline: none; background: white; font-size: 13px; color: var(--text-main);">
+                                <span style="color: var(--text-muted); font-size: 13px;">até</span>
+                                <input type="date" id="audit-filter-end" onchange="app.loadAuditLogs()" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; outline: none; background: white; font-size: 13px; color: var(--text-main);">
+                            </div>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <i class="fas fa-box" style="color: var(--text-muted); font-size: 14px; margin-left: 8px;"></i>
+                                <select id="audit-filter-resource" onchange="app.loadAuditLogs()" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; outline: none; background: white; font-size: 13px; color: var(--text-main); cursor: pointer; min-width: 150px;">
+                                    <option value="all">Todos os Recursos</option>
+                                    <option value="client">Cliente</option>
+                                    <option value="sale">Venda Histórico</option>
+                                    <option value="funnel">Funil de Vendas</option>
+                                </select>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <i class="fas fa-user-tie" style="color: var(--text-muted); font-size: 14px; margin-left: 8px;"></i>
+                                <input type="text" id="audit-filter-user" placeholder="Nome do Vendedor..." oninput="app.loadAuditLogs()" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; outline: none; background: white; font-size: 13px; color: var(--text-main); min-width: 150px;">
+                            </div>
+                            <button class="btn-secondary" onclick="document.getElementById('audit-filter-start').value=''; document.getElementById('audit-filter-end').value=''; document.getElementById('audit-filter-resource').value='all'; document.getElementById('audit-filter-user').value=''; app.loadAuditLogs();" style="padding: 6px 12px; font-size: 12px; border-radius: 6px; background: transparent; color: #EF4444; border: 1px solid #EF4444; cursor: pointer; margin-left: auto;">Limpar Filtros</button>
+                        </div>
+                    </div>
+                    <div class="form-card">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Data / Hora</th>
+                                    <th>Recurso</th>
+                                    <th>Colaborador (Vendedor)</th>
+                                    <th>Descrição da Alteração</th>
+                                </tr>
+                            </thead>
+                            <tbody id="audit-logs-body">
+                                <tr>
+                                    <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 32px;">
+                                        <i class="fas fa-spinner fa-spin" style="margin-right: 8px;"></i> Carregando logs de auditoria...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
 
                 <!-- Funil de Vendas Page -->
                 <section class="page" id="page-funnel" style="height: calc(100vh - 100px);">

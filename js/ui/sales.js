@@ -88,6 +88,13 @@ export const salesModule = {
     },
 
     deleteSale(id) {
+        if (this.currentUserProfile && this.currentUserProfile.role !== 'admin') {
+            if (typeof this.showToast === 'function') this.showToast('Sem permissão para excluir vendas do histórico. Contate um Administrador.', 'error');
+            const s = this.sales.find(x => x.id === id);
+            if (typeof this.saveAuditLog === 'function') this.saveAuditLog('sale', 'attempt_delete', id, `Tentativa de exclusão no Histórico bloqueada.<br><strong>Cliente:</strong> ${s ? s.name+' ('+s.phone+')' : id}<br><strong>Item:</strong> ${s ? s.product : 'Desconhecido'}`);
+            return;
+        }
+
         this.confirmAction(
             "Excluir Venda",
             "Tem certeza que deseja excluir esta venda do histórico? Esta ação não pode ser desfeita.",
@@ -109,6 +116,13 @@ export const salesModule = {
     },
 
     deleteSelectedSales() {
+        if (this.currentUserProfile && this.currentUserProfile.role !== 'admin') {
+            if (typeof this.showToast === 'function') this.showToast('Sem permissão para exclusões em massa de Vendas.', 'error');
+            const checkboxes = document.querySelectorAll('.sale-checkbox:checked');
+            if (typeof this.saveAuditLog === 'function') this.saveAuditLog('sale', 'attempt_delete', 'Lote', `Tentativa de exclusão em massa bloqueada.<br><strong>Quantidade Selecionada:</strong> ${checkboxes.length} linha(s) de histórico.`);
+            return;
+        }
+
         const checkboxes = document.querySelectorAll('.sale-checkbox:checked');
         const idsToDelete = Array.from(checkboxes).map(cb => cb.value);
         if (idsToDelete.length === 0) {

@@ -25,6 +25,13 @@ export const clientsModule = {
     },
 
     async deleteClient(id) {
+        if (this.currentUserProfile && this.currentUserProfile.role !== 'admin') {
+            if (typeof this.showToast === 'function') this.showToast('Você (vendedor) não tem permissão para excluir um cliente. Apenas edições são permitidas.', 'error');
+            const c = this.clients.find(x => x.id === id);
+            if (typeof this.saveAuditLog === 'function') this.saveAuditLog('client', 'attempt_delete', id, `Tentativa de exclusão bloqueada.<br><strong>Alvo:</strong> ${c ? c.name+' ('+c.phone+')' : id}`);
+            return;
+        }
+
         this.confirmAction(
             "Excluir Cliente",
             "Tem certeza que deseja excluir este cliente? Toda a relação será perdida definitivamente.",
@@ -41,6 +48,13 @@ export const clientsModule = {
     },
 
     async deleteSelectedClients() {
+        if (this.currentUserProfile && this.currentUserProfile.role !== 'admin') {
+            if (typeof this.showToast === 'function') this.showToast('Ação bloqueada. Apenas Admins podem realizar exclusão em lote de clientes.', 'error');
+            const checkboxes = document.querySelectorAll('.page.active .client-checkbox:checked');
+            if (typeof this.saveAuditLog === 'function') this.saveAuditLog('client', 'attempt_delete', 'Lote', `Tentativa de exclusão em massa bloqueada.<br><strong>Quantidade Selecionada:</strong> ${checkboxes.length} cliente(s) simultâneos.`);
+            return;
+        }
+
         const checkboxes = document.querySelectorAll('.page.active .client-checkbox:checked');
         if (checkboxes.length === 0) {
             if (typeof this.showToast === 'function') this.showToast('Selecione pelo menos um cliente para excluir.', 'warning');

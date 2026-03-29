@@ -1,11 +1,37 @@
 import { db } from '../config/firebase.js';
 
 export const apiModule = {
-    async sendWhatsAppMessage(phone, message, imageUrl = '') {
-        if(!this.apiSettings || !this.apiSettings.url) return false;
+    async sendWhatsAppMessage(phone, message, imageUrl = '', targetStoreId = 'matriz') {
+        const settings = this.apiSettings;
+        if (!settings) return false;
+        
+        let provider = settings.provider;
+        let apiUrl = settings.url;
+        let apiToken = settings.token;
+
+        if (settings.instances && Array.isArray(settings.instances) && settings.instances.length > 0) {
+             let inst = settings.instances.find(i => i.storeId === targetStoreId);
+             if (!inst || !inst.active) {
+                 inst = settings.instances.find(i => i.storeId === 'matriz'); // fallback
+             }
+             if (inst && inst.active) {
+                 provider = inst.provider;
+                 apiUrl = inst.url;
+                 apiToken = inst.token;
+             } else {
+                 console.log("Instância API desabilitada ou incompatível para a loja:", targetStoreId);
+                 return false;
+             }
+        } else if (!settings.active) {
+            console.log("API master global desabilitada.");
+            return false;
+        }
+
+        if(!apiUrl) return false;
+
         try {
             console.log("=== INICIANDO ENVIO DE WHATSAPP ===");
-            console.log("Provedor configurado:", this.apiSettings.provider);
+            console.log("Provedor configurado:", provider, "Loja Alvo:", targetStoreId);
             
             const isGroup = phone.includes('-') || phone.includes('@g.us');
             let destPhone = phone;
@@ -15,14 +41,13 @@ export const apiModule = {
             }
 
             let body = {};
-            let finalUrl = this.apiSettings.url;
+            let finalUrl = apiUrl;
             let finalMediaPayload = "";
             let finalMessage = message;
 
             if (imageUrl && imageUrl.trim() !== '') {
                 finalMessage += `\n\n${imageUrl.trim()}`; // Fallback suffix
                 
-                // For APIs, we download the image and convert to Base64 to avoid URL parsing issues on their end (very common with Firebase token URLs)
                 try {
                     const response = await fetch(imageUrl.trim());
                     const blob = await response.blob();
@@ -33,12 +58,12 @@ export const apiModule = {
                         reader.readAsDataURL(blob);
                     });
                 } catch (e) {
-                    console.warn("Falha ao converter imagem para base64. Usando URL original.", e);
+                    console.warn("Falha ao converter imagem para base64.", e);
                     finalMediaPayload = imageUrl.trim();
                 }
             }
             
-            if(this.apiSettings.provider === 'evolution') {
+            if(provider === 'evolution') {
                 if (finalMediaPayload !== '') {
                     finalUrl = finalUrl.replace('/sendText', '/sendMedia');
                     body = { 
@@ -52,7 +77,7 @@ export const apiModule = {
                 } else {
                     body = { number: destPhone, textMessage: { text: message } };
                 }
-            } else if (this.apiSettings.provider === 'zapi') {
+            } else if (provider === 'zapi') {
                 if (finalMediaPayload !== '') {
                     finalUrl = finalUrl.replace('/send-text', '').replace(/\/$/, '') + '/send-image';
                     body = { phone: destPhone, image: finalMediaPayload, caption: message, message: message }; 
@@ -63,17 +88,15 @@ export const apiModule = {
                     }
                 }
             } else {
-                body = { phone: destPhone, message: finalMessage }; // webhook genérico
+                body = { phone: destPhone, message: finalMessage }; 
             }
             
             const headers = { 'Content-Type': 'application/json' };
-            if (this.apiSettings.token) {
-                const t = this.apiSettings.token;
+            if (apiToken) {
+                const t = apiToken;
                 headers['Authorization'] = t.toLowerCase().startsWith('bearer') ? t : `Bearer ${t}`;
                 headers['apikey'] = t; 
-                if(this.apiSettings.provider === 'zapi') {
-                    headers['Client-Token'] = t;
-                }
+                if(provider === 'zapi') headers['Client-Token'] = t;
             }
             
             console.log("URL Final disparada:", finalUrl);

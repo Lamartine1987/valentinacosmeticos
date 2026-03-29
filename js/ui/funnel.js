@@ -89,6 +89,7 @@ export const funnelModule = {
                         `Oba! Negócio com ${lead.name} ganho!\nDeseja registrar a venda agora?`, 
                         () => {
                             return new Promise(resolve => {
+                                this.originLeadWonId = leadId;
                                 this.navigateTo('register');
                                 setTimeout(() => {
                                     if(document.getElementById('r-name')) {
@@ -96,6 +97,10 @@ export const funnelModule = {
                                     }
                                     if(document.getElementById('r-phone')) {
                                         document.getElementById('r-phone').value = lead.phone || '';
+                                    }
+                                    const btnCancel = document.getElementById('btn-cancel-sale');
+                                    if(btnCancel) {
+                                        btnCancel.style.display = 'flex';
                                     }
                                     resolve();
                                 }, 100);
@@ -279,6 +284,13 @@ export const funnelModule = {
     },
 
     deleteSelectedFunnelCards() {
+        if (this.currentUserProfile && this.currentUserProfile.role !== 'admin') {
+            if (typeof this.showToast === 'function') this.showToast('Sem permissão para excluir conversas. Aterrompa um Admin.', 'error');
+            const checked = document.querySelectorAll('.funnel-checkbox:checked');
+            if (typeof this.saveAuditLog === 'function') this.saveAuditLog('funnel', 'attempt_delete', 'Lote', `Tentativa de exclusão em massa bloqueada.<br><strong>Quantidade Selecionada:</strong> ${checked.length} conversa(s) de funil.`);
+            return;
+        }
+
         const checked = document.querySelectorAll('.funnel-checkbox:checked');
         if (checked.length === 0) return;
         
@@ -445,6 +457,13 @@ ${groupSenderHtml}${displayHtml}
 
     async deleteLeadCard(id) {
         if (!id) return;
+        
+        if (this.currentUserProfile && this.currentUserProfile.role !== 'admin') {
+            if (typeof this.showToast === 'function') this.showToast('Sem permissão para excluir histórico. Contate um Admin.', 'error');
+            if (typeof this.saveAuditLog === 'function') this.saveAuditLog('funnel', 'attempt_delete', id, `Tentativa de exclusão individual bloqueada.<br><strong>Conversa:</strong> ${id}`);
+            return;
+        }
+
         this.confirmAction(
             "Excluir Conversa",
             "Tem certeza que deseja excluir esta conversa do funil?\n\nEsta ação não poderá ser desfeita.",
@@ -537,9 +556,13 @@ ${groupSenderHtml}${displayHtml}
             this.cancelUpload();
         }
 
+        // Recuperar a loja que esse cliente pertence para rotear a mensagem pela API correta
+        const currentLead = this.leadsList.find(l => l.id === this.activeLeadId);
+        const sourceStore = currentLead ? (currentLead.storeId || 'matriz') : 'matriz';
+
         // Despacha a mensagem usando a API conectada
         if (typeof this.sendWhatsAppMessage === 'function') {
-            const success = await this.sendWhatsAppMessage(this.activeLeadPhone, sentText, imageUrl);
+            const success = await this.sendWhatsAppMessage(this.activeLeadPhone, sentText, imageUrl, sourceStore);
             if (!success) {
                 if(this.showToast) this.showToast('Erro ao enviar mensagem pelo WhatsApp.', 'error');
                 return;

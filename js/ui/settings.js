@@ -7,14 +7,26 @@ export const settingsModule = {
             const docApi = await db.collection("settings").doc("whatsapp_api").get();
             if (docApi.exists) {
                 this.apiSettings = docApi.data();
-                const p = document.getElementById('api-provider');
-                const u = document.getElementById('api-url');
-                const t = document.getElementById('api-token');
-                const a = document.getElementById('api-active');
-                if(p) p.value = this.apiSettings.provider || 'evolution';
-                if(u) u.value = this.apiSettings.url || '';
-                if(t) t.value = this.apiSettings.token || '';
-                if(a) a.checked = !!this.apiSettings.active;
+                this.apiSettings = docApi.data();
+                if (!this.apiSettings.instances) {
+                    this.apiSettings.instances = [];
+                    if (this.apiSettings.url) {
+                        this.apiSettings.instances.push({
+                            id: Date.now(),
+                            storeId: 'matriz',
+                            provider: this.apiSettings.provider || 'evolution',
+                            url: this.apiSettings.url,
+                            token: this.apiSettings.token || '',
+                            active: !!this.apiSettings.active
+                        });
+                    }
+                }
+                if(this.apiSettings.instances.length === 0) {
+                    this.apiSettings.instances.push({id: Date.now(), storeId: 'matriz', provider: 'zapi', url: '', token: '', active: true});
+                }
+                if (typeof this.renderApiInstances === 'function') {
+                    this.renderApiInstances();
+                }
             }
             
             this.loadTeamList();
@@ -96,10 +108,14 @@ export const settingsModule = {
     },
 
     removePromoTemplate(index) {
-        if (confirm('Tem certeza que deseja remover este modelo de campanha?')) {
-            this.msgTemplates.promo.splice(index, 1);
-            this.renderPromoTemplates();
-        }
+        this.confirmAction(
+            "Excluir Modelo de Campanha",
+            "Tem certeza que deseja remover este modelo de campanha promocional?",
+            async () => {
+                this.msgTemplates.promo.splice(index, 1);
+                this.renderPromoTemplates();
+            }
+        );
     },
 
     updateLivePreview(text, imageUrl) {
@@ -131,6 +147,86 @@ export const settingsModule = {
                 previewImg.src = '';
             }
         }
+    },
+
+    renderApiInstances() {
+        const container = document.getElementById('api-instances-container');
+        if (!container) return;
+        container.innerHTML = '';
+        if (!this.apiSettings || !Array.isArray(this.apiSettings.instances)) return;
+
+        this.apiSettings.instances.forEach((inst, index) => {
+            const div = document.createElement('div');
+            div.style.cssText = "border: 1px solid var(--border); border-radius: 8px; padding: 16px; background: white; position: relative;";
+            
+            // Lógica para nome visual da loja
+            let storeLabel = 'Matriz Principal';
+            if (inst.storeId === 'filial_1') storeLabel = 'Filial 1';
+            if (inst.storeId === 'filial_2') storeLabel = 'Filial 2';
+            
+            div.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 16px;">
+                    <h4 style="margin: 0; font-size: 15px; color: var(--text-main);"><i class="fas fa-store" style="color: var(--primary); margin-right: 6px;"></i> Conexão: ${storeLabel}</h4>
+                    <button type="button" class="btn-icon" style="color: #EF4444; font-size: 14px;" onclick="app.removeApiInstance(${index})" title="Remover Instância"><i class="fas fa-trash"></i> Remover</button>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group" style="grid-column: span 2;">
+                        <label>Loja Vinculada</label>
+                        <select class="api-v-store" required>
+                            <option value="matriz" ${inst.storeId === 'matriz' ? 'selected' : ''}>Matriz (Sede Principal)</option>
+                            <option value="filial_1" ${inst.storeId === 'filial_1' ? 'selected' : ''}>Filial 1</option>
+                            <option value="filial_2" ${inst.storeId === 'filial_2' ? 'selected' : ''}>Filial 2</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="grid-column: span 2;">
+                        <label>Serviço da API</label>
+                        <select class="api-v-provider" required>
+                            <option value="zapi" ${inst.provider === 'zapi' ? 'selected' : ''}>Z-API / ChatPro</option>
+                            <option value="evolution" ${inst.provider === 'evolution' ? 'selected' : ''}>Evolution API / WhaConnect</option>
+                            <option value="webhook" ${inst.provider === 'webhook' ? 'selected' : ''}>Webhook Externo</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="grid-column: span 2;">
+                        <label>URL / Webhook Endpoint</label>
+                        <input type="url" class="api-v-url" placeholder="https://api..." value="${inst.url || ''}" required>
+                    </div>
+                    <div class="form-group" style="grid-column: span 2;">
+                        <label>Token de Autenticação</label>
+                        <input type="text" class="api-v-token" placeholder="Bearer Token" value="${inst.token || ''}">
+                    </div>
+                    <div class="form-group" style="display: flex; align-items: center; gap: 8px; grid-column: span 2;">
+                        <input type="checkbox" class="api-v-active" style="width: 20px; height: 20px;" ${inst.active ? 'checked' : ''}>
+                        <label style="margin: 0; cursor: pointer; font-weight: 500;">Habilitar envios automáticos por esta instância</label>
+                    </div>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    },
+
+    addApiInstance() {
+        if (!this.apiSettings) this.apiSettings = {};
+        if (!Array.isArray(this.apiSettings.instances)) this.apiSettings.instances = [];
+        this.apiSettings.instances.push({
+            id: Date.now(),
+            storeId: 'filial_1',
+            provider: 'zapi',
+            url: '',
+            token: '',
+            active: true
+        });
+        this.renderApiInstances();
+    },
+
+    removeApiInstance(index) {
+        this.confirmAction(
+            "Excluir Instância Z-API",
+            "Atenção: Os disparos para clientes desta loja falharão ou serão roteados para a Matriz se você excluir e não repor. Confirma a exclusão?",
+            async () => {
+                this.apiSettings.instances.splice(index, 1);
+                this.renderApiInstances();
+            }
+        );
     },
 
     switchSettingsTab(tabId) {

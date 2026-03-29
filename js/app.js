@@ -371,6 +371,187 @@ const app = {
         
         document.body.classList.remove('sidebar-open');
         this.updateActiveViews();
+
+        // Ocultar botão "Cancelar Ganho" se sair da tela de Registro para evitar confusões de estado
+        if (pageId !== 'register') {
+            const btnCancel = document.getElementById('btn-cancel-sale');
+            if (btnCancel) btnCancel.style.display = 'none';
+        }
+
+        if (pageId === 'audit') {
+            this.loadAuditLogs();
+        }
+    },
+
+    clearSaleForm() {
+        const form = document.getElementById('form-sale');
+        if (form) form.reset();
+        
+        const dateInput = document.getElementById('r-date');
+        if (dateInput) dateInput.valueAsDate = new Date();
+        
+        const cont = document.getElementById('sale-items-container');
+        if (cont) { 
+            cont.innerHTML = ''; 
+            if(typeof this.addSaleItem === 'function') this.addSaleItem(); 
+        }
+        
+        // Se limpou manualmente, desvincula do funil anterior pra não bugar próximos saves
+        const btnCancel = document.getElementById('btn-cancel-sale');
+        if (btnCancel && btnCancel.style.display !== 'none') {
+            btnCancel.style.display = 'none';
+            if(this.originLeadWonId) {
+                this.originLeadWonId = null; 
+            }
+        }
+    },
+
+    async cancelSaleProcess() {
+        if (!this.originLeadWonId) {
+            this.clearSaleForm();
+            return;
+        }
+
+        this.confirmAction(
+            "Cancelar Venda no Funil?",
+            "Atenção: Ao prosseguir, o registro de venda será descartado e o Card deste cliente retornará automaticamente para a coluna 'Em Negociação' no seu Funil de Vendas para que você possa continuar o atendimento.\n\nConfirma essa ação?",
+            async () => {
+                try {
+                    // Reverter Lead do status 'won' para 'negotiation'
+                    await db.collection('leads').doc(this.originLeadWonId).update({
+                        status: 'negotiation',
+                        updatedAt: new Date().toISOString()
+                    });
+
+                    this.originLeadWonId = null;
+                    this.clearSaleForm();
+                    this.navigateTo('funnel');
+                    this.showToast('Ganho desfeito e cliente retornado para Em Negociação!', 'info');
+                    
+                } catch (error) {
+                    console.error("Erro ao cancelar venda do funil:", error);
+                    this.showToast('Erro técnico ao desfazer o ganho no funil.', 'error');
+                }
+            },
+            {
+                confirmText: "Sim, Cancelar Venda",
+                confirmColor: "#E11D48",
+                iconClass: "fas fa-undo",
+                iconBg: "#FFE4E6",
+                iconColor: "#E11D48"
+            }
+        );
+    },
+
+    async saveAuditLog(resource, action, resourceId, details) {
+        if (!db) return;
+        try {
+            const userProfile = this.currentUserProfile || { name: 'Sistema', role: 'system' };
+            await db.collection('audit_logs').add({
+                resource,
+                action,
+                resourceId,
+                details,
+                userName: userProfile.name || 'Desconhecido',
+                userEmail: this.user ? this.user.email : 'Unknown',
+                userRole: userProfile.role || 'seller',
+                timestamp: new Date().toISOString()
+            });
+        } catch (e) {
+            console.error("Falha ao registar log de auditoria", e);
+        }
+    },
+
+    async loadAuditLogs() {
+        if (!db || !this.currentUserProfile || this.currentUserProfile.role !== 'admin') {
+            const tbody = document.getElementById('audit-logs-body');
+            if(tbody) tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 32px;">Sem permissão para visualizar auditorias.</td></tr>`;
+            return;
+        }
+
+        try {
+            const filterStart = (document.getElementById('audit-filter-start') || {value:''}).value;
+            const filterEnd = (document.getElementById('audit-filter-end') || {value:''}).value;
+            const filterResource = (document.getElementById('audit-filter-resource') || {value:'all'}).value;
+            let filterUser = (document.getElementById('audit-filter-user') || {value:''}).value;
+            if (filterUser) filterUser = filterUser.toLowerCase().trim();
+
+            // Usando limit 300 para garantir busca sem estourar quotas do firebase
+            const snapshot = await db.collection('audit_logs').orderBy('timestamp', 'desc').limit(300).get();
+            const tbody = document.getElementById('audit-logs-body');
+            if(!tbody) return;
+            
+            let html = '';
+            let count = 0;
+
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                const d = new Date(data.timestamp);
+                
+                // Application of Filters
+                if (filterStart) {
+                    const [y, m, dNum] = filterStart.split('-');
+                    const startFull = new Date(y, m-1, dNum);
+                    startFull.setHours(0,0,0,0);
+                    if (d < startFull) return;
+                }
+                if (filterEnd) {
+                    const [y, m, dNum] = filterEnd.split('-');
+                    const endFull = new Date(y, m-1, dNum);
+                    endFull.setHours(23,59,59,999);
+                    if (d > endFull) return;
+                }
+                if (filterResource !== 'all' && data.resource !== filterResource) return;
+                if (filterUser && data.userName && !data.userName.toLowerCase().includes(filterUser)) return;
+
+                count++;
+                
+                let actionBadge = `<span style="background:#E2E8F0; color:#475569; padding:2px 6px; border-radius:4px; font-size:11px; font-weight:600;"><i class="fas fa-pen"></i> Edição</span>`;
+                if(data.action === 'delete') {
+                    actionBadge = `<span style="background:#FEE2E2; color:#EF4444; padding:2px 6px; border-radius:4px; font-size:11px; font-weight:600;"><i class="fas fa-trash"></i> Exclusão</span>`;
+                } else if (data.action === 'attempt_delete') {
+                    actionBadge = `<span style="background:#FEF3C7; color:#D97706; padding:2px 6px; border-radius:4px; font-size:11px; font-weight:600;"><i class="fas fa-shield-alt"></i> Exclusão Interceptada</span>`;
+                }
+
+                let roleText = data.userRole;
+                if(roleText === 'seller') roleText = 'Vendedor';
+                if(roleText === 'admin') roleText = 'Administrador';
+
+                let resourceText = data.resource;
+                if(resourceText === 'client') resourceText = 'Cliente';
+                if(resourceText === 'sale') resourceText = 'Venda';
+                if(resourceText === 'funnel') resourceText = 'Funil';
+
+                html += `
+                    <tr>
+                        <td style="white-space:nowrap; font-size:13px; color:var(--text-muted)">
+                            ${d.toLocaleDateString('pt-BR')} <br/><small>${d.toLocaleTimeString('pt-BR')}</small>
+                        </td>
+                        <td style="text-transform: capitalize;"><strong>${resourceText}</strong><br/>${actionBadge}</td>
+                        <td>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <div class="avatar" style="width:28px; height:28px; font-size:11px;">${(data.userName || 'U').substring(0,2).toUpperCase()}</div>
+                                <div style="display:flex; flex-direction:column;">
+                                    <strong>${data.userName}</strong>
+                                    <span style="font-size:11px; color:var(--text-muted)">Perfil: ${roleText}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td style="font-size: 13px; color: var(--text-main); max-width: 300px; white-space: normal; line-height: 1.4;">
+                            ${data.details}
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            if (count === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 32px;">Nenhuma alteração encontrada para os filtros aplicados.</td></tr>`;
+            } else {
+                tbody.innerHTML = html;
+            }
+        } catch(e) {
+            console.error("Erro ao carregar logs", e);
+        }
     },
 
     setupNavigation() {
@@ -520,9 +701,16 @@ const app = {
             const saleId = await this.saveSale(newSale);
             
             // Auto send WhatsApp Message if API is active
-            if (this.apiSettings && this.apiSettings.active && saleId) {
+            let isApiActive = false;
+            if (this.apiSettings) {
+                if (this.apiSettings.active) isApiActive = true;
+                if (this.apiSettings.instances && this.apiSettings.instances.some(i => i.active)) isApiActive = true;
+            }
+
+            if (isApiActive && saleId) {
                 const actionMsg = this.parseTemplate('thanks', newSale.name, newSale.product);
-                this.sendWhatsAppMessage(newSale.phone, actionMsg, this.msgTemplates.thanksImg).then(async (success) => {
+                const targetStore = newSale.overrideStoreId || (this.currentUserProfile ? this.currentUserProfile.storeId : 'matriz');
+                this.sendWhatsAppMessage(newSale.phone, actionMsg, this.msgTemplates.thanksImg, targetStore).then(async (success) => {
                     const status = success ? 'sent' : 'failed';
                     await db.collection('sales').doc(saleId).update({ msg_thanks_status: status });
                     if(success) this.showToast('Mensagem enviada via API WhatsApp!');
@@ -531,11 +719,10 @@ const app = {
             
             btn.innerHTML = originalText;
             btn.disabled = false;
-            e.target.reset();
-            document.getElementById('r-date').valueAsDate = new Date();
-            // Reinicializar lista de itens com uma linha vazia
-            const cont = document.getElementById('sale-items-container');
-            if (cont) { cont.innerHTML = ''; this.addSaleItem(); }
+            
+            // Depois do registro finalizar com sucesso, limpamos a tela e o histórico de Funil.
+            this.originLeadWonId = null;
+            this.clearSaleForm();
             this.navigateTo('dashboard');
         });
 
@@ -554,7 +741,16 @@ const app = {
                     email: document.getElementById('c-email').value || ''
                 };
                 if (this.editingClientId) {
+                    const oldClient = this.clients.find(c => c.id === this.editingClientId) || {};
                     await this.updateClient(this.editingClientId, newClient);
+                    
+                    let changes = [];
+                    if ((oldClient.name || '') !== (newClient.name || '')) changes.push(`<strong>Nome:</strong> ${oldClient.name || "Vazio"} ➔ ${newClient.name || "Vazio"}`);
+                    if ((oldClient.phone || '') !== (newClient.phone || '')) changes.push(`<strong>Tel:</strong> ${oldClient.phone || "Vazio"} ➔ ${newClient.phone || "Vazio"}`);
+                    if ((oldClient.email || '') !== (newClient.email || '')) changes.push(`<strong>E-mail:</strong> ${oldClient.email || "Vazio"} ➔ ${newClient.email || "Vazio"}`);
+                    
+                    let detailsStr = changes.length > 0 ? changes.join('<br>') : 'Atualizado sem perdas visíveis.';
+                    await this.saveAuditLog('client', 'edit', this.editingClientId, detailsStr);
                 } else {
                     await this.saveClient(newClient);
                 }
@@ -602,14 +798,31 @@ const app = {
                 const originalText = btn.innerHTML;
                 btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
                 btn.disabled = true;
-
-                this.apiSettings = {
-                    provider: document.getElementById('api-provider').value,
-                    url: document.getElementById('api-url').value,
-                    token: document.getElementById('api-token').value,
-                    active: document.getElementById('api-active').checked
-                };
-
+                if (!this.apiSettings) this.apiSettings = {};
+                this.apiSettings.instances = [];
+                
+                const container = document.getElementById('api-instances-container');
+                if (container) {
+                    const rows = container.children;
+                    for (let i = 0; i < rows.length; i++) {
+                        const row = rows[i];
+                        const storeId = row.querySelector('.api-v-store').value;
+                        const provider = row.querySelector('.api-v-provider').value;
+                        const url = row.querySelector('.api-v-url').value;
+                        const token = row.querySelector('.api-v-token').value;
+                        const active = row.querySelector('.api-v-active').checked;
+                        this.apiSettings.instances.push({ id: Date.now() + i, storeId, provider, url, token, active });
+                    }
+                }
+                
+                // Compatibilidade com possíveis scripts legados guardando a primeira conexão na root
+                if (this.apiSettings.instances.length > 0) {
+                    const first = this.apiSettings.instances[0];
+                    this.apiSettings.url = first.url;
+                    this.apiSettings.token = first.token;
+                    this.apiSettings.provider = first.provider;
+                    this.apiSettings.active = first.active;
+                }
                 try {
                     await db.collection("settings").doc("whatsapp_api").set(this.apiSettings);
                     this.showToast('Integração WhatsApp salva e atualizada!');
