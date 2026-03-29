@@ -52,9 +52,16 @@ export const funnelModule = {
     },
 
     listenToLeads() {
-        if(!db || !this.user) return;
+        if(!db || !this.user || !this.currentUserProfile) return;
         
-        this.unsubLeads = db.collection('leads').onSnapshot((snapshot) => {
+        let query = db.collection('leads');
+        
+        if (this.currentUserProfile.role !== 'admin') {
+            const storeId = this.currentUserProfile.storeId || 'matriz';
+            query = query.where('storeId', '==', storeId);
+        }
+
+        this.unsubLeads = query.onSnapshot((snapshot) => {
             this.leadsList = [];
             snapshot.forEach(doc => {
                 this.leadsList.push({ id: doc.id, ...doc.data() });
@@ -123,10 +130,23 @@ export const funnelModule = {
         });
 
         const counts = { inbox: 0, negotiation: 0, waiting: 0, won: 0, lost: 0 };
+        const searchInput = document.getElementById('filter-funnel-search');
+        const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
 
         this.leadsList.forEach(lead => {
             const status = lead.status || 'inbox';
             if(!listContainers[status]) return;
+
+            if (searchTerm) {
+                const nameStr = (lead.name || '').toLowerCase();
+                const phoneStr = (lead.phone || '').replace(/\D/g, '');
+                const searchPhone = searchTerm.replace(/\D/g, '');
+                
+                const nameMatch = nameStr.includes(searchTerm);
+                const phoneMatch = searchPhone && phoneStr.includes(searchPhone);
+                
+                if (!nameMatch && !phoneMatch) return;
+            }
 
             counts[status]++;
 
@@ -150,18 +170,30 @@ export const funnelModule = {
             if(status === 'inbox') tagHtml = '<span class="k-card-tag" style="background:#E0E7FF; color:#4F46E5;">Novo</span>';
             else if(status === 'waiting') tagHtml = '<span class="k-card-tag" style="background:#FEF3C7; color:#D97706;">Pendente</span>';
 
+            let storeBadgeId = lead.storeId || 'matriz';
+            let storeBadgeLabel = storeBadgeId === 'matriz' ? 'MATRIZ' : storeBadgeId.replace('_', ' ').toUpperCase();
+            let storeTagHtml = `<span style="font-size: 9px; padding: 2px 5px; border-radius: 4px; background: #F3F4F6; border: 1px solid #E5E7EB; color: #4B5563; font-weight: bold; align-self: flex-start;"><i class="fas fa-store" style="font-size: 9px; margin-right: 3px;"></i>${storeBadgeLabel}</span>`;
+
             card.innerHTML = `
                 <div class="k-card-title" style="display:flex; justify-content:space-between; align-items:flex-start;">
-                    <span>
-                        ${lead.name || 'Desconhecido'}
-                        ${lead.unread ? '<i class="fas fa-circle" style="color:#EF4444; font-size:10px; margin-left:6px; animation: pulse 1s infinite alternate;" title="Nova mensagem não lida"></i>' : ''}
+                    <span style="display:flex; gap: 8px; align-items:flex-start; pointer-events:none;">
+                        <input type="checkbox" class="funnel-checkbox admin-only" value="${lead.id}" style="display:none; margin-top: 3px; pointer-events:auto;" onclick="event.stopPropagation(); app.toggleFunnelSelection(this)" onmousedown="event.stopPropagation()">
+                        <span style="pointer-events:auto; display:flex; flex-direction:column;">
+                            <span>
+                                ${lead.name || 'Desconhecido'}
+                                ${lead.unread ? '<i class="fas fa-circle" style="color:#EF4444; font-size:10px; margin-left:6px; animation: pulse 1s infinite alternate;" title="Nova mensagem não lida"></i>' : ''}
+                            </span>
+                        </span>
                     </span>
                     <button class="btn-icon" style="color: #EF4444; padding: 2px;" onclick="event.stopPropagation(); app.deleteLeadCard('${lead.id}')" title="Excluir Conversa">
                         <i class="fas fa-trash" style="font-size: 13px;"></i>
                     </button>
                 </div>
                 <div class="k-card-meta" style="margin-bottom: 8px;">
-                    <span><i class="fab fa-whatsapp" style="color:#25D366;"></i> ${phoneStr}</span>
+                    <span style="display:flex; flex-direction:column; gap:4px;">
+                        <span><i class="fab fa-whatsapp" style="color:#25D366;"></i> ${phoneStr}</span>
+                        ${storeTagHtml}
+                    </span>
                 </div>
                 <div class="k-card-meta">
                     <span class="k-card-value">${valStr}</span>
@@ -174,6 +206,107 @@ export const funnelModule = {
         columns.forEach(col => {
             if(counters[col]) counters[col].textContent = counts[col];
         });
+        
+        // Aplica exibição de administrador aos checkboxes do funil sem disparar loop de recarga
+        if (app && app.currentUserProfile && app.currentUserProfile.role === 'admin') {
+            document.querySelectorAll('#page-funnel .admin-only').forEach(el => el.style.display = '');
+        }
+        
+        // Reset local selection UI state if cards were re-rendered
+        if (this.updateFunnelBatchUI) this.updateFunnelBatchUI();
+    },
+
+    toggleFunnelSelection(checkbox) {
+        const card = checkbox.closest('.k-card');
+        if (checkbox.checked) {
+            card.classList.add('k-card-selected');
+        } else {
+            card.classList.remove('k-card-selected');
+        }
+        this.updateFunnelBatchUI();
+    },
+
+    toggleSelectAllFunnel() {
+        // Select all cards currently in the board that have checkboxes
+        const checkboxes = document.querySelectorAll('.funnel-checkbox');
+        if (checkboxes.length === 0) return;
+        
+        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+        const newState = !allChecked;
+        
+        checkboxes.forEach(cb => {
+            cb.checked = newState;
+            const card = cb.closest('.k-card');
+            if(cb.checked) {
+                card.classList.add('k-card-selected');
+            } else {
+                card.classList.remove('k-card-selected');
+            }
+        });
+        this.updateFunnelBatchUI();
+    },
+
+    updateFunnelBatchUI() {
+        const checkedCount = document.querySelectorAll('.funnel-checkbox:checked').length;
+        const totalCount = document.querySelectorAll('.funnel-checkbox').length;
+        const countSpan = document.getElementById('funnel-selected-count');
+        const deleteBtn = document.getElementById('btn-funnel-delete');
+        const selectAllBtn = document.getElementById('btn-funnel-select-all');
+        const actionContainer = document.querySelector('.funnel-batch-actions');
+        
+        if (actionContainer) {
+            actionContainer.style.display = 'flex'; 
+        }
+
+        if (selectAllBtn && totalCount > 0) {
+            if (checkedCount === totalCount) {
+                selectAllBtn.innerHTML = '<i class="far fa-square"></i> Desmarcar Tudo';
+            } else {
+                selectAllBtn.innerHTML = '<i class="fas fa-check-square"></i> Selecionar Tudo';
+            }
+        }
+
+        if (countSpan && deleteBtn) {
+            if (checkedCount > 0) {
+                countSpan.textContent = `${checkedCount} selecionado${checkedCount > 1 ? 's' : ''}`;
+                countSpan.style.display = 'inline-block';
+                deleteBtn.style.display = 'inline-flex';
+            } else {
+                countSpan.style.display = 'none';
+                deleteBtn.style.display = 'none';
+            }
+        }
+    },
+
+    deleteSelectedFunnelCards() {
+        const checked = document.querySelectorAll('.funnel-checkbox:checked');
+        if (checked.length === 0) return;
+        
+        this.confirmAction(
+            "Excluir Múltiplas Conversas",
+            `Tem certeza que deseja excluir permanentemente as ${checked.length} conversas selecionadas do seu funil e toda a troca de mensagens?\n\nEsta ação não poderá ser desfeita.`,
+            async () => {
+                if (typeof this.showToast === 'function') this.showToast('Excluindo conversas...', 'info');
+                try {
+                    const batch = db.batch();
+                    let count = 0;
+                    
+                    checked.forEach(cb => {
+                        const id = cb.value;
+                        const ref = db.collection('leads').doc(id);
+                        batch.delete(ref);
+                        count++;
+                    });
+                    
+                    await batch.commit();
+                    if (typeof this.showToast === 'function') this.showToast(`${count} conversas excluídas com sucesso!`, 'info');
+                    this.updateFunnelBatchUI();
+                } catch (e) {
+                    console.error("Erro ao excluir leads em lote:", e);
+                    if (typeof this.showToast === 'function') this.showToast('Erro ao excluir conversas.', 'error');
+                }
+            }
+        );
     },
 
     async addTestLead() {
@@ -243,6 +376,15 @@ export const funnelModule = {
                 const safeText = (msg.text || '').replace(/"/g, '&quot;');
                 let displayHtml = (msg.text || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
                 
+                // Formatação WhatsApp-like para grupos (Identifica *Nome:* no começo)
+                let groupSenderHtml = '';
+                const groupMatch = displayHtml.match(/^\*([^*]+):\*\s*(.*)/s);
+                if (groupMatch && msg.sender !== 'agent') {
+                    // Substitui a tag grosseira por um título colorido bonitinho sem asteriscos
+                    groupSenderHtml = `<div style="color: #0284c7; font-size: 11.5px; font-weight: 600; margin-bottom: 2px;">${groupMatch[1]}</div>`;
+                    displayHtml = groupMatch[2]; // Pega apenas a mensagem limpa
+                }
+                
                 if (msg.imageUrl) {
                     displayHtml = `<a href="${msg.imageUrl}" target="_blank"><img src="${msg.imageUrl}" style="max-width:100%; border-radius:6px; margin-bottom:6px; max-height: 200px; object-fit: cover; display:block;"></a>` + displayHtml;
                 }
@@ -270,20 +412,17 @@ export const funnelModule = {
                     ` + displayHtml;
                 }
                 
+                // Removemos espaços brancos em torno do displayHtml na string porque a classe tem white-space: pre-wrap
                 if (msg.sender === 'agent') {
                     chatArea.innerHTML += `
                         <div class="wa-bubble wa-bubble-agent" onclick="app.quoteMessage(this.getAttribute('data-text'), this.getAttribute('data-sender'))" data-text="${safeText}" data-sender="${senderName}" style="cursor: pointer; animation: fadeIn 0.3s ease;">
-                            ${displayHtml}
-                            <div class="wa-bubble-time">${timeStr} <i class="fas fa-check" style="color:#8BA1AD;"></i></div>
-                        </div>
-                    `;
+${displayHtml}
+<div class="wa-bubble-time">${timeStr} <i class="fas fa-check" style="color:#8BA1AD;"></i></div></div>`;
                 } else {
                     chatArea.innerHTML += `
                         <div class="wa-bubble wa-bubble-client" onclick="app.quoteMessage(this.getAttribute('data-text'), this.getAttribute('data-sender'))" data-text="${safeText}" data-sender="${senderName}" style="cursor: pointer; animation: fadeIn 0.3s ease;">
-                            ${displayHtml}
-                            <div class="wa-bubble-time" style="justify-content: flex-start;">${timeStr}</div>
-                        </div>
-                    `;
+${groupSenderHtml}${displayHtml}
+<div class="wa-bubble-time" style="justify-content: flex-start;">${timeStr}</div></div>`;
                 }
             });
             
@@ -416,9 +555,19 @@ export const funnelModule = {
             if (imageUrl) msgObj.imageUrl = imageUrl;
             
             await db.collection('leads').doc(this.activeLeadId).collection('messages').add(msgObj);
+
+            // Automação 4.2: Envio de mensagem move o cliente para 'Em Atendimento'
+            const currentLead = this.leadsList.find(l => l.id === this.activeLeadId);
+            if (currentLead && currentLead.status === 'inbox') {
+                await db.collection('leads').doc(this.activeLeadId).update({
+                    status: 'negotiation',
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            }
+
             input.value = '';
         } catch(e) {
-            console.error("Erro ao salvar mensagem:", e);
+            console.error("Erro ao salvar mensagem ou status:", e);
         }
     },
     

@@ -44,6 +44,7 @@ const app = {
         this.setupAuth();
         this.setupGlobalSearch();
         this.setupFunnel();
+        this.setupTeamListeners();
         
         // Setup date defaulting to today
         document.getElementById('r-date').valueAsDate = new Date();
@@ -125,16 +126,126 @@ const app = {
         }, 100);
     },
 
+    applyPermissions() {
+        if (!this.currentUserProfile) return;
+        
+        const role = this.currentUserProfile.role;
+        const storeId = this.currentUserProfile.storeId;
+        
+        // 1. Ocultar Configurações Pesadas para Vendedores
+        const settingsMenuBtn = document.querySelector('a[data-page="settings"]');
+        if (role === 'seller') {
+            if (settingsMenuBtn) settingsMenuBtn.style.display = 'none';
+        } else {
+            if (settingsMenuBtn) settingsMenuBtn.style.display = 'flex';
+        }
+        
+        // 2. Atualizar Avatar e Identidade no Rodapé do Menu Lateral
+        const userInfoContainer = document.querySelector('.user-info');
+        if (userInfoContainer) {
+            const spans = userInfoContainer.querySelectorAll('span');
+            const avatarBox = userInfoContainer.querySelector('.avatar');
+            
+            if (spans.length >= 2) {
+                spans[0].textContent = this.currentUserProfile.name || 'Usuário';
+                
+                let storeLabel = 'Acesso Global';
+                if (storeId === 'matriz') storeLabel = 'Loja Matriz';
+                else if (storeId === 'filial_1') storeLabel = 'Filial 1';
+                else if (storeId === 'filial_2') storeLabel = 'Filial 2';
+                
+                spans[1].textContent = role === 'admin' ? `Mestre (${storeLabel})` : storeLabel;
+            }
+            
+            if (avatarBox && this.currentUserProfile.name) {
+                const parts = this.currentUserProfile.name.split(' ');
+                if (parts.length > 1) {
+                    avatarBox.textContent = (parts[0][0] + parts[1][0]).toUpperCase();
+                } else {
+                    avatarBox.textContent = parts[0].substring(0, 2).toUpperCase();
+                }
+            }
+        }
+        
+        if (role === 'admin') {
+            document.querySelectorAll('.admin-only').forEach(el => el.style.display = '');
+            this.loadAdminFilters();
+        } else {
+            document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
+        }
+    },
+
+    loadAdminFilters() {
+        if (!db) return;
+        db.collection('users').get().then(snapshot => {
+            const sellers = [];
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                if (data.role === 'seller') {
+                    sellers.push({ id: doc.id, ...data });
+                }
+            });
+            
+            const uniqueStores = [...new Set(sellers.map(s => s.storeId))];
+
+            const selects = ['filter-client-store', 'filter-sale-store', 'dash-filter-store', 'report-filter-store'];
+            selects.forEach(selectId => {
+                const selectEl = document.getElementById(selectId);
+                if (selectEl) {
+                    let html = '<option value="all">Rede Completa</option>';
+                    
+                    uniqueStores.forEach(store => {
+                        const storeName = store === 'matriz' ? 'Matriz' : (store === 'filial_1' ? 'Filial 1' : 'Filial 2');
+                        html += `<option value="${store}">🏢 Somente Loja ${storeName} (Consolidado)</option>`;
+                    });
+                    
+                    html += '<optgroup label="Desempenho por Vendedor">';
+                    sellers.forEach(s => {
+                        const storeName = s.storeId === 'matriz' ? 'Matriz' : (s.storeId === 'filial_1' ? 'Filial 1' : 'Filial 2');
+                        html += `<option value="${s.id}">${storeName} - ${s.name}</option>`;
+                    });
+                    html += '</optgroup>';
+                    
+                    selectEl.innerHTML = html;
+                }
+            });
+
+            const assignSelect = document.getElementById('r-seller-assigned');
+            if (assignSelect) {
+                let assignHtml = '<option value="me">Deixar Comigo (Minha Autoria)</option>';
+                sellers.forEach(s => {
+                    const storeName = s.storeId === 'matriz' ? 'Matriz' : (s.storeId === 'filial_1' ? 'Filial 1' : 'Filial 2');
+                    assignHtml += `<option value="${s.id}" data-name="${s.name}" data-store="${s.storeId}">${storeName} - ${s.name}</option>`;
+                });
+                assignSelect.innerHTML = assignHtml;
+            }
+
+            this.updateActiveViews();
+        }).catch(err => console.error("Erro ao carregar filtros admin:", err));
+    },
+
 
 
     listenData() {
-        if(!db || !this.user) return;
+        if(!db || !this.user || !this.currentUserProfile) return;
         
-        this.unsubSales = db.collection("sales").orderBy("createdAt", "asc").onSnapshot((snapshot) => {
+        let salesQuery = db.collection("sales");
+        
+        // Multi-Tenant: Ocultar dados financeiros de outras filiais para vendedores
+        if (this.currentUserProfile.role !== 'admin') {
+            const storeId = this.currentUserProfile.storeId || 'matriz';
+            salesQuery = salesQuery.where('storeId', '==', storeId);
+        }
+
+        this.unsubSales = salesQuery.onSnapshot((snapshot) => {
             this.sales = [];
             snapshot.forEach((doc) => {
                 this.sales.push({ id: doc.id, ...doc.data() });
             });
+            
+            // Ordenação local em memória para evitar erro "The query requires an index" no Firebase
+            this.sales.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+            
             this.updateActiveViews();
         }, (error) => {
             alert(`Atenção: O Firebase bloqueou a conexão de leitura!\n\nLembre-se de ir na Aba "Regras" do Firestore Database e alterar de "false" para "true".\n\nErro: ${error.message}`);
@@ -303,6 +414,12 @@ const app = {
                         div.addEventListener('click', () => {
                             inputName.value = client.name;
                             if (inputPhone && client.phone) inputPhone.value = client.phone;
+                            
+                            const rSeller = document.getElementById('r-seller-assigned');
+                            if (rSeller && client.sellerId) {
+                                rSeller.value = client.sellerId;
+                            }
+                            
                             suggestionsBox.classList.remove('show');
                         });
                         suggestionsBox.appendChild(div);
@@ -341,7 +458,10 @@ const app = {
                 const prodInput = row.querySelector('.sale-item-product').value.trim();
                 const qty = parseInt(row.querySelector('.sale-item-qty').value) || 1;
                 if (prodInput) { 
-                    const catalogProd = this.products.find(p => p.name === prodInput || p.barcode === prodInput);
+                    const catalogProd = this.products.find(p => 
+                        (p.name && p.name.trim().toLowerCase() === prodInput.toLowerCase()) || 
+                        (p.barcode && p.barcode.trim() === prodInput)
+                    );
                     const finalName = catalogProd ? catalogProd.name : prodInput;
                     const unitPrice = catalogProd && catalogProd.price ? catalogProd.price : 0;
                     items.push({ product: finalName, quantity: qty, price: unitPrice }); 
@@ -359,7 +479,10 @@ const app = {
             // Unrecognized product lock
             const hasUnknown = Array.from(itemRows).some(row => {
                 const prodInput = row.querySelector('.sale-item-product').value.trim();
-                return prodInput && !this.products.find(p => p.name === prodInput || p.barcode === prodInput);
+                return prodInput && !this.products.find(p => 
+                    (p.name && p.name.trim().toLowerCase() === prodInput.toLowerCase()) || 
+                    (p.barcode && p.barcode.trim() === prodInput)
+                );
             });
 
             if (hasUnknown) {
@@ -379,6 +502,14 @@ const app = {
                 value: parseFloat(document.getElementById('r-value').value),
                 date: document.getElementById('r-date').value,
             };
+
+            const assignSelect = document.getElementById('r-seller-assigned');
+            if (assignSelect && assignSelect.value !== 'me') {
+                newSale.overrideSellerId = assignSelect.value;
+                const opt = assignSelect.options[assignSelect.selectedIndex];
+                newSale.overrideSellerName = opt.getAttribute('data-name');
+                newSale.overrideStoreId = opt.getAttribute('data-store');
+            }
 
             // Auto-register client if not exists
             const phoneStr = newSale.phone.replace(/\D/g, '');

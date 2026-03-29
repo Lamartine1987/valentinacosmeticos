@@ -83,8 +83,13 @@ export const clientsModule = {
         const filterStatus = (document.getElementById('filter-status') || {value:'all'}).value;
         const filterDateStart = (document.getElementById('filter-date-start') || {value:''}).value;
         const filterDateEnd = (document.getElementById('filter-date-end') || {value:''}).value;
+        const filterSaleStore = (document.getElementById('filter-sale-store') || {value:'all'}).value;
 
         let filteredSales = [...this.sales].reverse();
+
+        if (filterSaleStore !== 'all') {
+            filteredSales = filteredSales.filter(sale => sale.sellerId === filterSaleStore || sale.storeId === filterSaleStore);
+        }
 
         filteredSales = filteredSales.filter(sale => {
             if(!sale.date) return false;
@@ -185,6 +190,7 @@ export const clientsModule = {
                 <td>${saleDate.toLocaleDateString('pt-BR')}</td>
                 <td><strong>R$ ${sale.value.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong></td>
                 <td>${timeStatus}</td>
+                <td class="admin-only" style="${this.currentUserProfile && this.currentUserProfile.role === 'admin' ? '' : 'display:none;'} color:var(--text-muted); font-size:12px; text-transform:capitalize;">${sale.sellerName || 'Sistema'}</td>
                 <td style="text-align: center;">
                     <div style="display: flex; justify-content: center; gap: 8px;">
                         <button class="btn-icon" style="color: #EF4444;" onclick="app.deleteSale('${sale.id}')" title="Excluir Venda">
@@ -215,6 +221,7 @@ export const clientsModule = {
         const maxQtyInput = document.getElementById('filter-client-qty-max');
         const filterQtyMin = minQtyInput ? parseInt(minQtyInput.value) : NaN;
         const filterQtyMax = maxQtyInput ? parseInt(maxQtyInput.value) : NaN;
+        const filterClientStore = (document.getElementById('filter-client-store') || {value:'all'}).value;
 
         // Pre-calcula os gastos para poder filtrar e ordenar
         let clientsWithStats = this.clients.map(client => {
@@ -249,6 +256,7 @@ export const clientsModule = {
                 if (!isNaN(filterMax) && c.totalGasto > filterMax) return false;
                 if (!isNaN(filterQtyMin) && c.compras.length < filterQtyMin) return false;
                 if (!isNaN(filterQtyMax) && c.compras.length > filterQtyMax) return false;
+                if (filterClientStore !== 'all' && c.sellerId !== filterClientStore && c.storeId !== filterClientStore) return false;
                 return true;
             });
         }
@@ -277,6 +285,7 @@ export const clientsModule = {
                 <td>${client.phone}</td>
                 <td>${client.compras.length} compra(s)</td>
                 <td style="color:var(--primary); font-weight:600;">R$ ${client.totalGasto.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                <td class="admin-only" style="${this.currentUserProfile && this.currentUserProfile.role === 'admin' ? '' : 'display:none;'} color:var(--text-muted); font-size:12px; text-transform:capitalize;">${client.sellerName || 'Sistema'}</td>
                 <td style="text-align: center;">
                     <button class="btn-icon" style="color: var(--primary); margin-right: 12px;" onclick="app.viewClientHistory('${client.id}')" title="Ver Histórico de Compras">
                         <i class="fas fa-history"></i>

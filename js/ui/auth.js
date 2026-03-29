@@ -2,10 +2,39 @@ import { firebase } from '../config/firebase.js';
 
 export const authModule = {
     setupAuth() {
-        firebase.auth().onAuthStateChanged(user => {
+        firebase.auth().onAuthStateChanged(async user => {
             const loginScreen = document.getElementById('login-overlay');
             if (user) {
                 this.user = user;
+                
+                // Fetch User Profile SaaS Multi-Tenant
+                try {
+                    const db = firebase.firestore();
+                    const doc = await db.collection("users").doc(user.uid).get();
+                    if (doc.exists) {
+                        this.userProfile = doc.data();
+                    } else {
+                        // Fallback Master Admin creation
+                        this.userProfile = {
+                            role: 'admin',
+                            storeId: 'all',
+                            name: 'Administrador Principal',
+                            email: user.email
+                        };
+                        await db.collection("users").doc(user.uid).set(this.userProfile);
+                    }
+                } catch(err) {
+                    console.error("Erro ao carregar perfil:", err);
+                    this.userProfile = { role: 'admin', storeId: 'all', name: 'Administrador (Root)' };
+                }
+
+                if (window.app) window.app.currentUserProfile = this.userProfile;
+                else this.currentUserProfile = this.userProfile;
+
+                if (window.app && typeof window.app.applyPermissions === 'function') {
+                    window.app.applyPermissions();
+                }
+
                 if(loginScreen) loginScreen.classList.remove('active');
                 this.listenData();
                 this.loadSettings();

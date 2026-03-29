@@ -7,7 +7,13 @@ export const apiModule = {
             console.log("=== INICIANDO ENVIO DE WHATSAPP ===");
             console.log("Provedor configurado:", this.apiSettings.provider);
             
-            const cleanPhone = phone.replace(/\D/g, '');
+            const isGroup = phone.includes('-') || phone.includes('@g.us');
+            let destPhone = phone;
+            if (!isGroup) {
+                const cleanPhone = phone.replace(/\D/g, '');
+                destPhone = (cleanPhone.startsWith('55') && cleanPhone.length > 11) ? cleanPhone : "55" + cleanPhone;
+            }
+
             let body = {};
             let finalUrl = this.apiSettings.url;
             let finalMediaPayload = "";
@@ -36,7 +42,7 @@ export const apiModule = {
                 if (finalMediaPayload !== '') {
                     finalUrl = finalUrl.replace('/sendText', '/sendMedia');
                     body = { 
-                        number: "55" + cleanPhone, 
+                        number: destPhone, 
                         mediaMessage: { 
                             mediatype: "image", 
                             caption: message, 
@@ -44,20 +50,20 @@ export const apiModule = {
                         } 
                     };
                 } else {
-                    body = { number: "55" + cleanPhone, textMessage: { text: message } };
+                    body = { number: destPhone, textMessage: { text: message } };
                 }
             } else if (this.apiSettings.provider === 'zapi') {
                 if (finalMediaPayload !== '') {
                     finalUrl = finalUrl.replace('/send-text', '').replace(/\/$/, '') + '/send-image';
-                    body = { phone: "55" + cleanPhone, image: finalMediaPayload, caption: message, message: message }; 
+                    body = { phone: destPhone, image: finalMediaPayload, caption: message, message: message }; 
                 } else {
-                    body = { phone: "55" + cleanPhone, message: message };
+                    body = { phone: destPhone, message: message };
                     if (!finalUrl.endsWith('/send-text')) {
                         finalUrl = finalUrl.replace(/\/$/, '') + '/send-text';
                     }
                 }
             } else {
-                body = { phone: cleanPhone, message: finalMessage }; // webhook genérico
+                body = { phone: destPhone, message: finalMessage }; // webhook genérico
             }
             
             const headers = { 'Content-Type': 'application/json' };
@@ -127,10 +133,13 @@ export const apiModule = {
 
     async saveClient(clientData) {
         try {
-            await db.collection("clients").add({
-                ...clientData,
-                createdAt: new Date().toISOString()
-            });
+            const enrichedClient = { ...clientData, createdAt: new Date().toISOString() };
+            if (this.user && this.currentUserProfile) {
+                enrichedClient.sellerId = clientData.overrideSellerId || this.user.uid;
+                enrichedClient.sellerName = clientData.overrideSellerName || this.currentUserProfile.name || 'Sistema';
+                enrichedClient.storeId = clientData.overrideStoreId || this.currentUserProfile.storeId || 'matriz';
+            }
+            await db.collection("clients").add(enrichedClient);
             this.syncToBrevo(clientData);
             this.showToast('Cliente salva na nuvem com sucesso!');
         } catch (e) {
@@ -154,10 +163,14 @@ export const apiModule = {
 
     async saveSale(saleData) {
         try {
-            const docRef = await db.collection("sales").add({
-                ...saleData,
-                createdAt: new Date().toISOString()
-            });
+            const enrichedSale = { ...saleData, createdAt: new Date().toISOString() };
+            if (this.user && this.currentUserProfile) {
+                enrichedSale.sellerId = saleData.overrideSellerId || this.user.uid;
+                enrichedSale.sellerName = saleData.overrideSellerName || this.currentUserProfile.name || 'Sistema';
+                enrichedSale.storeId = saleData.overrideStoreId || this.currentUserProfile.storeId || 'matriz';
+            }
+            
+            const docRef = await db.collection("sales").add(enrichedSale);
             this.showToast('Venda faturada e salva na nuvem!');
             
             try {
@@ -186,6 +199,7 @@ export const apiModule = {
                         await db.collection("leads").doc(leadDoc.id).update({
                             value: currentVal + saleVal,
                             status: 'won', // Marca como ganho automaticamente na venda
+                            storeId: enrichedSale.storeId || 'matriz', // Garante a posse do lead na conversão
                             updatedAt: new Date().toISOString()
                         });
                     }

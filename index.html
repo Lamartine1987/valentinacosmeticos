@@ -78,7 +78,7 @@
                 </a>
                 <a href="#" class="nav-item" data-page="settings">
                     <i class="fas fa-cog"></i>
-                    <span>Modelos de Msg</span>
+                    <span>Configurações</span>
                 </a>
             </nav>
             <div class="sidebar-footer">
@@ -140,6 +140,13 @@
                             <option value="lost">Somente Ex-clientes (Resgate > 120d)</option>
                             <option value="promo">Somente Promoções (Enviadas)</option>
                         </select>
+                        
+                        <div class="admin-only" style="display: flex; gap: 8px; align-items: center; display: none;">
+                            <span style="font-size: 13px; color: var(--text-muted); font-weight: 500;"><i class="fas fa-store" style="margin-right:4px;"></i> Vendedor / Loja</span>
+                            <select id="dash-filter-store" style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer; transition: border-color 0.2s;" onchange="app.renderDashboard()">
+                                <option value="all">Rede Completa</option>
+                            </select>
+                        </div>
                     </div>
 
                     <div class="stats-grid">
@@ -219,7 +226,13 @@
                                 <input type="text" id="report-filter-product" list="dt-report-products" placeholder="Buscar Produto..." oninput="app.renderReports()" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; outline: none; background: white; font-size: 13px; color: var(--text-main); min-width: 150px; max-width: 200px;">
                                 <datalist id="dt-report-products"></datalist>
                             </div>
-                            <button class="btn-secondary" onclick="document.getElementById('report-filter-start').value=''; document.getElementById('report-filter-end').value=''; document.getElementById('report-filter-client').value=''; document.getElementById('report-filter-product').value=''; app.renderReports();" style="padding: 6px 12px; font-size: 12px; border-radius: 6px; background: transparent; color: #EF4444; border: 1px solid #EF4444; cursor: pointer; margin-left: auto;">Limpar Filtros</button>
+                            <div class="admin-only" style="display:flex; align-items:center; gap:8px; display:none;">
+                                <i class="fas fa-store" style="color: var(--text-muted); font-size: 14px; margin-left: 8px;"></i>
+                                <select id="report-filter-store" onchange="app.renderReports()" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; outline: none; background: white; font-size: 13px; color: var(--text-main); cursor: pointer;">
+                                    <option value="all">Rede Completa</option>
+                                </select>
+                            </div>
+                            <button class="btn-secondary" onclick="document.getElementById('report-filter-start').value=''; document.getElementById('report-filter-end').value=''; document.getElementById('report-filter-client').value=''; document.getElementById('report-filter-product').value=''; const rStore = document.getElementById('report-filter-store'); if(rStore) rStore.value='all'; app.renderReports();" style="padding: 6px 12px; font-size: 12px; border-radius: 6px; background: transparent; color: #EF4444; border: 1px solid #EF4444; cursor: pointer; margin-left: auto;">Limpar Filtros</button>
                         </div>
                     </div>
 
@@ -309,6 +322,12 @@
                                     <label>Data da Compra</label>
                                     <input type="date" id="r-date" required>
                                 </div>
+                                <div class="form-group admin-only" style="grid-column: span 2; display: none;">
+                                    <label><i class="fas fa-user-tag" style="color:var(--primary); margin-right:6px;"></i> Atribuir a Venda e Cliente para (Override)</label>
+                                    <select id="r-seller-assigned" style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer;">
+                                        <option value="me">Minha Própria Venda</option>
+                                    </select>
+                                </div>
                             </div>
                             <div class="form-actions">
                                 <button type="submit" class="btn-primary" style="width: 100%; padding: 14px; font-size: 16px; justify-content: center;">
@@ -360,6 +379,12 @@
                             <input type="number" id="filter-client-qty-max" placeholder="Qtd Máx" style="padding: 12px; width: 80px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); transition: border-color 0.2s;" oninput="app.renderClientsList()">
                             <span style="font-size: 13px; color: var(--text-muted); font-weight: 500;">compras</span>
                         </div>
+                        <div class="admin-only" style="display: flex; gap: 8px; align-items: center; display: none;">
+                            <span style="font-size: 13px; color: var(--text-muted); font-weight: 500;"><i class="fas fa-store" style="margin-right:4px;"></i> Filtro Gerencial</span>
+                            <select id="filter-client-store" style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer; transition: border-color 0.2s;" onchange="app.renderClientsList()">
+                                <option value="all">Rede Completa</option>
+                            </select>
+                        </div>
                     </div>
 
                     <div class="table-card" style="overflow-x: auto;">
@@ -371,6 +396,7 @@
                                     <th>WhatsApp / Contato</th>
                                     <th>Compras Realizadas</th>
                                     <th>Total Gasto na Loja</th>
+                                    <th class="admin-only" style="display: none;">Cadastrado Por</th>
                                     <th style="text-align: center;">Ações</th>
                                 </tr>
                             </thead>
@@ -446,6 +472,12 @@
                             <span style="color: var(--text-muted); font-weight: 500;">até</span>
                             <input type="date" id="filter-date-end" style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; color: var(--text-muted); font-size: 14px; transition: border-color 0.2s;">
                         </div>
+                        <div class="admin-only" style="display: flex; gap: 8px; align-items: center; display: none;">
+                            <span style="font-size: 13px; color: var(--text-muted); font-weight: 500;"><i class="fas fa-user-tie" style="margin-right:4px;"></i> Filtro Gerencial</span>
+                            <select id="filter-sale-store" style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer; transition: border-color 0.2s;" onchange="app.renderClientsTable()">
+                                <option value="all">Rede Completa</option>
+                            </select>
+                        </div>
                     </div>
 
                     <div class="table-card" style="overflow-x: auto;">
@@ -460,6 +492,7 @@
                                     <th>Data</th>
                                     <th>Valor da Compra</th>
                                     <th>Status (Tempo)</th>
+                                    <th class="admin-only" style="display: none;">Vendedor Resp.</th>
                                     <th style="text-align: center;">Ações</th>
                                 </tr>
                             </thead>
@@ -562,6 +595,9 @@
                        </button>
                        <button type="button" class="tab-btn" id="tab-btn-api" onclick="app.switchSettingsTab('api')" style="background: none; border: none; padding: 12px 4px; font-size: 15px; font-weight: 500; color: var(--text-muted); border-bottom: 2px solid transparent; cursor: pointer; margin-bottom: -2px;">
                            <i class="fas fa-plug"></i> Integração WhatsApp
+                       </button>
+                       <button type="button" class="tab-btn" id="tab-btn-team" onclick="app.switchSettingsTab('team')" style="background: none; border: none; padding: 12px 4px; font-size: 15px; font-weight: 500; color: var(--text-muted); border-bottom: 2px solid transparent; cursor: pointer; margin-bottom: -2px;">
+                           <i class="fas fa-users-cog"></i> Gestão de Equipe
                        </button>
                    </div>
 
@@ -767,13 +803,58 @@
                             </form>
                         </div>
                     </div>
+
+                    <!-- TAB 4: TEAM / ROLES -->
+                    <div id="tab-content-team" class="settings-tab-content" style="display: none;">
+                        <div class="form-card" style="margin-bottom: 24px;">
+                            <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:16px;">
+                                <div>
+                                    <h3>Gestão de Equipe e Lojas</h3>
+                                    <p style="color: var(--text-muted); font-size: 14px; margin: 4px 0 0 0;">Adicione vendedores ou novos diretores ao sistema.</p>
+                                </div>
+                                <button type="button" class="btn-primary" style="padding: 10px 16px; font-size: 14px; background: var(--primary);" onclick="app.openTeamModal()">
+                                    <i class="fas fa-user-plus"></i> Convidar Colaborador
+                                </button>
+                            </div>
+                            
+                            <table class="data-table" style="margin-top: 16px;">
+                                <thead>
+                                    <tr>
+                                        <th>Nome</th>
+                                        <th>E-mail de Login</th>
+                                        <th>Perfil de Acesso</th>
+                                        <th>Unidade / Loja</th>
+                                        <th style="text-align: center;">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="team-list-body">
+                                    <!-- JS Populates -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                </section>
 
                 <!-- Funil de Vendas Page -->
                 <section class="page" id="page-funnel" style="height: calc(100vh - 100px);">
-                    <div class="page-header" style="margin-bottom: 24px;">
-                        <h2>Funil de Vendas</h2>
-                        <p>Acompanhe suas oportunidades de negócio. Arraste e solte os clientes entre as etapas.</p>
+                    <div class="page-header" style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px;">
+                        <div>
+                            <h2>Funil de Vendas</h2>
+                            <p>Acompanhe suas oportunidades de negócio. Arraste e solte os clientes entre as etapas.</p>
+                        </div>
+                        <div class="admin-only funnel-batch-actions" style="display: none; gap: 8px;">
+                            <span id="funnel-selected-count" style="align-self: center; margin-right: 8px; font-weight: 500; font-size: 14px; color: var(--text-muted); display: none;">0 selecionados</span>
+                            <button id="btn-funnel-select-all" class="btn-primary" style="background: #F1F5F9; color: var(--text-main); border: 1px solid var(--border); box-shadow: none;" onclick="app.toggleSelectAllFunnel()">
+                                <i class="fas fa-check-square"></i> Selecionar Tudo
+                            </button>
+                            <button id="btn-funnel-delete" class="btn-primary" style="background: #EF4444; display: none;" onclick="app.deleteSelectedFunnelCards()">
+                                <i class="fas fa-trash"></i> Excluir Selecionados
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="filters-bar" style="margin-bottom: 24px; display: flex; gap: 16px; flex-wrap: wrap; align-items: center;">
+                        <input type="text" id="filter-funnel-search" placeholder="Buscar conversa por nome ou telefone..." style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; flex: 1; min-width: 250px; outline: none; font-size: 14px; transition: border-color 0.2s;" oninput="app.renderFunnelBoard()">
                     </div>
 
                     <div class="kanban-board">
@@ -849,6 +930,55 @@
                 <button class="btn-primary" style="background: #E2E8F0; color: var(--text-main); flex: 1; box-shadow: none; justify-content: center;" onclick="app.closeConfirm()">Cancelar</button>
                 <button class="btn-primary" id="confirm-btn-yes" style="background: #EF4444; flex: 1; justify-content: center;">Sim, Excluir</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Team Add Modal -->
+    <div id="team-overlay" class="login-overlay">
+        <div class="login-card" style="max-width: 500px; max-height: 90vh; overflow-y:auto; display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h2 style="margin: 0; text-align: left; font-size: 20px;"><i class="fas fa-user-tie" style="color: var(--primary); margin-right: 8px;"></i> Novo Colaborador</h2>
+                <button class="btn-icon" onclick="app.closeTeamModal()" style="font-size: 28px; line-height: 1;">&times;</button>
+            </div>
+            
+            <form id="form-team" style="display: flex; flex-direction: column; gap: 16px;">
+                <div class="form-group">
+                    <label>Nome Completo</label>
+                    <input type="text" id="t-name" required placeholder="Joana da Silva">
+                </div>
+                <div class="form-group">
+                    <label>E-mail de Login</label>
+                    <input type="email" id="t-email" required placeholder="joana@empresa.com">
+                </div>
+                <div class="form-group">
+                    <label>Senha Provisória</label>
+                    <input type="password" id="t-password" required placeholder="Crie uma senha de acesso">
+                </div>
+                <div class="form-group" style="display:flex; gap:16px;">
+                    <div style="flex:1;">
+                        <label>Perfil (Role)</label>
+                        <select id="t-role" required style="width:100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer;" onchange="document.getElementById('t-store-container').style.display = this.value === 'admin' ? 'none' : 'block'; if(this.value==='admin') document.getElementById('t-store').value = 'all'; ">
+                            <option value="seller">Vendedor (Acesso Restrito)</option>
+                            <option value="admin">Administrador (Mestre)</option>
+                        </select>
+                    </div>
+                    <div style="flex:1;" id="t-store-container">
+                        <label>Loja Vinculada</label>
+                        <select id="t-store" required style="width:100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer;">
+                            <option value="matriz">Matriz (Sede Principal)</option>
+                            <option value="filial_1">Filial 1</option>
+                            <option value="filial_2">Filial 2</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-actions" style="margin-top: 8px; display: flex; gap: 12px;">
+                    <button type="button" class="btn-primary" style="background:#E2E8F0; color:var(--text-main); flex:1; justify-content:center; box-shadow:none;" onclick="app.closeTeamModal()">Cancelar</button>
+                    <button type="submit" class="btn-primary" style="flex:2; padding: 14px; font-size: 16px; justify-content: center;">
+                        <i class="fas fa-plus-circle"></i> Cadastrar Acesso
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -973,6 +1103,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-functions.js"></script>
     <script type="module" src="https://unpkg.com/emoji-picker-element@1"></script>
     
     <script type="module" src="js/app.js"></script>

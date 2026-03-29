@@ -10,6 +10,10 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
     res.status(200).send("Recebido");
 
     const payload = req.body;
+    
+    // Identificação Multi-Tenant (Lojas) pela URL do Webhook
+    // Ex: https://.../whatsappWebhook?storeId=filial_1
+    const storeId = req.query.storeId || 'matriz';
 
     // Filtros de Proteção
     // Ignorar status de mensagem, focar apenas em MENSAGENS RECEBIDAS (NÃO da própria empresa)
@@ -23,11 +27,24 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
     let audioUrl = "";
     let imageUrl = "";
 
+    let isGroup = false;
+    let groupName = "Grupo WhatsApp";
+
     // 1. Tentar ler no formato Z-API
     if (payload.phone) {
         isFromMe = payload.fromMe === true || payload.fromMe === "true" || (payload.fromMe === undefined && payload.status !== undefined);
-        phoneNum = payload.phone; // ex: 5511999999999
-        senderName = payload.senderName || payload.chatName || "Desconhecido";
+        phoneNum = payload.groupId || payload.phone; // Se houver groupId explícito, usa ele.
+        
+        // Verifica se é grupo
+        isGroup = payload.isGroup === true || payload.isGroup === "true" || phoneNum.includes('-group') || phoneNum.includes('@g.us');
+        
+        if (isGroup) {
+            groupName = payload.chatName || "Grupo WhatsApp";
+            senderName = payload.senderName || "Membro";
+        } else {
+            senderName = payload.senderName || payload.chatName || "Desconhecido";
+        }
+
         textBody = (payload.text && payload.text.message) ? payload.text.message : "";
         if (payload.audio && payload.audio.audioUrl) audioUrl = payload.audio.audioUrl;
         else if (payload.audioUrl) audioUrl = payload.audioUrl;
@@ -42,6 +59,12 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
         phoneNum = msgData.key && msgData.key.remoteJid ? msgData.key.remoteJid.replace('@s.whatsapp.net', '') : "";
         senderName = payload.data.pushName || "Desconhecido";
 
+        isGroup = phoneNum.includes('@g.us') || (msgData.key.participant !== undefined);
+        if (isGroup) {
+            groupName = "Grupo WhatsApp";
+            senderName = payload.data.pushName || "Membro";
+        }
+
         // Tentar pegar o texto (pode vir de conversation ou extendedTextMessage)
         if (msgData.message) {
             textBody = msgData.message.conversation || (msgData.message.extendedTextMessage && msgData.message.extendedTextMessage.text) || "";
@@ -50,10 +73,10 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
         }
     }
 
-    // Ignorar Grupos, Status e LIDs
-    if (phoneNum.includes('-group') || phoneNum.includes('@g.us') || phoneNum.includes('@broadcast') || phoneNum.includes('@lid')) {
-        console.log("Mensagem ignorada (grupo/status/lid)", { phoneNum });
-        return res.status(200).send("Ignored group/status/lid");
+    // Ignorar Status e LIDs
+    if (phoneNum.includes('@broadcast') || phoneNum.includes('@lid')) {
+        console.log("Mensagem ignorada (status/lid)", { phoneNum });
+        return res.status(200).send("Ignored status/lid");
     }
 
     if (!textBody) {
@@ -67,28 +90,41 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
         return res.status(200).send("Ignored");
     }
 
+    // Formatar texto para grupos
+    if (isGroup && !isFromMe) {
+        textBody = `*${senderName}:* ${textBody}`;
+    }
+
     // --- LÓGICA DO FUNIL ---
     try {
         const leadsRef = db.collection('leads');
         
-        let cleanPhone = phoneNum.replace(/\D/g, '');
-        let base = cleanPhone.startsWith('55') ? cleanPhone.substring(2) : cleanPhone;
-        let pWith9 = base;
-        let pWithout9 = base;
+        let variations = [];
+        
+        if (isGroup) {
+            variations = [phoneNum]; // O ID do grupo é único e literal
+        } else {
+            let cleanPhone = phoneNum.replace(/\D/g, '');
+            let base = cleanPhone.startsWith('55') ? cleanPhone.substring(2) : cleanPhone;
+            let pWith9 = base;
+            let pWithout9 = base;
 
-        if (base.length === 11) {
-            pWithout9 = base.substring(0, 2) + base.substring(3);
-        } else if (base.length === 10) {
-            pWith9 = base.substring(0, 2) + '9' + base.substring(2);
+            if (base.length === 11) {
+                pWithout9 = base.substring(0, 2) + base.substring(3);
+            } else if (base.length === 10) {
+                pWith9 = base.substring(0, 2) + '9' + base.substring(2);
+            }
+
+            variations = [...new Set([
+                base, '55' + base,
+                pWith9, '55' + pWith9,
+                pWithout9, '55' + pWithout9
+            ])];
         }
 
-        const variations = [...new Set([
-            base, '55' + base,
-            pWith9, '55' + pWith9,
-            pWithout9, '55' + pWithout9
-        ])];
-
         const snapshot = await leadsRef.where('phone', 'in', variations).limit(1).get();
+        // ID Determinístico para evitar Race Condition quando múltiplas mensagens chegam no mesmo milissegundo
+        const deterministicId = isGroup ? phoneNum : (variations.length > 1 ? variations[1] : phoneNum);
 
         if (isFromMe) {
             // MENSAGEM ENVIADA PELO AGENTE (VOCÊ)
@@ -96,17 +132,21 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
                 const leadId = snapshot.docs[0].id;
                 // --- DEDUPLICAÇÃO ---
                 const recentMsgs = await leadsRef.doc(leadId).collection('messages')
-                    .orderBy('timestamp', 'desc').limit(1).get();
+                    .orderBy('timestamp', 'desc').limit(5).get();
 
                 let isDuplicate = false;
                 if (!recentMsgs.empty) {
-                    const lastMsg = recentMsgs.docs[0].data();
-                    if (lastMsg.sender === 'agent' && lastMsg.text === textBody) {
-                        const now = Date.now();
-                        const msgTime = lastMsg.timestamp ? lastMsg.timestamp.toDate().getTime() : 0;
-                        if (now - msgTime < 15000) { // 15 segundos
-                            isDuplicate = true;
-                            console.log("Mensagem ignorada (já inserida pelo CRM).");
+                    const now = Date.now();
+                    for (let msgDoc of recentMsgs.docs) {
+                        const msg = msgDoc.data();
+                        // Remover espaços em branco no final para comparação segura
+                        if (msg.sender === 'agent' && msg.text.trim() === textBody.trim()) {
+                            const msgTime = msg.timestamp ? msg.timestamp.toDate().getTime() : 0;
+                            if (now - msgTime < 30000) { // 30 segundos
+                                isDuplicate = true;
+                                console.log("Mensagem ignorada (já inserida pelo CRM).");
+                                break;
+                            }
                         }
                     }
                 }
@@ -127,15 +167,17 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
                 }
             } else {
                 // Criar o lead se você iniciou a conversa
-                const newLead = await leadsRef.add({
-                    name: phoneNum,
+                const newLeadRef = leadsRef.doc(deterministicId);
+                await newLeadRef.set({
+                    name: isGroup ? groupName : phoneNum,
                     phone: phoneNum,
                     status: 'negotiation',
                     value: 0,
+                    storeId: storeId,
                     createdAt: admin.firestore.FieldValue.serverTimestamp(),
                     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
                     lastMessage: "Você: " + textBody.substring(0, 45) + "..."
-                });
+                }, { merge: true });
                 
                 const msgObj = {
                     text: textBody,
@@ -145,7 +187,7 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
                 if(audioUrl) msgObj.audioUrl = audioUrl;
                 if(imageUrl) msgObj.imageUrl = imageUrl;
                 
-                await leadsRef.doc(newLead.id).collection('messages').add(msgObj);
+                await newLeadRef.collection('messages').add(msgObj);
             }
             return res.status(200).send("Agent message saved.");
         }
@@ -154,28 +196,37 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
         let leadId;
 
         if (snapshot.empty) {
-            // CRIAR NOVO CARD
-            const newLead = await leadsRef.add({
-                name: senderName,
+            // CUIDADO CONTRA RACE CONDITION - Set with merge usando deterministic ID
+            leadId = deterministicId;
+            await leadsRef.doc(leadId).set({
+                name: isGroup ? groupName : senderName,
                 phone: phoneNum,
                 status: 'inbox',
                 value: 0,
                 unread: true,
+                storeId: storeId,
                 createdAt: admin.firestore.FieldValue.serverTimestamp(),
                 updatedAt: admin.firestore.FieldValue.serverTimestamp(),
                 lastMessage: textBody.substring(0, 50) + "..."
-            });
-            leadId = newLead.id;
+            }, { merge: true });
         } else {
             // ATUALIZAR CARD EXISTENTE
             const doc = snapshot.docs[0];
             leadId = doc.id;
-
-            await leadsRef.doc(leadId).update({
+            const leadData = doc.data();
+            const updatePayload = {
                 updatedAt: admin.firestore.FieldValue.serverTimestamp(),
                 lastMessage: textBody.substring(0, 50) + "...",
-                unread: true
-            });
+                unread: true,
+                storeId: storeId // Atualiza a pátria do Lead para a loja que está respondendo
+            };
+
+            // Automação 4.1: Retornar à Caixa de Entrada se o negócio já estava 'Ganho' (Pós-Venda ativo)
+            if (leadData.status === 'won') {
+                updatePayload.status = 'inbox';
+            }
+
+            await leadsRef.doc(leadId).update(updatePayload);
         }
 
         // SALVAR A MENSAGEM NO HISTÓRICO SECRETO DO CHAT
@@ -372,5 +423,53 @@ exports.scheduledDailyFunnels = onSchedule({
         console.log("Resultado da varredura diária:", result);
     } catch(e) {
         console.error("Erro no Cron Job PubSub:", e);
+    }
+});
+
+// --- SAAS MULTI-TENANT: ADMIN CONTROLS ---
+const { onCall } = require("firebase-functions/v2/https");
+
+exports.createUser = onCall({ invoker: "public" }, async (request) => {
+    const authInfo = request.auth;
+    const payload = request.data;
+
+    // Segurança: Verificar se quem está chamando está logado e é admin
+    if (!authInfo) {
+        throw new functions.https.HttpsError('unauthenticated', 'Usuário não autenticado no sistema.');
+    }
+    
+    const callerDoc = await db.collection('users').doc(authInfo.uid).get();
+    if (!callerDoc.exists || callerDoc.data().role !== 'admin') {
+        throw new functions.https.HttpsError('permission-denied', 'Apenas administradores podem registrar novos membros na equipe.');
+    }
+
+    const { email, password, name, role, storeId } = payload;
+    
+    if (!email || !password || !name || !role || !storeId) {
+        throw new functions.https.HttpsError('invalid-argument', 'Faltam parâmetros obrigatórios para a criação do usuário.');
+    }
+
+    try {
+        // 1. Criar o usuário no Firebase Authentication System
+        const userRecord = await admin.auth().createUser({
+            email: email,
+            password: password,
+            displayName: name
+        });
+
+        // 2. Registrar a "Identidade" e restrições na Coleção de Users
+        await db.collection('users').doc(userRecord.uid).set({
+            email: email,
+            name: name,
+            role: role,
+            storeId: storeId,
+            createdAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        return { success: true, uid: userRecord.uid, message: 'Usuário cadastrado com sucesso.' };
+        
+    } catch (error) {
+        console.error("Erro ao tentar criar novo usuário Firebase:", error);
+        throw new functions.https.HttpsError('internal', error.message);
     }
 });

@@ -83,9 +83,15 @@ export const dashboardModule = {
         const fStart = (document.getElementById('dash-filter-start') || {value:''}).value;
         const fEnd = (document.getElementById('dash-filter-end') || {value:''}).value;
         const fType = (document.getElementById('dash-filter-type') || {value:'all'}).value;
+        const fStoreSeller = (document.getElementById('dash-filter-store') || {value:'all'}).value;
 
         let filteredSales = [...this.sales];
         let actions = this.getActions();
+
+        if (fStoreSeller !== 'all') {
+            filteredSales = filteredSales.filter(sale => sale.sellerId === fStoreSeller || sale.storeId === fStoreSeller);
+            actions = actions.filter(act => act.sellerId === fStoreSeller || act.storeId === fStoreSeller);
+        }
 
         if (fStart || fEnd) {
             const filterDates = (item) => {

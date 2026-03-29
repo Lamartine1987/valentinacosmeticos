@@ -37,11 +37,13 @@ export const reportsModule = {
         const fEnd = (document.getElementById('report-filter-end') || {value:''}).value;
         const fClient = (document.getElementById('report-filter-client') || {value:''}).value.trim().toLowerCase();
         const fProd = (document.getElementById('report-filter-product') || {value:''}).value.trim().toLowerCase();
+        const fStoreSeller = (document.getElementById('report-filter-store') || {value:'all'}).value;
 
         let filteredSales = [...this.sales];
 
         if (fClient) filteredSales = filteredSales.filter(s => s.name && s.name.toLowerCase().includes(fClient));
         if (fProd) filteredSales = filteredSales.filter(s => s.product && s.product.toLowerCase().includes(fProd));
+        if (fStoreSeller !== 'all') filteredSales = filteredSales.filter(s => s.sellerId === fStoreSeller || s.storeId === fStoreSeller);
 
         if (fStart || fEnd) {
             const filterDates = (item) => {
