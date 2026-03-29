@@ -138,7 +138,18 @@ export const funnelModule = {
         const searchInput = document.getElementById('filter-funnel-search');
         const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
 
-        this.leadsList.forEach(lead => {
+        // Organizar do mais recente (topo) pro mais antigo (base) lidando com Timestamps do Firebase e strings
+        const getTime = (val) => {
+            if (!val) return 0;
+            if (typeof val.toDate === 'function') return val.toDate().getTime();
+            if (val.seconds) return val.seconds * 1000;
+            return new Date(val).getTime() || 0;
+        };
+        const sortedLeads = [...this.leadsList].sort((a, b) => {
+            return getTime(b.updatedAt) - getTime(a.updatedAt);
+        });
+
+        sortedLeads.forEach(lead => {
             const status = lead.status || 'inbox';
             if(!listContainers[status]) return;
 
