@@ -230,13 +230,18 @@
                                 <input type="text" id="report-filter-product" list="dt-report-products" placeholder="Buscar Produto..." oninput="app.renderReports()" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; outline: none; background: white; font-size: 13px; color: var(--text-main); min-width: 150px; max-width: 200px;">
                                 <datalist id="dt-report-products"></datalist>
                             </div>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <i class="fas fa-map-marker-alt" style="color: var(--text-muted); font-size: 14px; margin-left: 8px;"></i>
+                                <input type="text" id="report-filter-city" list="dt-report-cities" placeholder="Buscar por Cidade..." oninput="app.renderReports()" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; outline: none; background: white; font-size: 13px; color: var(--text-main); min-width: 120px; max-width: 180px;">
+                                <datalist id="dt-report-cities"></datalist>
+                            </div>
                             <div class="admin-only" style="display:flex; align-items:center; gap:8px; display:none;">
                                 <i class="fas fa-store" style="color: var(--text-muted); font-size: 14px; margin-left: 8px;"></i>
                                 <select id="report-filter-store" onchange="app.renderReports()" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; outline: none; background: white; font-size: 13px; color: var(--text-main); cursor: pointer;">
                                     <option value="all">Rede Completa</option>
                                 </select>
                             </div>
-                            <button class="btn-secondary" onclick="document.getElementById('report-filter-start').value=''; document.getElementById('report-filter-end').value=''; document.getElementById('report-filter-client').value=''; document.getElementById('report-filter-product').value=''; const rStore = document.getElementById('report-filter-store'); if(rStore) rStore.value='all'; app.renderReports();" style="padding: 6px 12px; font-size: 12px; border-radius: 6px; background: transparent; color: #EF4444; border: 1px solid #EF4444; cursor: pointer; margin-left: auto;">Limpar Filtros</button>
+                            <button class="btn-secondary" onclick="document.getElementById('report-filter-start').value=''; document.getElementById('report-filter-end').value=''; document.getElementById('report-filter-client').value=''; document.getElementById('report-filter-product').value=''; document.getElementById('report-filter-city').value=''; const rStore = document.getElementById('report-filter-store'); if(rStore) rStore.value='all'; app.renderReports();" style="padding: 6px 12px; font-size: 12px; border-radius: 6px; background: transparent; color: #EF4444; border: 1px solid #EF4444; cursor: pointer; margin-left: auto;">Limpar Filtros</button>
                         </div>
                     </div>
 
@@ -437,6 +442,14 @@
                                 <div class="form-group">
                                     <label>E-mail (Opcional)</label>
                                     <input type="email" id="c-email" placeholder="cliente@email.com">
+                                </div>
+                                <div class="form-group">
+                                    <label>Data de Aniversário (Opcional)</label>
+                                    <input type="text" id="c-birthdate" placeholder="DD/MM" maxlength="5" autocomplete="off" oninput="this.value = this.value.replace(/[^0-9/]/g, '').replace(/^([0-9]{2})([0-9])/, '$1/$2').substring(0,5);">
+                                </div>
+                                <div class="form-group" style="grid-column: span 2;">
+                                    <label>Cidade (Opcional)</label>
+                                    <input type="text" id="c-city" placeholder="Ex: São Paulo">
                                 </div>
                             </div>
                             <div class="form-actions" style="display:flex; gap:16px;">
@@ -702,7 +715,7 @@
                                 </details>
 
                                 <!-- Accordion 5 -->
-                                <details style="border: 1px solid var(--border); border-radius: 8px; background: white;">
+                                <details style="margin-bottom: 12px; border: 1px solid var(--border); border-radius: 8px; background: white;">
                                     <summary style="padding: 16px; font-weight: 600; cursor: pointer; outline: none; background: #F8FAFC; border-bottom: 1px solid var(--border); color: #0F172A; list-style-type: none;">
                                         <div style="display: flex; align-items: center;"><i class="fas fa-user-clock" style="color: #475569; margin-right: 8px; width: 20px; text-align: center;"></i> <span>Resgate Estratégico (> 120 dias)</span></div>
                                     </summary>
@@ -717,6 +730,26 @@
                                                 <button type="button" class="btn-icon" style="color: #EF4444; font-size: 14px; padding: 4px; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 4px; background: transparent; border: none; cursor: pointer;" onclick="app.removeTemplateImage('tpl-lost-img')" title="Remover anexo"><i class="fas fa-trash"></i></button>
                                             </div>
                                             <input type="file" id="tpl-lost-file" accept="image/*" style="display: none;" onchange="app.uploadTemplateImage(event, 'tpl-lost-img')">
+                                        </div>
+                                    </div>
+                                </details>
+
+                                <!-- Accordion 6 (Aniversário) -->
+                                <details style="border: 1px solid var(--border); border-radius: 8px; background: white;">
+                                    <summary style="padding: 16px; font-weight: 600; cursor: pointer; outline: none; background: #F8FAFC; border-bottom: 1px solid var(--border); color: #0F172A; list-style-type: none;">
+                                        <div style="display: flex; align-items: center;"><i class="fas fa-birthday-cake" style="color: #FBBF24; margin-right: 8px; width: 20px; text-align: center;"></i> <span>Aniversário da Cliente</span></div>
+                                    </summary>
+                                    <div style="padding: 16px;">
+                                        <textarea id="tpl-birthday" rows="3" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; resize: vertical; font-family: inherit; font-size: 14px; margin-bottom: 12px;"></textarea>
+                                        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                                            <button type="button" class="btn-primary" style="padding: 8px 16px; background: #64748B; font-size: 13px; box-shadow: none;" onclick="document.getElementById('tpl-birthday-file').click()">
+                                                <i class="fas fa-paperclip"></i> Adicionar Imagem/Anexo
+                                            </button>
+                                            <div style="display: flex; flex: 1; min-width: 200px; gap: 4px; align-items: center; background: #F8FAFC; border: 1px dashed var(--border); border-radius: 8px; padding-right: 4px;">
+                                                <input type="url" id="tpl-birthday-img" placeholder="Sem anexo..." style="flex: 1; min-width: 0; padding: 8px 12px; border: none; outline: none; font-size: 12px; color: var(--text-muted); background: transparent; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;" readonly>
+                                                <button type="button" class="btn-icon" style="color: #EF4444; font-size: 14px; padding: 4px; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 4px; background: transparent; border: none; cursor: pointer;" onclick="app.removeTemplateImage('tpl-birthday-img')" title="Remover anexo"><i class="fas fa-trash"></i></button>
+                                            </div>
+                                            <input type="file" id="tpl-birthday-file" accept="image/*" style="display: none;" onchange="app.uploadTemplateImage(event, 'tpl-birthday-img')">
                                         </div>
                                     </div>
                                 </details>

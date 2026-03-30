@@ -2,10 +2,12 @@ export const reportsModule = {
     populateReportFilters() {
         const clientDt = document.getElementById('dt-report-clients');
         const prodDt = document.getElementById('dt-report-products');
+        const cityDt = document.getElementById('dt-report-cities');
         if (!clientDt || !prodDt) return;
 
         clientDt.innerHTML = '';
         prodDt.innerHTML = '';
+        if (cityDt) cityDt.innerHTML = '';
 
         const uniqueClients = [...new Set(this.sales.map(s => s.name))].filter(Boolean).sort();
         const allProducts = [];
@@ -18,6 +20,8 @@ export const reportsModule = {
             }
         });
         const uniqueProducts = [...new Set(allProducts)].filter(Boolean).sort();
+        
+        const uniqueCities = [...new Set(this.clients.map(c => c.city))].filter(Boolean).sort();
 
         uniqueClients.forEach(c => {
             const opt = document.createElement('option');
@@ -30,6 +34,14 @@ export const reportsModule = {
             opt.value = p;
             prodDt.appendChild(opt);
         });
+        
+        if (cityDt) {
+            uniqueCities.forEach(city => {
+                const opt = document.createElement('option');
+                opt.value = city;
+                cityDt.appendChild(opt);
+            });
+        }
     },
 
     renderReports() {
@@ -37,6 +49,7 @@ export const reportsModule = {
         const fEnd = (document.getElementById('report-filter-end') || {value:''}).value;
         const fClient = (document.getElementById('report-filter-client') || {value:''}).value.trim().toLowerCase();
         const fProd = (document.getElementById('report-filter-product') || {value:''}).value.trim().toLowerCase();
+        const fCity = (document.getElementById('report-filter-city') || {value:''}).value.trim().toLowerCase();
         const fStoreSeller = (document.getElementById('report-filter-store') || {value:'all'}).value;
 
         let filteredSales = [...this.sales];
@@ -44,6 +57,13 @@ export const reportsModule = {
         if (fClient) filteredSales = filteredSales.filter(s => s.name && s.name.toLowerCase().includes(fClient));
         if (fProd) filteredSales = filteredSales.filter(s => s.product && s.product.toLowerCase().includes(fProd));
         if (fStoreSeller !== 'all') filteredSales = filteredSales.filter(s => s.sellerId === fStoreSeller || s.storeId === fStoreSeller);
+        
+        if (fCity) {
+            filteredSales = filteredSales.filter(s => {
+                const clientObj = this.clients.find(c => (c.phone === s.phone) || (c.name === s.name));
+                return clientObj && clientObj.city && clientObj.city.toLowerCase().includes(fCity);
+            });
+        }
 
         if (fStart || fEnd) {
             const filterDates = (item) => {

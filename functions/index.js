@@ -271,7 +271,6 @@ exports.triggerDailyFunnels = functions.https.onRequest((req, res) => {
             }
 
             // 2. Determinar as datas-alvo (Hoje menos 30, 45 e 120 dias)
-            // Fixando timezone para o Brasil, garantindo que o dia não mude antecipadamente pelo horário UTC.
             const nowBrtStr = new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" });
             const today = new Date(nowBrtStr);
             
@@ -299,12 +298,10 @@ exports.triggerDailyFunnels = functions.https.onRequest((req, res) => {
 
             // 3. Varredura por Data
             for (const target of targetDates) {
-                if (!target.text || target.text.trim() === '') continue; // Não envia se não há texto configurado
+                if (!target.text || target.text.trim() === '') continue;
 
-                // Puxar as vendas daquela data exata
                 const salesSnap = await db.collection("sales").where("date", "==", target.dateStr).get();
                 
-                // Mapear telefones para evitar duplicidade na mesma data
                 const salesByPhone = new Map();
                 salesSnap.docs.forEach(doc => {
                     const data = doc.data();
@@ -313,39 +310,32 @@ exports.triggerDailyFunnels = functions.https.onRequest((req, res) => {
                     }
                 });
 
-                // 4. Lógica Reversa: Validar a ÚLTIMA compra real desse cliente
+                // 4. Lógica Reversa
                 for (const [phone, saleData] of salesByPhone.entries()) {
                     
-                    // Buscar a venda MAIS RECENTE desse mesmo telefone (em memória para evitar exigência de Composite Index)
                     const recentSaleSnap = await db.collection("sales")
                         .where("phone", "==", phone)
                         .get();
                     
                     if (!recentSaleSnap.empty) {
                         const allUserSales = recentSaleSnap.docs.map(d => d.data());
-                        // Ordena por data mais recente primeiro
                         allUserSales.sort((a, b) => b.date.localeCompare(a.date));
                         const mostRecentSale = allUserSales[0];
                         
-                        // Se a data mais recente FOR MAIOR que a data-alvo, significa que ele comprou DEPOIS. ABORTA.
                         if (mostRecentSale.date > target.dateStr) {
-                            console.log(`Disparo ${target.days}d abortado para ${phone}: cliente comprou recentemente em ${mostRecentSale.date}`);
+                            console.log(`Disparo ${target.days}d abortado para ${phone}: comprou em ${mostRecentSale.date}`);
                             continue;
                         }
                     }
 
-                    // 5. Se sobreviveu à validação, dispara!
+                    // 5. Dispara
                     let finalUrl = apiConfig.url.trim();
                     let headers = { "Content-Type": "application/json" };
                     let body = {};
-                    let isEvolution = true;
 
-                    // A API WA geralmente exige o prefixo 55 (Brasil)
                     const formattedPhone = phone.startsWith("55") ? phone : "55" + phone;
 
-                    // Ajustar Payload da API
                     if (finalUrl.includes('z-api')) {
-                        isEvolution = false;
                         if(apiConfig.token) headers['Client-Token'] = apiConfig.token;
                         if(target.img && target.img.trim() !== '') {
                             finalUrl = finalUrl.replace('/send-text', '/send-image');
@@ -382,6 +372,78 @@ exports.triggerDailyFunnels = functions.https.onRequest((req, res) => {
                         }
                     } catch(err) {
                         console.error('Falha no fetch para API do WA:', err);
+                    }
+                }
+            }
+
+            // --- 6. VARREDURA DE ANIVERSÁRIOS ---
+            if (templates.birthday && templates.birthday.trim() !== '') {
+                const todayDayMonth = String(today.getDate()).padStart(2, '0') + '/' + String(today.getMonth() + 1).padStart(2, '0');
+                const clientsSnap = await db.collection("clients").get();
+                
+                for (const doc of clientsSnap.docs) {
+                    const clientData = doc.data();
+                    if (clientData.birthdate && clientData.birthdate === todayDayMonth) {
+                        const phone = clientData.phone;
+                        if (!phone) continue;
+                        
+                        let finalUrl = apiConfig.url.trim();
+                        let headers = { "Content-Type": "application/json" };
+                        let body = {};
+                        
+                        const formattedPhone = phone.startsWith("55") ? phone : "55" + phone;
+                        const msgText = templates.birthday.replace(/\{nome\}/g, clientData.name || '');
+                        
+                        if (finalUrl.includes('z-api')) {
+                            if(apiConfig.token) headers['Client-Token'] = apiConfig.token;
+                            if(templates.birthdayImg && templates.birthdayImg.trim() !== '') {
+                                finalUrl = finalUrl.replace('/send-text', '/send-image');
+                                body = { phone: formattedPhone, image: templates.birthdayImg, caption: msgText };
+                            } else {
+                                body = { phone: formattedPhone, message: msgText };
+                            }
+                        } else {
+                            if(apiConfig.token) headers['apikey'] = apiConfig.token;
+                            if(templates.birthdayImg && templates.birthdayImg.trim() !== '') {
+                                finalUrl = finalUrl.endsWith('/messages/sendMedia') ? finalUrl : finalUrl.replace('/messages/sendText', '/messages/sendMedia');
+                                body = {
+                                    number: formattedPhone,
+                                    mediatype: "image",
+                                    media: templates.birthdayImg,
+                                    caption: msgText,
+                                    delay: 2000
+                                };
+                            } else {
+                                finalUrl = finalUrl.endsWith('/messages/sendText') ? finalUrl : finalUrl.replace('/messages/sendMedia', '/messages/sendText');
+                                body = {
+                                    number: formattedPhone,
+                                    textMessage: { text: msgText },
+                                    delay: 2000
+                                };
+                            }
+                        }
+                        
+                        try {
+                            const response = await fetch(finalUrl, { method: 'POST', headers, body: JSON.stringify(body) });
+                            if (response.ok) {
+                                sentCount++;
+                                logDetails.push({ phone, date: todayDayMonth, type: 'birthday' });
+                                
+                                // Salvar log de auditoria
+                                await db.collection('audit_logs').add({
+                                    resource: 'client',
+                                    action: 'birthday_message',
+                                    resourceId: doc.id,
+                                    details: `Mensagem automática de Feliz Aniversário enviada com sucesso para ${clientData.name || 'Cliente Sem Nome'} (${phone}).`,
+                                    userName: 'Sistema Automático',
+                                    userEmail: 'system',
+                                    userRole: 'system',
+                                    timestamp: admin.firestore.FieldValue.serverTimestamp()
+                                });
+                            }
+                        } catch(err) {
+                            console.error('Falha no fetch para API do WA (Aniversário):', err);
+                        }
                     }
                 }
             }

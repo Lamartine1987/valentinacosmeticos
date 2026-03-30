@@ -319,6 +319,8 @@ const app = {
         document.getElementById('c-name').value = client.name || '';
         document.getElementById('c-phone').value = client.phone || '';
         document.getElementById('c-email').value = client.email || '';
+        document.getElementById('c-birthdate').value = client.birthdate || '';
+        document.getElementById('c-city').value = client.city || '';
         document.getElementById('client-form-title').innerText = "Editar Cliente";
         document.getElementById('client-form-desc').innerText = "Atualize os dados deste cliente na sua base.";
         document.getElementById('client-submit-text').innerText = "Atualizar Cliente";
@@ -738,7 +740,9 @@ const app = {
                 const newClient = {
                     name: document.getElementById('c-name').value,
                     phone: document.getElementById('c-phone').value,
-                    email: document.getElementById('c-email').value || ''
+                    email: document.getElementById('c-email').value || '',
+                    birthdate: document.getElementById('c-birthdate').value || '',
+                    city: document.getElementById('c-city').value || ''
                 };
                 if (this.editingClientId) {
                     const oldClient = this.clients.find(c => c.id === this.editingClientId) || {};
@@ -748,6 +752,8 @@ const app = {
                     if ((oldClient.name || '') !== (newClient.name || '')) changes.push(`<strong>Nome:</strong> ${oldClient.name || "Vazio"} ➔ ${newClient.name || "Vazio"}`);
                     if ((oldClient.phone || '') !== (newClient.phone || '')) changes.push(`<strong>Tel:</strong> ${oldClient.phone || "Vazio"} ➔ ${newClient.phone || "Vazio"}`);
                     if ((oldClient.email || '') !== (newClient.email || '')) changes.push(`<strong>E-mail:</strong> ${oldClient.email || "Vazio"} ➔ ${newClient.email || "Vazio"}`);
+                    if ((oldClient.birthdate || '') !== (newClient.birthdate || '')) changes.push(`<strong>Anivesário:</strong> ${oldClient.birthdate || "Vazio"} ➔ ${newClient.birthdate || "Vazio"}`);
+                    if ((oldClient.city || '') !== (newClient.city || '')) changes.push(`<strong>Cidade:</strong> ${oldClient.city || "Vazio"} ➔ ${newClient.city || "Vazio"}`);
                     
                     let detailsStr = changes.length > 0 ? changes.join('<br>') : 'Atualizado sem perdas visíveis.';
                     await this.saveAuditLog('client', 'edit', this.editingClientId, detailsStr);
@@ -869,6 +875,8 @@ const app = {
                     dormantImg: document.getElementById('tpl-dormant-img') ? document.getElementById('tpl-dormant-img').value : '',
                     lost: document.getElementById('tpl-lost').value,
                     lostImg: document.getElementById('tpl-lost-img') ? document.getElementById('tpl-lost-img').value : '',
+                    birthday: document.getElementById('tpl-birthday') ? document.getElementById('tpl-birthday').value : '',
+                    birthdayImg: document.getElementById('tpl-birthday-img') ? document.getElementById('tpl-birthday-img').value : '',
                     promo: promos
                 };
 

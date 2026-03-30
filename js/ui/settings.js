@@ -45,6 +45,8 @@ export const settingsModule = {
                 const tRestockImg = document.getElementById('tpl-restock-img');
                 const tDormantImg = document.getElementById('tpl-dormant-img');
                 const tLostImg = document.getElementById('tpl-lost-img');
+                const tBirthday = document.getElementById('tpl-birthday');
+                const tBirthdayImg = document.getElementById('tpl-birthday-img');
 
                 if(tThanks) tThanks.value = this.msgTemplates.thanks || '';
                 if(t15d) t15d.value = this.msgTemplates.d15 || '';
@@ -57,6 +59,8 @@ export const settingsModule = {
                 if(tRestockImg) tRestockImg.value = this.msgTemplates.restockImg || '';
                 if(tDormantImg) tDormantImg.value = this.msgTemplates.dormantImg || '';
                 if(tLostImg) tLostImg.value = this.msgTemplates.lostImg || '';
+                if(tBirthday) tBirthday.value = this.msgTemplates.birthday || '';
+                if(tBirthdayImg) tBirthdayImg.value = this.msgTemplates.birthdayImg || '';
                 
                 if (typeof this.msgTemplates.promo === 'string') {
                     this.msgTemplates.promo = [ { id: Date.now(), title: 'Campanha Padrão', text: this.msgTemplates.promo } ];
