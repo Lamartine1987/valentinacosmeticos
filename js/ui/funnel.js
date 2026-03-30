@@ -194,7 +194,7 @@ export const funnelModule = {
             card.innerHTML = `
                 <div class="k-card-title" style="display:flex; justify-content:space-between; align-items:flex-start;">
                     <span style="display:flex; gap: 8px; align-items:flex-start; pointer-events:none;">
-                        <i class="fas fa-grip-vertical drag-handle" style="color: #cbd5e1; cursor: grab; padding: 4px 6px 4px 0; font-size: 14px; pointer-events: auto; touch-action: none;" title="Arraste por aqui"></i>
+                        <i class="fas fa-grip-vertical drag-handle" style="color: #94a3b8; cursor: grab; padding: 8px 12px 8px 4px; font-size: 22px; pointer-events: auto; touch-action: none;" title="Arraste por aqui"></i>
                         <input type="checkbox" class="funnel-checkbox admin-only" value="${lead.id}" style="display:none; margin-top: 3px; pointer-events:auto;" onclick="event.stopPropagation(); app.toggleFunnelSelection(this)" onmousedown="event.stopPropagation()">
                         <span style="pointer-events:auto; display:flex; flex-direction:column;">
                             <span>

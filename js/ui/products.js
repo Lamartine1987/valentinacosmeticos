@@ -117,6 +117,7 @@ export const productsModule = {
                 <td><strong>${prod.name}</strong><br><small style="color:var(--text-muted);">${prod.barcode || ''}</small></td>
                 <td><span class="pill" style="pointer-events:none;">${prod.category || 'Geral'}</span></td>
                 <td>${price}</td>
+                <td style="color:var(--text-muted); font-size:12px; text-transform:capitalize;">${prod.sellerName || 'Sistema'}</td>
                 <td style="text-align: center;">
                     <button class="btn-icon" style="color: var(--primary); margin-right: 12px;" onclick="app.editProduct('${prod.id}')" title="Editar Produto">
                         <i class="fas fa-edit"></i>

@@ -173,10 +173,13 @@ export const apiModule = {
 
     async saveProduct(productData) {
         try {
-            await db.collection("products").add({
-                ...productData,
-                createdAt: new Date().toISOString()
-            });
+            const enrichedProduct = { ...productData, createdAt: new Date().toISOString() };
+            if (this.user && this.currentUserProfile) {
+                enrichedProduct.sellerId = this.user.uid;
+                enrichedProduct.sellerName = this.currentUserProfile.name || 'Sistema';
+                enrichedProduct.storeId = this.currentUserProfile.storeId || 'matriz';
+            }
+            await db.collection("products").add(enrichedProduct);
             this.showToast('Produto salvo no catálogo com sucesso!');
         } catch (e) {
             console.error(e);

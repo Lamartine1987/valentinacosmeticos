@@ -301,7 +301,7 @@ export const clientsModule = {
                 <td>${client.phone}</td>
                 <td>${client.compras.length} compra(s)</td>
                 <td style="color:var(--primary); font-weight:600;">R$ ${client.totalGasto.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                <td class="admin-only" style="${this.currentUserProfile && this.currentUserProfile.role === 'admin' ? '' : 'display:none;'} color:var(--text-muted); font-size:12px; text-transform:capitalize;">${client.sellerName || 'Sistema'}</td>
+                <td style="color:var(--text-muted); font-size:12px; text-transform:capitalize;">${client.sellerName || 'Sistema'}</td>
                 <td style="text-align: center;">
                     <button class="btn-icon" style="color: var(--primary); margin-right: 12px;" onclick="app.viewClientHistory('${client.id}')" title="Ver Histórico de Compras">
                         <i class="fas fa-history"></i>
