@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,6 +11,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 </head>
+
 <body>
     <!-- Login Overlay -->
     <div id="login-overlay" class="login-overlay active">
@@ -30,11 +32,14 @@
                     <label>Senha</label>
                     <input type="password" id="login-password" required placeholder="••••••••">
                 </div>
-                <button type="submit" class="btn-primary" style="width: 100%; justify-content: center; margin-top: 24px; padding: 14px; font-size: 16px;">
+                <button type="submit" class="btn-primary"
+                    style="width: 100%; justify-content: center; margin-top: 24px; padding: 14px; font-size: 16px;">
                     <i class="fas fa-sign-in-alt"></i> Entrar no Sistema
                 </button>
             </form>
-            <div id="login-error" style="color: #EF4444; font-size: 14px; margin-top: 16px; display: none; text-align: center; font-weight: 500;"></div>
+            <div id="login-error"
+                style="color: #EF4444; font-size: 14px; margin-top: 16px; display: none; text-align: center; font-weight: 500;">
+            </div>
         </div>
     </div>
 
@@ -54,7 +59,8 @@
                 <a href="#" class="nav-item" data-page="funnel">
                     <i class="fas fa-filter"></i>
                     <span>Funil de Vendas</span>
-                    <span class="badge" style="position:relative; top:0; right:0; margin-left:auto; background:#EF4444; border:none; padding:2px 6px;">Novo</span>
+                    <span class="badge"
+                        style="position:relative; top:0; right:0; margin-left:auto; background:#EF4444; border:none; padding:2px 6px;">Novo</span>
                 </a>
                 <a href="#" class="nav-item" data-page="reports">
                     <i class="fas fa-chart-line"></i>
@@ -86,7 +92,8 @@
                 </a>
             </nav>
             <div class="sidebar-footer">
-                <div class="user-info" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                <div class="user-info"
+                    style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
                     <div style="display:flex; align-items:center; gap: 12px;">
                         <div class="avatar">AD</div>
                         <div style="display:flex; flex-direction: column;">
@@ -110,10 +117,13 @@
                 <div class="search-bar" style="position: relative;">
                     <i class="fas fa-search"></i>
                     <input type="text" id="global-search" placeholder="Buscar cliente ou produto..." autocomplete="off">
-                    <div id="global-search-results" class="autocomplete-suggestions" style="width: 100%; top: 45px; border-radius: 8px;"></div>
+                    <div id="global-search-results" class="autocomplete-suggestions"
+                        style="width: 100%; top: 45px; border-radius: 8px;"></div>
                 </div>
                 <div class="topbar-actions">
-                    <button class="btn-icon" onclick="app.navigateTo('dashboard')" title="Ver pendências"><i class="fas fa-bell"></i><span class="badge" id="noti-badge" style="display:none;">0</span></button>
+                    <button class="btn-icon" onclick="app.navigateTo('dashboard')" title="Ver pendências"><i
+                            class="fas fa-bell"></i><span class="badge" id="noti-badge"
+                            style="display:none;">0</span></button>
                     <button class="btn-primary" onclick="app.navigateTo('register')">
                         <i class="fas fa-plus"></i> Nova Venda
                     </button>
@@ -127,15 +137,21 @@
                         <h2>Visão Geral do Relacionamento</h2>
                         <p>Acompanhe e aja sobre as oportunidades de pós-venda.</p>
                     </div>
-                    
-                    <div class="filters-bar" style="display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; align-items: center;">
+
+                    <div class="filters-bar"
+                        style="display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; align-items: center;">
                         <div style="display: flex; gap: 8px; align-items: center;">
-                            <input type="date" id="dash-filter-start" style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; color: var(--text-muted); font-size: 14px; transition: border-color 0.2s;" title="Data Inicial das Vendas">
+                            <input type="date" id="dash-filter-start"
+                                style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; color: var(--text-muted); font-size: 14px; transition: border-color 0.2s;"
+                                title="Data Inicial das Vendas">
                             <span style="color: var(--text-muted); font-weight: 500;">até</span>
-                            <input type="date" id="dash-filter-end" style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; color: var(--text-muted); font-size: 14px; transition: border-color 0.2s;" title="Data Final das Vendas">
+                            <input type="date" id="dash-filter-end"
+                                style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; color: var(--text-muted); font-size: 14px; transition: border-color 0.2s;"
+                                title="Data Final das Vendas">
                         </div>
-                        
-                        <select id="dash-filter-type" style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer; transition: border-color 0.2s; flex: 1; min-width: 200px;">
+
+                        <select id="dash-filter-type"
+                            style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer; transition: border-color 0.2s; flex: 1; min-width: 200px;">
                             <option value="all">Todas as Ações Recomendadas</option>
                             <option value="thanks">Somente Agradecimentos</option>
                             <option value="d15">Somente Acompanhamento (15d)</option>
@@ -144,10 +160,13 @@
                             <option value="lost">Somente Ex-clientes (Resgate > 120d)</option>
                             <option value="promo">Somente Promoções (Enviadas)</option>
                         </select>
-                        
+
                         <div class="admin-only" style="display: flex; gap: 8px; align-items: center; display: none;">
-                            <span style="font-size: 13px; color: var(--text-muted); font-weight: 500;"><i class="fas fa-store" style="margin-right:4px;"></i> Vendedor / Loja</span>
-                            <select id="dash-filter-store" style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer; transition: border-color 0.2s;" onchange="app.renderDashboard()">
+                            <span style="font-size: 13px; color: var(--text-muted); font-weight: 500;"><i
+                                    class="fas fa-store" style="margin-right:4px;"></i> Vendedor / Loja</span>
+                            <select id="dash-filter-store"
+                                style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer; transition: border-color 0.2s;"
+                                onchange="app.renderDashboard()">
                                 <option value="all">Rede Completa</option>
                             </select>
                         </div>
@@ -187,10 +206,13 @@
                         <!-- Régua de Relacionamento (Smart Action List) -->
                         <div class="action-list-card">
                             <div class="card-header">
-                                <h3><i class="fab fa-whatsapp" style="color:#25D366; margin-right: 8px;"></i> Ações de Relacionamento RecomendadasHoje</h3>
+                                <h3><i class="fab fa-whatsapp" style="color:#25D366; margin-right: 8px;"></i> Ações de
+                                    Relacionamento Recomendadas Hoje</h3>
                                 <div class="filter-pills" style="display: flex; gap: 8px; align-items: center;">
-                                    <button class="btn-primary" id="btn-disparar-todos" onclick="app.dispararTodos()" style="padding: 6px 12px; font-size: 13px; display: none; background: #8B5CF6; align-items: center;">
-                                        <i class="fas fa-paper-plane" style="margin-right: 6px;"></i> <span>Disparar Pendentes</span>
+                                    <button class="btn-primary" id="btn-disparar-todos" onclick="app.dispararTodos()"
+                                        style="padding: 6px 12px; font-size: 13px; display: none; background: #8B5CF6; align-items: center;">
+                                        <i class="fas fa-paper-plane" style="margin-right: 6px;"></i> <span>Disparar
+                                            Pendentes</span>
                                     </button>
                                     <span class="pill active" data-filter="all">Todas as Tarefas</span>
                                 </div>
@@ -213,55 +235,75 @@
                             <h2>Estatísticas e Resultados</h2>
                             <p>Acompanhe o faturamento e os produtos mais vendidos da sua loja.</p>
                         </div>
-                        <div class="filters-bar" style="width: 100%; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; border-top: 1px solid var(--border); padding-top: 16px;">
+                        <div class="filters-bar"
+                            style="width: 100%; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; border-top: 1px solid var(--border); padding-top: 16px;">
                             <div style="display:flex; align-items:center; gap:8px;">
                                 <i class="fas fa-calendar-alt" style="color: var(--text-muted); font-size: 14px;"></i>
-                                <input type="date" id="report-filter-start" onchange="app.renderReports()" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; outline: none; background: white; font-size: 13px; color: var(--text-main);">
+                                <input type="date" id="report-filter-start" onchange="app.renderReports()"
+                                    style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; outline: none; background: white; font-size: 13px; color: var(--text-main);">
                                 <span style="color: var(--text-muted); font-size: 13px;">até</span>
-                                <input type="date" id="report-filter-end" onchange="app.renderReports()" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; outline: none; background: white; font-size: 13px; color: var(--text-main);">
+                                <input type="date" id="report-filter-end" onchange="app.renderReports()"
+                                    style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; outline: none; background: white; font-size: 13px; color: var(--text-main);">
                             </div>
                             <div style="display:flex; align-items:center; gap:8px;">
-                                <i class="fas fa-users" style="color: var(--text-muted); font-size: 14px; margin-left: 8px;"></i>
-                                <input type="text" id="report-filter-client" list="dt-report-clients" placeholder="Buscar Cliente..." oninput="app.renderReports()" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; outline: none; background: white; font-size: 13px; color: var(--text-main); min-width: 150px; max-width: 200px;">
+                                <i class="fas fa-users"
+                                    style="color: var(--text-muted); font-size: 14px; margin-left: 8px;"></i>
+                                <input type="text" id="report-filter-client" list="dt-report-clients"
+                                    placeholder="Buscar Cliente..." oninput="app.renderReports()"
+                                    style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; outline: none; background: white; font-size: 13px; color: var(--text-main); min-width: 150px; max-width: 200px;">
                                 <datalist id="dt-report-clients"></datalist>
                             </div>
                             <div style="display:flex; align-items:center; gap:8px;">
-                                <i class="fas fa-box" style="color: var(--text-muted); font-size: 14px; margin-left: 8px;"></i>
-                                <input type="text" id="report-filter-product" list="dt-report-products" placeholder="Buscar Produto..." oninput="app.renderReports()" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; outline: none; background: white; font-size: 13px; color: var(--text-main); min-width: 150px; max-width: 200px;">
+                                <i class="fas fa-box"
+                                    style="color: var(--text-muted); font-size: 14px; margin-left: 8px;"></i>
+                                <input type="text" id="report-filter-product" list="dt-report-products"
+                                    placeholder="Buscar Produto..." oninput="app.renderReports()"
+                                    style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; outline: none; background: white; font-size: 13px; color: var(--text-main); min-width: 150px; max-width: 200px;">
                                 <datalist id="dt-report-products"></datalist>
                             </div>
                             <div style="display:flex; align-items:center; gap:8px;">
-                                <i class="fas fa-map-marker-alt" style="color: var(--text-muted); font-size: 14px; margin-left: 8px;"></i>
-                                <input type="text" id="report-filter-city" list="dt-report-cities" placeholder="Buscar por Cidade..." oninput="app.renderReports()" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; outline: none; background: white; font-size: 13px; color: var(--text-main); min-width: 120px; max-width: 180px;">
+                                <i class="fas fa-map-marker-alt"
+                                    style="color: var(--text-muted); font-size: 14px; margin-left: 8px;"></i>
+                                <input type="text" id="report-filter-city" list="dt-report-cities"
+                                    placeholder="Buscar por Cidade..." oninput="app.renderReports()"
+                                    style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; outline: none; background: white; font-size: 13px; color: var(--text-main); min-width: 120px; max-width: 180px;">
                                 <datalist id="dt-report-cities"></datalist>
                             </div>
                             <div class="admin-only" style="display:flex; align-items:center; gap:8px; display:none;">
-                                <i class="fas fa-store" style="color: var(--text-muted); font-size: 14px; margin-left: 8px;"></i>
-                                <select id="report-filter-store" onchange="app.renderReports()" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; outline: none; background: white; font-size: 13px; color: var(--text-main); cursor: pointer;">
+                                <i class="fas fa-store"
+                                    style="color: var(--text-muted); font-size: 14px; margin-left: 8px;"></i>
+                                <select id="report-filter-store" onchange="app.renderReports()"
+                                    style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; outline: none; background: white; font-size: 13px; color: var(--text-main); cursor: pointer;">
                                     <option value="all">Rede Completa</option>
                                 </select>
                             </div>
-                            <button class="btn-secondary" onclick="document.getElementById('report-filter-start').value=''; document.getElementById('report-filter-end').value=''; document.getElementById('report-filter-client').value=''; document.getElementById('report-filter-product').value=''; document.getElementById('report-filter-city').value=''; const rStore = document.getElementById('report-filter-store'); if(rStore) rStore.value='all'; app.renderReports();" style="padding: 6px 12px; font-size: 12px; border-radius: 6px; background: transparent; color: #EF4444; border: 1px solid #EF4444; cursor: pointer; margin-left: auto;">Limpar Filtros</button>
+                            <button class="btn-secondary"
+                                onclick="document.getElementById('report-filter-start').value=''; document.getElementById('report-filter-end').value=''; document.getElementById('report-filter-client').value=''; document.getElementById('report-filter-product').value=''; document.getElementById('report-filter-city').value=''; const rStore = document.getElementById('report-filter-store'); if(rStore) rStore.value='all'; app.renderReports();"
+                                style="padding: 6px 12px; font-size: 12px; border-radius: 6px; background: transparent; color: #EF4444; border: 1px solid #EF4444; cursor: pointer; margin-left: auto;">Limpar
+                                Filtros</button>
                         </div>
                     </div>
 
                     <div class="stats-grid">
                         <div class="stat-card">
-                            <div class="stat-icon" style="background: #E0E7FF; color: #4F46E5;"><i class="fas fa-calendar-alt"></i></div>
+                            <div class="stat-icon" style="background: #E0E7FF; color: #4F46E5;"><i
+                                    class="fas fa-calendar-alt"></i></div>
                             <div class="stat-info">
                                 <h3>Faturamento Total</h3>
                                 <div class="stat-value" id="report-total-year">R$ 0,00</div>
                             </div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-icon" style="background: #DEF7EC; color: #059669;"><i class="fas fa-chart-bar"></i></div>
+                            <div class="stat-icon" style="background: #DEF7EC; color: #059669;"><i
+                                    class="fas fa-chart-bar"></i></div>
                             <div class="stat-info">
                                 <h3>Faturamento do Mês</h3>
                                 <div class="stat-value" id="report-total-month">R$ 0,00</div>
                             </div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-icon" style="background: #FEF3C7; color: #D97706;"><i class="fas fa-receipt"></i></div>
+                            <div class="stat-icon" style="background: #FEF3C7; color: #D97706;"><i
+                                    class="fas fa-receipt"></i></div>
                             <div class="stat-info">
                                 <h3>Ticket Médio Geral</h3>
                                 <div class="stat-value" id="report-ticket-avg">R$ 0,00</div>
@@ -286,8 +328,12 @@
                         </div>
                     </div>
 
-                    <div id="report-filtered-clients" style="display: none; margin-bottom: 32px; animation: fadeIn 0.3s ease-in-out;">
-                        <h3 style="margin-bottom: 16px; margin-top: 16px; font-size: 16px; color: var(--text-main); border-bottom: 2px solid #E0E7FF; padding-bottom: 8px; display: inline-flex; align-items: center; gap: 8px;"><i class="fas fa-search" style="color: #8B5CF6;"></i> Resultados do Filtro Atual (Clientes)</h3>
+                    <div id="report-filtered-clients"
+                        style="display: none; margin-bottom: 32px; animation: fadeIn 0.3s ease-in-out;">
+                        <h3
+                            style="margin-bottom: 16px; margin-top: 16px; font-size: 16px; color: var(--text-main); border-bottom: 2px solid #E0E7FF; padding-bottom: 8px; display: inline-flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-search" style="color: #8B5CF6;"></i> Resultados do Filtro Atual (Clientes)
+                        </h3>
                         <div id="report-clients-list" style="display: flex; flex-direction: column; gap: 8px;">
                             <!-- Preenchido via JS -->
                         </div>
@@ -300,13 +346,14 @@
                         <h2>Registrar Nova Venda</h2>
                         <p>Insira os dados da sua cliente para iniciar o fluxo de CRM automágico.</p>
                     </div>
-                    
+
                     <div class="form-card">
                         <form id="form-sale">
                             <div class="form-grid">
                                 <div class="form-group" style="position: relative;">
                                     <label>Nome da Cliente</label>
-                                    <input type="text" id="r-name" required placeholder="Ex: Ana Clara" autocomplete="off">
+                                    <input type="text" id="r-name" required placeholder="Ex: Ana Clara"
+                                        autocomplete="off">
                                     <div id="client-suggestions" class="autocomplete-suggestions"></div>
                                 </div>
                                 <div class="form-group">
@@ -314,59 +361,79 @@
                                     <input type="text" id="r-phone" required placeholder="Ex: 11999999999">
                                 </div>
                                 <div class="form-group" style="grid-column: span 2;">
-                                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                                    <div
+                                        style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                                         <label style="margin:0;">Produtos Comprados</label>
-                                        <button type="button" onclick="app.addSaleItem()" class="btn-primary" style="padding:5px 14px; font-size:13px; box-shadow:none;">
+                                        <button type="button" onclick="app.addSaleItem()" class="btn-primary"
+                                            style="padding:5px 14px; font-size:13px; box-shadow:none;">
                                             <i class="fas fa-plus"></i> Adicionar Item
                                         </button>
                                     </div>
-                                    <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px; padding:0 4px; font-size:12px; font-weight:600; color:var(--text-muted);">
+                                    <div
+                                        style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px; padding:0 4px; font-size:12px; font-weight:600; color:var(--text-muted);">
                                         <span style="flex: 1 1 200px;">Produto</span>
                                         <span style="flex: 0 0 110px;">Unitário</span>
                                         <span style="flex: 0 0 70px; text-align:center;">Qtd</span>
                                         <span style="flex: 0 0 110px;">Subtotal</span>
                                         <span style="flex: 0 0 44px;"></span>
                                     </div>
-                                    <div id="sale-items-container" style="display:flex; flex-direction:column; gap:8px;"></div>
-                                    <div style="display:flex; justify-content:flex-end; padding: 16px 52px 0 0; font-size:14px; color:var(--text-main);">
-                                        <strong>Subtotal da Lista: </strong> <span id="r-subtotal-display" style="margin-left:8px; font-weight:bold; color:var(--primary); font-size:15px;">R$ 0.00</span>
+                                    <div id="sale-items-container"
+                                        style="display:flex; flex-direction:column; gap:8px;"></div>
+                                    <div
+                                        style="display:flex; justify-content:flex-end; padding: 16px 52px 0 0; font-size:14px; color:var(--text-main);">
+                                        <strong>Subtotal da Lista: </strong> <span id="r-subtotal-display"
+                                            style="margin-left:8px; font-weight:bold; color:var(--primary); font-size:15px;">R$
+                                            0.00</span>
                                     </div>
                                     <datalist id="products-datalist"></datalist>
                                 </div>
                                 <div class="form-group">
                                     <label>Desconto (R$)</label>
-                                    <input type="number" id="r-discount" placeholder="0.00" step="0.01" value="0" oninput="if(window.app && app.calculateSaleTotal) app.calculateSaleTotal()">
+                                    <input type="number" id="r-discount" placeholder="0.00" step="0.01" value="0"
+                                        oninput="if(window.app && app.calculateSaleTotal) app.calculateSaleTotal()">
                                 </div>
                                 <div class="form-group">
                                     <label>Valor Final (Faturado) (R$)</label>
-                                    <input type="number" id="r-value" required placeholder="149.90" step="0.01" readonly style="background: #F1F5F9; font-weight: bold; border-color: #CBD5E1;">
+                                    <input type="number" id="r-value" required placeholder="149.90" step="0.01" readonly
+                                        style="background: #F1F5F9; font-weight: bold; border-color: #CBD5E1;">
                                 </div>
                                 <div class="form-group" style="grid-column: span 2;">
                                     <label>Data da Compra</label>
                                     <input type="date" id="r-date" required>
                                 </div>
                                 <div class="form-group" style="grid-column: span 2;">
-                                    <label><i class="fas fa-store" style="color:var(--primary); margin-right:6px;"></i> Loja do Atendimento</label>
-                                    <select id="r-store-assigned" style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer;">
+                                    <label><i class="fas fa-store" style="color:var(--primary); margin-right:6px;"></i>
+                                        Loja do Atendimento</label>
+                                    <select id="r-store-assigned"
+                                        style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer;">
                                         <option value="matriz">Loja 1</option>
                                         <option value="filial_1">Loja 2</option>
                                     </select>
                                 </div>
                                 <div class="form-group admin-only" style="grid-column: span 2; display: none;">
-                                    <label><i class="fas fa-user-tag" style="color:var(--primary); margin-right:6px;"></i> Atribuir a Venda e Cliente para Consultor (Override)</label>
-                                    <select id="r-seller-assigned" style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer;">
+                                    <label><i class="fas fa-user-tag"
+                                            style="color:var(--primary); margin-right:6px;"></i> Atribuir a Venda e
+                                        Cliente para Consultor (Override)</label>
+                                    <select id="r-seller-assigned"
+                                        style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer;">
                                         <option value="me">Minha Própria Venda</option>
                                     </select>
                                 </div>
                             </div>
-                            <div class="form-actions" style="display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap;">
-                                <button type="button" class="btn-primary" style="background: white; color: var(--text-muted); border: 1px solid var(--border); box-shadow: none; justify-content: center; flex: 1; min-width: 120px; font-size: 15px;" onclick="app.clearSaleForm()">
+                            <div class="form-actions"
+                                style="display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap;">
+                                <button type="button" class="btn-primary"
+                                    style="background: white; color: var(--text-muted); border: 1px solid var(--border); box-shadow: none; justify-content: center; flex: 1; min-width: 120px; font-size: 15px;"
+                                    onclick="app.clearSaleForm()">
                                     <i class="fas fa-eraser"></i> Limpar
                                 </button>
-                                <button type="button" id="btn-cancel-sale" class="btn-primary" style="background: #FFF1F2; color: #E11D48; border: 1px solid #FECDD3; box-shadow: none; justify-content: center; flex: 1; min-width: 150px; font-size: 15px; display: none;" onclick="app.cancelSaleProcess()">
+                                <button type="button" id="btn-cancel-sale" class="btn-primary"
+                                    style="background: #FFF1F2; color: #E11D48; border: 1px solid #FECDD3; box-shadow: none; justify-content: center; flex: 1; min-width: 150px; font-size: 15px; display: none;"
+                                    onclick="app.cancelSaleProcess()">
                                     <i class="fas fa-undo"></i> Cancelar Ganho
                                 </button>
-                                <button type="submit" class="btn-primary" style="flex: 2; min-width: 250px; padding: 14px; font-size: 16px; justify-content: center;">
+                                <button type="submit" class="btn-primary"
+                                    style="flex: 2; min-width: 250px; padding: 14px; font-size: 16px; justify-content: center;">
                                     <i class="fas fa-save"></i> Registrar Venda
                                 </button>
                             </div>
@@ -376,13 +443,15 @@
 
                 <!-- Clients List Page -->
                 <section class="page" id="page-clients">
-                     <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
+                    <div class="page-header"
+                        style="display: flex; justify-content: space-between; align-items: flex-end;">
                         <div>
                             <h2>Base de Clientes</h2>
                             <p>Contatos e Lifetime Value (LTV) da sua carteira.</p>
                         </div>
                         <div style="display: flex; gap: 8px;">
-                            <button class="btn-primary" style="background: #EF4444;" onclick="app.deleteSelectedClients()">
+                            <button class="btn-primary" style="background: #EF4444;"
+                                onclick="app.deleteSelectedClients()">
                                 <i class="fas fa-trash"></i> Excluir Selecionados
                             </button>
                             <button class="btn-primary" style="background: #8B5CF6;" onclick="app.openPromoModal()">
@@ -393,31 +462,48 @@
                             </button>
                         </div>
                     </div>
-                    
+
                     <div class="filters-bar" style="margin-bottom: 24px; display: flex; gap: 16px; flex-wrap: wrap;">
-                        <input type="text" id="filter-client-name" placeholder="Pesquisar por nome ou telefone..." style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; flex: 1; min-width: 250px; outline: none; font-size: 14px; transition: border-color 0.2s;" oninput="app.renderClientsList()">
-                        
-                        <select id="filter-client-sort" style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer; transition: border-color 0.2s;" onchange="app.renderClientsList()">
+                        <input type="text" id="filter-client-name" placeholder="Pesquisar por nome ou telefone..."
+                            style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; flex: 1; min-width: 250px; outline: none; font-size: 14px; transition: border-color 0.2s;"
+                            oninput="app.renderClientsList()">
+
+                        <select id="filter-client-sort"
+                            style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer; transition: border-color 0.2s;"
+                            onchange="app.renderClientsList()">
                             <option value="recent">Maior Valor em Compras (Padrão)</option>
                             <option value="az">Ordem Alfabética (A-Z)</option>
                             <option value="za">Ordem Alfabética (Z-A)</option>
                         </select>
                         <div style="display: flex; gap: 8px; align-items: center;">
-                            <span style="font-size: 13px; color: var(--text-muted); font-weight: 500;"><i class="fas fa-filter" style="margin-right:4px;"></i> Gastou de</span>
-                            <input type="number" id="filter-client-min" placeholder="R$ Mín" step="0.01" style="padding: 12px; width: 100px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); transition: border-color 0.2s;" oninput="app.renderClientsList()">
+                            <span style="font-size: 13px; color: var(--text-muted); font-weight: 500;"><i
+                                    class="fas fa-filter" style="margin-right:4px;"></i> Gastou de</span>
+                            <input type="number" id="filter-client-min" placeholder="R$ Mín" step="0.01"
+                                style="padding: 12px; width: 100px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); transition: border-color 0.2s;"
+                                oninput="app.renderClientsList()">
                             <span style="font-size: 13px; color: var(--text-muted); font-weight: 500;">a</span>
-                            <input type="number" id="filter-client-max" placeholder="R$ Máx" step="0.01" style="padding: 12px; width: 100px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); transition: border-color 0.2s;" oninput="app.renderClientsList()">
+                            <input type="number" id="filter-client-max" placeholder="R$ Máx" step="0.01"
+                                style="padding: 12px; width: 100px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); transition: border-color 0.2s;"
+                                oninput="app.renderClientsList()">
                         </div>
                         <div style="display: flex; gap: 8px; align-items: center;">
-                            <span style="font-size: 13px; color: var(--text-muted); font-weight: 500;"><i class="fas fa-shopping-bag" style="margin-right:4px;"></i> Tem de</span>
-                            <input type="number" id="filter-client-qty-min" placeholder="Qtd Mín" style="padding: 12px; width: 80px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); transition: border-color 0.2s;" oninput="app.renderClientsList()">
+                            <span style="font-size: 13px; color: var(--text-muted); font-weight: 500;"><i
+                                    class="fas fa-shopping-bag" style="margin-right:4px;"></i> Tem de</span>
+                            <input type="number" id="filter-client-qty-min" placeholder="Qtd Mín"
+                                style="padding: 12px; width: 80px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); transition: border-color 0.2s;"
+                                oninput="app.renderClientsList()">
                             <span style="font-size: 13px; color: var(--text-muted); font-weight: 500;">a</span>
-                            <input type="number" id="filter-client-qty-max" placeholder="Qtd Máx" style="padding: 12px; width: 80px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); transition: border-color 0.2s;" oninput="app.renderClientsList()">
+                            <input type="number" id="filter-client-qty-max" placeholder="Qtd Máx"
+                                style="padding: 12px; width: 80px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); transition: border-color 0.2s;"
+                                oninput="app.renderClientsList()">
                             <span style="font-size: 13px; color: var(--text-muted); font-weight: 500;">compras</span>
                         </div>
                         <div class="admin-only" style="display: flex; gap: 8px; align-items: center; display: none;">
-                            <span style="font-size: 13px; color: var(--text-muted); font-weight: 500;"><i class="fas fa-store" style="margin-right:4px;"></i> Filtro Gerencial</span>
-                            <select id="filter-client-store" style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer; transition: border-color 0.2s;" onchange="app.renderClientsList()">
+                            <span style="font-size: 13px; color: var(--text-muted); font-weight: 500;"><i
+                                    class="fas fa-store" style="margin-right:4px;"></i> Filtro Gerencial</span>
+                            <select id="filter-client-store"
+                                style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer; transition: border-color 0.2s;"
+                                onchange="app.renderClientsList()">
                                 <option value="all">Rede Completa (Todas as Lojas)</option>
                                 <option value="matriz">Loja 1</option>
                                 <option value="filial_1">Loja 2</option>
@@ -429,7 +515,9 @@
                         <table class="data-table">
                             <thead>
                                 <tr>
-                                    <th style="width: 40px; text-align: center;"><input type="checkbox" id="selectAllClients" onclick="app.toggleSelectAllClients(this)" style="cursor: pointer;"></th>
+                                    <th style="width: 40px; text-align: center;"><input type="checkbox"
+                                            id="selectAllClients" onclick="app.toggleSelectAllClients(this)"
+                                            style="cursor: pointer;"></th>
                                     <th>Nome</th>
                                     <th>WhatsApp / Contato</th>
                                     <th>Compras Realizadas</th>
@@ -450,7 +538,7 @@
                         <h2 id="client-form-title">Cadastrar Cliente</h2>
                         <p id="client-form-desc">Adicione um novo contato à sua base manualmente.</p>
                     </div>
-                    
+
                     <div class="form-card">
                         <form id="form-client">
                             <div class="form-grid">
@@ -468,7 +556,9 @@
                                 </div>
                                 <div class="form-group">
                                     <label>Data de Aniversário (Opcional)</label>
-                                    <input type="text" id="c-birthdate" placeholder="DD/MM" maxlength="5" autocomplete="off" oninput="this.value = this.value.replace(/[^0-9/]/g, '').replace(/^([0-9]{2})([0-9])/, '$1/$2').substring(0,5);">
+                                    <input type="text" id="c-birthdate" placeholder="DD/MM" maxlength="5"
+                                        autocomplete="off"
+                                        oninput="this.value = this.value.replace(/[^0-9/]/g, '').replace(/^([0-9]{2})([0-9])/, '$1/$2').substring(0,5);">
                                 </div>
                                 <div class="form-group">
                                     <label>Cidade (Opcional)</label>
@@ -476,12 +566,16 @@
                                 </div>
                                 <div class="form-group">
                                     <label>Consultor Responsável</label>
-                                    <select id="c-seller-assigned" style="padding: 14px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 15px; color: var(--text-main); cursor: pointer;"></select>
+                                    <select id="c-seller-assigned"
+                                        style="padding: 14px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 15px; color: var(--text-main); cursor: pointer;"></select>
                                 </div>
                             </div>
                             <div class="form-actions" style="display:flex; gap:16px;">
-                                <button type="button" class="btn-primary" style="background:#E2E8F0; color:var(--text-main); flex:1; justify-content:center; box-shadow:none;" onclick="app.cancelClientEdit()">Cancelar</button>
-                                <button type="submit" id="client-submit-btn" class="btn-primary" style="flex:2; padding: 14px; font-size: 16px; justify-content: center;">
+                                <button type="button" class="btn-primary"
+                                    style="background:#E2E8F0; color:var(--text-main); flex:1; justify-content:center; box-shadow:none;"
+                                    onclick="app.cancelClientEdit()">Cancelar</button>
+                                <button type="submit" id="client-submit-btn" class="btn-primary"
+                                    style="flex:2; padding: 14px; font-size: 16px; justify-content: center;">
                                     <i class="fas fa-save"></i> <span id="client-submit-text">Salvar Cliente</span>
                                 </button>
                             </div>
@@ -491,13 +585,15 @@
 
                 <!-- Sales History Page -->
                 <section class="page" id="page-sales">
-                     <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
+                    <div class="page-header"
+                        style="display: flex; justify-content: space-between; align-items: flex-end;">
                         <div>
                             <h2>Histórico de Vendas</h2>
                             <p>Visão de todas as vendas já registradas no CRM.</p>
                         </div>
                         <div style="display: flex; gap: 12px;">
-                            <button class="btn-primary" style="background: #EF4444;" onclick="app.deleteSelectedSales()">
+                            <button class="btn-primary" style="background: #EF4444;"
+                                onclick="app.deleteSelectedSales()">
                                 <i class="fas fa-trash"></i> Excluir Selecionados
                             </button>
                             <button class="btn-primary" style="background: #8B5CF6;" onclick="app.openPromoModal()">
@@ -506,25 +602,34 @@
                         </div>
                     </div>
 
-                    <div class="filters-bar" style="display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; align-items: center;">
-                        <input type="text" id="filter-name" placeholder="Buscar por cliente..." style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; flex: 1; min-width: 200px; outline: none; font-size: 14px; transition: border-color 0.2s;">
-                        <input type="text" id="filter-sale-product" placeholder="Buscar por produto..." style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; flex: 1; min-width: 200px; outline: none; font-size: 14px; transition: border-color 0.2s;">
-                        
-                        <select id="filter-status" style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer; transition: border-color 0.2s;">
+                    <div class="filters-bar"
+                        style="display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; align-items: center;">
+                        <input type="text" id="filter-name" placeholder="Buscar por cliente..."
+                            style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; flex: 1; min-width: 200px; outline: none; font-size: 14px; transition: border-color 0.2s;">
+                        <input type="text" id="filter-sale-product" placeholder="Buscar por produto..."
+                            style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; flex: 1; min-width: 200px; outline: none; font-size: 14px; transition: border-color 0.2s;">
+
+                        <select id="filter-status"
+                            style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer; transition: border-color 0.2s;">
                             <option value="all">Todos os Status</option>
                             <option value="new">Novas Vendas (< 30d)</option>
                             <option value="restock">Em Reposição (30d+)</option>
                             <option value="dormant">Inativos (90d+)</option>
                         </select>
-                        
+
                         <div style="display: flex; gap: 8px; align-items: center;">
-                            <input type="date" id="filter-date-start" style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; color: var(--text-muted); font-size: 14px; transition: border-color 0.2s;">
+                            <input type="date" id="filter-date-start"
+                                style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; color: var(--text-muted); font-size: 14px; transition: border-color 0.2s;">
                             <span style="color: var(--text-muted); font-weight: 500;">até</span>
-                            <input type="date" id="filter-date-end" style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; color: var(--text-muted); font-size: 14px; transition: border-color 0.2s;">
+                            <input type="date" id="filter-date-end"
+                                style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; color: var(--text-muted); font-size: 14px; transition: border-color 0.2s;">
                         </div>
                         <div class="admin-only" style="display: flex; gap: 8px; align-items: center; display: none;">
-                            <span style="font-size: 13px; color: var(--text-muted); font-weight: 500;"><i class="fas fa-user-tie" style="margin-right:4px;"></i> Filtro Gerencial</span>
-                            <select id="filter-sale-store" style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer; transition: border-color 0.2s;" onchange="app.renderClientsTable()">
+                            <span style="font-size: 13px; color: var(--text-muted); font-weight: 500;"><i
+                                    class="fas fa-user-tie" style="margin-right:4px;"></i> Filtro Gerencial</span>
+                            <select id="filter-sale-store"
+                                style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer; transition: border-color 0.2s;"
+                                onchange="app.renderClientsTable()">
                                 <option value="all">Rede Completa (Todas as Lojas)</option>
                                 <option value="matriz">Loja 1</option>
                                 <option value="filial_1">Loja 2</option>
@@ -536,7 +641,9 @@
                         <table class="data-table">
                             <thead>
                                 <tr>
-                                    <th style="width: 40px; text-align: center;"><input type="checkbox" id="selectAllSales" onclick="app.toggleSelectAllSales(this)" style="cursor: pointer;"></th>
+                                    <th style="width: 40px; text-align: center;"><input type="checkbox"
+                                            id="selectAllSales" onclick="app.toggleSelectAllSales(this)"
+                                            style="cursor: pointer;"></th>
                                     <th>Cliente</th>
                                     <th>Produto(s)</th>
                                     <th style="text-align: center;">Qtd</th>
@@ -559,13 +666,15 @@
 
                 <!-- Products Page -->
                 <section class="page" id="page-products">
-                     <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
+                    <div class="page-header"
+                        style="display: flex; justify-content: space-between; align-items: flex-end;">
                         <div>
                             <h2>Catálogo de Produtos</h2>
                             <p>Sua lista de produtos e serviços disponíveis.</p>
                         </div>
                         <div style="display: flex; gap: 8px;">
-                            <button class="btn-primary" style="background: #EF4444;" onclick="app.deleteSelectedProducts()">
+                            <button class="btn-primary" style="background: #EF4444;"
+                                onclick="app.deleteSelectedProducts()">
                                 <i class="fas fa-trash"></i> Excluir Selecionados
                             </button>
                             <button class="btn-primary" onclick="app.navigateTo('product-register')">
@@ -574,15 +683,19 @@
                         </div>
                     </div>
 
-                    <div class="filters-bar" style="display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; align-items: center;">
-                        <input type="text" id="filter-product-catalog" placeholder="Buscar por Nome ou Código de Barras..." style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); transition: border-color 0.2s; flex: 1; min-width: 200px;">
+                    <div class="filters-bar"
+                        style="display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; align-items: center;">
+                        <input type="text" id="filter-product-catalog"
+                            placeholder="Buscar por Nome ou Código de Barras..."
+                            style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); transition: border-color 0.2s; flex: 1; min-width: 200px;">
                     </div>
 
                     <div class="table-card" style="overflow-x: auto;">
                         <table class="data-table">
                             <thead>
                                 <tr>
-                                    <th style="width: 40px; text-align: center;"><input type="checkbox" onclick="app.toggleSelectAllProducts(this)" style="cursor: pointer;"></th>
+                                    <th style="width: 40px; text-align: center;"><input type="checkbox"
+                                            onclick="app.toggleSelectAllProducts(this)" style="cursor: pointer;"></th>
                                     <th>Nome do Produto</th>
                                     <th>Categoria</th>
                                     <th>Preço Padrão</th>
@@ -602,7 +715,7 @@
                         <h2 id="product-form-title">Registrar Produto</h2>
                         <p id="product-form-desc">Cadastre um novo item no seu catálogo.</p>
                     </div>
-                    
+
                     <div class="form-card">
                         <form id="form-product">
                             <div class="form-grid">
@@ -624,8 +737,11 @@
                                 </div>
                             </div>
                             <div class="form-actions" style="display:flex; gap:16px;">
-                                <button type="button" class="btn-primary" style="background:#E2E8F0; color:var(--text-main); flex:1; justify-content:center; box-shadow:none;" onclick="app.cancelProductEdit()">Cancelar</button>
-                                <button type="submit" id="product-submit-btn" class="btn-primary" style="flex:2; padding: 14px; font-size: 16px; justify-content: center;">
+                                <button type="button" class="btn-primary"
+                                    style="background:#E2E8F0; color:var(--text-main); flex:1; justify-content:center; box-shadow:none;"
+                                    onclick="app.cancelProductEdit()">Cancelar</button>
+                                <button type="submit" id="product-submit-btn" class="btn-primary"
+                                    style="flex:2; padding: 14px; font-size: 16px; justify-content: center;">
                                     <i class="fas fa-save"></i> <span id="product-submit-text">Salvar Produto</span>
                                 </button>
                             </div>
@@ -633,30 +749,37 @@
                     </div>
                 </section>
 
-                 <!-- Settings Page -->
-                 <section class="page" id="page-settings">
+                <!-- Settings Page -->
+                <section class="page" id="page-settings">
                     <div class="page-header">
-                       <h2>Configurações do CRM</h2>
-                       <p>Gerencie suas automações, campanhas promocionais e integrações.</p>
-                   </div>
-                   
-                   <!-- TAB SYSTEM NAVIGATION -->
-                   <div class="tabs-container" style="display: flex; gap: 32px; border-bottom: 2px solid var(--border); margin-bottom: 24px;">
-                       <button type="button" class="tab-btn active" id="tab-btn-funnel" onclick="app.switchSettingsTab('funnel')" style="background: none; border: none; padding: 12px 4px; font-size: 15px; font-weight: 600; color: var(--primary); border-bottom: 2px solid var(--primary); cursor: pointer; margin-bottom: -2px;">
-                           <i class="fas fa-magic"></i> Mensagens Automáticas
-                       </button>
-                       <button type="button" class="tab-btn" id="tab-btn-promo" onclick="app.switchSettingsTab('promo')" style="background: none; border: none; padding: 12px 4px; font-size: 15px; font-weight: 500; color: var(--text-muted); border-bottom: 2px solid transparent; cursor: pointer; margin-bottom: -2px;">
-                           <i class="fas fa-bullhorn"></i> Campanhas Manuais
-                       </button>
-                       <button type="button" class="tab-btn" id="tab-btn-api" onclick="app.switchSettingsTab('api')" style="background: none; border: none; padding: 12px 4px; font-size: 15px; font-weight: 500; color: var(--text-muted); border-bottom: 2px solid transparent; cursor: pointer; margin-bottom: -2px;">
-                           <i class="fas fa-plug"></i> Integração WhatsApp
-                       </button>
-                       <button type="button" class="tab-btn" id="tab-btn-team" onclick="app.switchSettingsTab('team')" style="background: none; border: none; padding: 12px 4px; font-size: 15px; font-weight: 500; color: var(--text-muted); border-bottom: 2px solid transparent; cursor: pointer; margin-bottom: -2px;">
-                           <i class="fas fa-users-cog"></i> Gestão de Equipe
-                       </button>
-                   </div>
+                        <h2>Configurações do CRM</h2>
+                        <p>Gerencie suas automações, campanhas promocionais e integrações.</p>
+                    </div>
 
-                   <form id="form-templates">
+                    <!-- TAB SYSTEM NAVIGATION -->
+                    <div class="tabs-container"
+                        style="display: flex; gap: 32px; border-bottom: 2px solid var(--border); margin-bottom: 24px;">
+                        <button type="button" class="tab-btn active" id="tab-btn-funnel"
+                            onclick="app.switchSettingsTab('funnel')"
+                            style="background: none; border: none; padding: 12px 4px; font-size: 15px; font-weight: 600; color: var(--primary); border-bottom: 2px solid var(--primary); cursor: pointer; margin-bottom: -2px;">
+                            <i class="fas fa-magic"></i> Mensagens Automáticas
+                        </button>
+                        <button type="button" class="tab-btn" id="tab-btn-promo"
+                            onclick="app.switchSettingsTab('promo')"
+                            style="background: none; border: none; padding: 12px 4px; font-size: 15px; font-weight: 500; color: var(--text-muted); border-bottom: 2px solid transparent; cursor: pointer; margin-bottom: -2px;">
+                            <i class="fas fa-bullhorn"></i> Campanhas Manuais
+                        </button>
+                        <button type="button" class="tab-btn" id="tab-btn-api" onclick="app.switchSettingsTab('api')"
+                            style="background: none; border: none; padding: 12px 4px; font-size: 15px; font-weight: 500; color: var(--text-muted); border-bottom: 2px solid transparent; cursor: pointer; margin-bottom: -2px;">
+                            <i class="fas fa-plug"></i> Integração WhatsApp
+                        </button>
+                        <button type="button" class="tab-btn" id="tab-btn-team" onclick="app.switchSettingsTab('team')"
+                            style="background: none; border: none; padding: 12px 4px; font-size: 15px; font-weight: 500; color: var(--text-muted); border-bottom: 2px solid transparent; cursor: pointer; margin-bottom: -2px;">
+                            <i class="fas fa-users-cog"></i> Gestão de Equipe
+                        </button>
+                    </div>
+
+                    <form id="form-templates">
                         <!-- TAB 1: FUNNEL -->
                         <div id="tab-content-funnel" class="settings-tab-content" style="display: block;">
                             <div class="form-card" style="margin-bottom: 24px;">
@@ -665,155 +788,256 @@
                                     Textos enviados automaticamente de acordo com do ciclo de vida da cliente.<br>
                                     Variáveis aceitas: <strong>{nome}</strong>, <strong>{produto}</strong>.
                                 </p>
-                                
+
                                 <!-- Accordion 1 -->
-                                <details style="margin-bottom: 12px; border: 1px solid var(--border); border-radius: 8px; background: white;" open>
-                                    <summary style="padding: 16px; font-weight: 600; cursor: pointer; outline: none; background: #F8FAFC; border-bottom: 1px solid var(--border); color: #0F172A; list-style-type: none;">
-                                        <div style="display: flex; align-items: center;"><i class="fas fa-handshake" style="color: #10B981; margin-right: 8px; width: 20px; text-align: center;"></i> <span>Agradecimento (Pós-Venda)</span></div>
+                                <details
+                                    style="margin-bottom: 12px; border: 1px solid var(--border); border-radius: 8px; background: white;"
+                                    open>
+                                    <summary
+                                        style="padding: 16px; font-weight: 600; cursor: pointer; outline: none; background: #F8FAFC; border-bottom: 1px solid var(--border); color: #0F172A; list-style-type: none;">
+                                        <div style="display: flex; align-items: center;"><i class="fas fa-handshake"
+                                                style="color: #10B981; margin-right: 8px; width: 20px; text-align: center;"></i>
+                                            <span>Agradecimento (Pós-Venda)</span></div>
                                     </summary>
                                     <div style="padding: 16px;">
-                                        <textarea id="tpl-thanks" rows="3" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; resize: vertical; font-family: inherit; font-size: 14px; margin-bottom: 12px;"></textarea>
+                                        <textarea id="tpl-thanks" rows="3"
+                                            style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; resize: vertical; font-family: inherit; font-size: 14px; margin-bottom: 12px;"></textarea>
                                         <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-                                            <button type="button" class="btn-primary" style="padding: 8px 16px; background: #64748B; font-size: 13px; box-shadow: none;" onclick="document.getElementById('tpl-thanks-file').click()" title="Fazer upload de nova mídia">
+                                            <button type="button" class="btn-primary"
+                                                style="padding: 8px 16px; background: #64748B; font-size: 13px; box-shadow: none;"
+                                                onclick="document.getElementById('tpl-thanks-file').click()"
+                                                title="Fazer upload de nova mídia">
                                                 <i class="fas fa-paperclip"></i> Adicionar Imagem/Anexo
                                             </button>
-                                            <div style="display: flex; flex: 1; min-width: 200px; gap: 4px; align-items: center; background: #F8FAFC; border: 1px dashed var(--border); border-radius: 8px; padding-right: 4px;">
-                                                <input type="url" id="tpl-thanks-img" placeholder="Sem anexo..." style="flex: 1; min-width: 0; padding: 8px 12px; border: none; outline: none; font-size: 12px; color: var(--text-muted); background: transparent; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;" readonly>
-                                                <button type="button" class="btn-icon" style="color: #EF4444; font-size: 14px; padding: 4px; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 4px; background: transparent; border: none; cursor: pointer;" onclick="app.removeTemplateImage('tpl-thanks-img')" title="Remover anexo"><i class="fas fa-trash"></i></button>
+                                            <div
+                                                style="display: flex; flex: 1; min-width: 200px; gap: 4px; align-items: center; background: #F8FAFC; border: 1px dashed var(--border); border-radius: 8px; padding-right: 4px;">
+                                                <input type="url" id="tpl-thanks-img" placeholder="Sem anexo..."
+                                                    style="flex: 1; min-width: 0; padding: 8px 12px; border: none; outline: none; font-size: 12px; color: var(--text-muted); background: transparent; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;"
+                                                    readonly>
+                                                <button type="button" class="btn-icon"
+                                                    style="color: #EF4444; font-size: 14px; padding: 4px; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 4px; background: transparent; border: none; cursor: pointer;"
+                                                    onclick="app.removeTemplateImage('tpl-thanks-img')"
+                                                    title="Remover anexo"><i class="fas fa-trash"></i></button>
                                             </div>
-                                            <input type="file" id="tpl-thanks-file" accept="image/*" style="display: none;" onchange="app.uploadTemplateImage(event, 'tpl-thanks-img')">
+                                            <input type="file" id="tpl-thanks-file" accept="image/*"
+                                                style="display: none;"
+                                                onchange="app.uploadTemplateImage(event, 'tpl-thanks-img')">
                                         </div>
                                     </div>
                                 </details>
 
                                 <!-- Accordion 2 (Novo 15 dias) -->
-                                <details style="margin-bottom: 12px; border: 1px solid var(--border); border-radius: 8px; background: white;">
-                                    <summary style="padding: 16px; font-weight: 600; cursor: pointer; outline: none; background: #F8FAFC; border-bottom: 1px solid var(--border); color: #0F172A; list-style-type: none;">
-                                        <div style="display: flex; align-items: center;"><i class="fas fa-calendar-check" style="color: #8B5CF6; margin-right: 8px; width: 20px; text-align: center;"></i> <span>Acompanhamento (15 dias)</span></div>
+                                <details
+                                    style="margin-bottom: 12px; border: 1px solid var(--border); border-radius: 8px; background: white;">
+                                    <summary
+                                        style="padding: 16px; font-weight: 600; cursor: pointer; outline: none; background: #F8FAFC; border-bottom: 1px solid var(--border); color: #0F172A; list-style-type: none;">
+                                        <div style="display: flex; align-items: center;"><i
+                                                class="fas fa-calendar-check"
+                                                style="color: #8B5CF6; margin-right: 8px; width: 20px; text-align: center;"></i>
+                                            <span>Acompanhamento (15 dias)</span></div>
                                     </summary>
                                     <div style="padding: 16px;">
-                                        <textarea id="tpl-15d" rows="3" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; resize: vertical; font-family: inherit; font-size: 14px; margin-bottom: 12px;"></textarea>
+                                        <textarea id="tpl-15d" rows="3"
+                                            style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; resize: vertical; font-family: inherit; font-size: 14px; margin-bottom: 12px;"></textarea>
                                         <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-                                            <button type="button" class="btn-primary" style="padding: 8px 16px; background: #64748B; font-size: 13px; box-shadow: none;" onclick="document.getElementById('tpl-15d-file').click()">
+                                            <button type="button" class="btn-primary"
+                                                style="padding: 8px 16px; background: #64748B; font-size: 13px; box-shadow: none;"
+                                                onclick="document.getElementById('tpl-15d-file').click()">
                                                 <i class="fas fa-paperclip"></i> Adicionar Imagem/Anexo
                                             </button>
-                                            <div style="display: flex; flex: 1; min-width: 200px; gap: 4px; align-items: center; background: #F8FAFC; border: 1px dashed var(--border); border-radius: 8px; padding-right: 4px;">
-                                                <input type="url" id="tpl-15d-img" placeholder="Sem anexo..." style="flex: 1; min-width: 0; padding: 8px 12px; border: none; outline: none; font-size: 12px; color: var(--text-muted); background: transparent; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;" readonly>
-                                                <button type="button" class="btn-icon" style="color: #EF4444; font-size: 14px; padding: 4px; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 4px; background: transparent; border: none; cursor: pointer;" onclick="app.removeTemplateImage('tpl-15d-img')" title="Remover anexo"><i class="fas fa-trash"></i></button>
+                                            <div
+                                                style="display: flex; flex: 1; min-width: 200px; gap: 4px; align-items: center; background: #F8FAFC; border: 1px dashed var(--border); border-radius: 8px; padding-right: 4px;">
+                                                <input type="url" id="tpl-15d-img" placeholder="Sem anexo..."
+                                                    style="flex: 1; min-width: 0; padding: 8px 12px; border: none; outline: none; font-size: 12px; color: var(--text-muted); background: transparent; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;"
+                                                    readonly>
+                                                <button type="button" class="btn-icon"
+                                                    style="color: #EF4444; font-size: 14px; padding: 4px; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 4px; background: transparent; border: none; cursor: pointer;"
+                                                    onclick="app.removeTemplateImage('tpl-15d-img')"
+                                                    title="Remover anexo"><i class="fas fa-trash"></i></button>
                                             </div>
-                                            <input type="file" id="tpl-15d-file" accept="image/*" style="display: none;" onchange="app.uploadTemplateImage(event, 'tpl-15d-img')">
+                                            <input type="file" id="tpl-15d-file" accept="image/*" style="display: none;"
+                                                onchange="app.uploadTemplateImage(event, 'tpl-15d-img')">
                                         </div>
                                     </div>
                                 </details>
 
                                 <!-- Accordion 3 -->
-                                <details style="margin-bottom: 12px; border: 1px solid var(--border); border-radius: 8px; background: white;">
-                                    <summary style="padding: 16px; font-weight: 600; cursor: pointer; outline: none; background: #F8FAFC; border-bottom: 1px solid var(--border); color: #0F172A; list-style-type: none;">
-                                        <div style="display: flex; align-items: center;"><i class="fas fa-box-open" style="color: #3B82F6; margin-right: 8px; width: 20px; text-align: center;"></i> <span>Reposição (30 a 45 dias)</span></div>
+                                <details
+                                    style="margin-bottom: 12px; border: 1px solid var(--border); border-radius: 8px; background: white;">
+                                    <summary
+                                        style="padding: 16px; font-weight: 600; cursor: pointer; outline: none; background: #F8FAFC; border-bottom: 1px solid var(--border); color: #0F172A; list-style-type: none;">
+                                        <div style="display: flex; align-items: center;"><i class="fas fa-box-open"
+                                                style="color: #3B82F6; margin-right: 8px; width: 20px; text-align: center;"></i>
+                                            <span>Reposição (30 a 45 dias)</span></div>
                                     </summary>
                                     <div style="padding: 16px;">
-                                        <textarea id="tpl-restock" rows="3" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; resize: vertical; font-family: inherit; font-size: 14px; margin-bottom: 12px;"></textarea>
+                                        <textarea id="tpl-restock" rows="3"
+                                            style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; resize: vertical; font-family: inherit; font-size: 14px; margin-bottom: 12px;"></textarea>
                                         <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-                                            <button type="button" class="btn-primary" style="padding: 8px 16px; background: #64748B; font-size: 13px; box-shadow: none;" onclick="document.getElementById('tpl-restock-file').click()">
+                                            <button type="button" class="btn-primary"
+                                                style="padding: 8px 16px; background: #64748B; font-size: 13px; box-shadow: none;"
+                                                onclick="document.getElementById('tpl-restock-file').click()">
                                                 <i class="fas fa-paperclip"></i> Adicionar Imagem/Anexo
                                             </button>
-                                            <div style="display: flex; flex: 1; min-width: 200px; gap: 4px; align-items: center; background: #F8FAFC; border: 1px dashed var(--border); border-radius: 8px; padding-right: 4px;">
-                                                <input type="url" id="tpl-restock-img" placeholder="Sem anexo..." style="flex: 1; min-width: 0; padding: 8px 12px; border: none; outline: none; font-size: 12px; color: var(--text-muted); background: transparent; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;" readonly>
-                                                <button type="button" class="btn-icon" style="color: #EF4444; font-size: 14px; padding: 4px; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 4px; background: transparent; border: none; cursor: pointer;" onclick="app.removeTemplateImage('tpl-restock-img')" title="Remover anexo"><i class="fas fa-trash"></i></button>
+                                            <div
+                                                style="display: flex; flex: 1; min-width: 200px; gap: 4px; align-items: center; background: #F8FAFC; border: 1px dashed var(--border); border-radius: 8px; padding-right: 4px;">
+                                                <input type="url" id="tpl-restock-img" placeholder="Sem anexo..."
+                                                    style="flex: 1; min-width: 0; padding: 8px 12px; border: none; outline: none; font-size: 12px; color: var(--text-muted); background: transparent; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;"
+                                                    readonly>
+                                                <button type="button" class="btn-icon"
+                                                    style="color: #EF4444; font-size: 14px; padding: 4px; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 4px; background: transparent; border: none; cursor: pointer;"
+                                                    onclick="app.removeTemplateImage('tpl-restock-img')"
+                                                    title="Remover anexo"><i class="fas fa-trash"></i></button>
                                             </div>
-                                            <input type="file" id="tpl-restock-file" accept="image/*" style="display: none;" onchange="app.uploadTemplateImage(event, 'tpl-restock-img')">
+                                            <input type="file" id="tpl-restock-file" accept="image/*"
+                                                style="display: none;"
+                                                onchange="app.uploadTemplateImage(event, 'tpl-restock-img')">
                                         </div>
                                     </div>
                                 </details>
 
                                 <!-- Accordion 4 -->
-                                <details style="margin-bottom: 12px; border: 1px solid var(--border); border-radius: 8px; background: white;">
-                                    <summary style="padding: 16px; font-weight: 600; cursor: pointer; outline: none; background: #F8FAFC; border-bottom: 1px solid var(--border); color: #0F172A; list-style-type: none;">
-                                        <div style="display: flex; align-items: center;"><i class="fas fa-heart" style="color: #DB2777; margin-right: 8px; width: 20px; text-align: center;"></i> <span>Recuperação (Saudades > 45 dias)</span></div>
+                                <details
+                                    style="margin-bottom: 12px; border: 1px solid var(--border); border-radius: 8px; background: white;">
+                                    <summary
+                                        style="padding: 16px; font-weight: 600; cursor: pointer; outline: none; background: #F8FAFC; border-bottom: 1px solid var(--border); color: #0F172A; list-style-type: none;">
+                                        <div style="display: flex; align-items: center;"><i class="fas fa-heart"
+                                                style="color: #DB2777; margin-right: 8px; width: 20px; text-align: center;"></i>
+                                            <span>Recuperação (Saudades > 45 dias)</span></div>
                                     </summary>
                                     <div style="padding: 16px;">
-                                        <textarea id="tpl-dormant" rows="3" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; resize: vertical; font-family: inherit; font-size: 14px; margin-bottom: 12px;"></textarea>
+                                        <textarea id="tpl-dormant" rows="3"
+                                            style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; resize: vertical; font-family: inherit; font-size: 14px; margin-bottom: 12px;"></textarea>
                                         <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-                                            <button type="button" class="btn-primary" style="padding: 8px 16px; background: #64748B; font-size: 13px; box-shadow: none;" onclick="document.getElementById('tpl-dormant-file').click()">
+                                            <button type="button" class="btn-primary"
+                                                style="padding: 8px 16px; background: #64748B; font-size: 13px; box-shadow: none;"
+                                                onclick="document.getElementById('tpl-dormant-file').click()">
                                                 <i class="fas fa-paperclip"></i> Adicionar Imagem/Anexo
                                             </button>
-                                            <div style="display: flex; flex: 1; min-width: 200px; gap: 4px; align-items: center; background: #F8FAFC; border: 1px dashed var(--border); border-radius: 8px; padding-right: 4px;">
-                                                <input type="url" id="tpl-dormant-img" placeholder="Sem anexo..." style="flex: 1; min-width: 0; padding: 8px 12px; border: none; outline: none; font-size: 12px; color: var(--text-muted); background: transparent; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;" readonly>
-                                                <button type="button" class="btn-icon" style="color: #EF4444; font-size: 14px; padding: 4px; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 4px; background: transparent; border: none; cursor: pointer;" onclick="app.removeTemplateImage('tpl-dormant-img')" title="Remover anexo"><i class="fas fa-trash"></i></button>
+                                            <div
+                                                style="display: flex; flex: 1; min-width: 200px; gap: 4px; align-items: center; background: #F8FAFC; border: 1px dashed var(--border); border-radius: 8px; padding-right: 4px;">
+                                                <input type="url" id="tpl-dormant-img" placeholder="Sem anexo..."
+                                                    style="flex: 1; min-width: 0; padding: 8px 12px; border: none; outline: none; font-size: 12px; color: var(--text-muted); background: transparent; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;"
+                                                    readonly>
+                                                <button type="button" class="btn-icon"
+                                                    style="color: #EF4444; font-size: 14px; padding: 4px; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 4px; background: transparent; border: none; cursor: pointer;"
+                                                    onclick="app.removeTemplateImage('tpl-dormant-img')"
+                                                    title="Remover anexo"><i class="fas fa-trash"></i></button>
                                             </div>
-                                            <input type="file" id="tpl-dormant-file" accept="image/*" style="display: none;" onchange="app.uploadTemplateImage(event, 'tpl-dormant-img')">
+                                            <input type="file" id="tpl-dormant-file" accept="image/*"
+                                                style="display: none;"
+                                                onchange="app.uploadTemplateImage(event, 'tpl-dormant-img')">
                                         </div>
                                     </div>
                                 </details>
 
                                 <!-- Accordion 5 -->
-                                <details style="margin-bottom: 12px; border: 1px solid var(--border); border-radius: 8px; background: white;">
-                                    <summary style="padding: 16px; font-weight: 600; cursor: pointer; outline: none; background: #F8FAFC; border-bottom: 1px solid var(--border); color: #0F172A; list-style-type: none;">
-                                        <div style="display: flex; align-items: center;"><i class="fas fa-user-clock" style="color: #475569; margin-right: 8px; width: 20px; text-align: center;"></i> <span>Resgate Estratégico (> 120 dias)</span></div>
+                                <details
+                                    style="margin-bottom: 12px; border: 1px solid var(--border); border-radius: 8px; background: white;">
+                                    <summary
+                                        style="padding: 16px; font-weight: 600; cursor: pointer; outline: none; background: #F8FAFC; border-bottom: 1px solid var(--border); color: #0F172A; list-style-type: none;">
+                                        <div style="display: flex; align-items: center;"><i class="fas fa-user-clock"
+                                                style="color: #475569; margin-right: 8px; width: 20px; text-align: center;"></i>
+                                            <span>Resgate Estratégico (> 120 dias)</span></div>
                                     </summary>
                                     <div style="padding: 16px;">
-                                        <textarea id="tpl-lost" rows="3" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; resize: vertical; font-family: inherit; font-size: 14px; margin-bottom: 12px;"></textarea>
+                                        <textarea id="tpl-lost" rows="3"
+                                            style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; resize: vertical; font-family: inherit; font-size: 14px; margin-bottom: 12px;"></textarea>
                                         <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-                                            <button type="button" class="btn-primary" style="padding: 8px 16px; background: #64748B; font-size: 13px; box-shadow: none;" onclick="document.getElementById('tpl-lost-file').click()">
+                                            <button type="button" class="btn-primary"
+                                                style="padding: 8px 16px; background: #64748B; font-size: 13px; box-shadow: none;"
+                                                onclick="document.getElementById('tpl-lost-file').click()">
                                                 <i class="fas fa-paperclip"></i> Adicionar Imagem/Anexo
                                             </button>
-                                            <div style="display: flex; flex: 1; min-width: 200px; gap: 4px; align-items: center; background: #F8FAFC; border: 1px dashed var(--border); border-radius: 8px; padding-right: 4px;">
-                                                <input type="url" id="tpl-lost-img" placeholder="Sem anexo..." style="flex: 1; min-width: 0; padding: 8px 12px; border: none; outline: none; font-size: 12px; color: var(--text-muted); background: transparent; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;" readonly>
-                                                <button type="button" class="btn-icon" style="color: #EF4444; font-size: 14px; padding: 4px; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 4px; background: transparent; border: none; cursor: pointer;" onclick="app.removeTemplateImage('tpl-lost-img')" title="Remover anexo"><i class="fas fa-trash"></i></button>
+                                            <div
+                                                style="display: flex; flex: 1; min-width: 200px; gap: 4px; align-items: center; background: #F8FAFC; border: 1px dashed var(--border); border-radius: 8px; padding-right: 4px;">
+                                                <input type="url" id="tpl-lost-img" placeholder="Sem anexo..."
+                                                    style="flex: 1; min-width: 0; padding: 8px 12px; border: none; outline: none; font-size: 12px; color: var(--text-muted); background: transparent; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;"
+                                                    readonly>
+                                                <button type="button" class="btn-icon"
+                                                    style="color: #EF4444; font-size: 14px; padding: 4px; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 4px; background: transparent; border: none; cursor: pointer;"
+                                                    onclick="app.removeTemplateImage('tpl-lost-img')"
+                                                    title="Remover anexo"><i class="fas fa-trash"></i></button>
                                             </div>
-                                            <input type="file" id="tpl-lost-file" accept="image/*" style="display: none;" onchange="app.uploadTemplateImage(event, 'tpl-lost-img')">
+                                            <input type="file" id="tpl-lost-file" accept="image/*"
+                                                style="display: none;"
+                                                onchange="app.uploadTemplateImage(event, 'tpl-lost-img')">
                                         </div>
                                     </div>
                                 </details>
 
                                 <!-- Accordion 6 (Aniversário) -->
-                                <details style="border: 1px solid var(--border); border-radius: 8px; background: white;">
-                                    <summary style="padding: 16px; font-weight: 600; cursor: pointer; outline: none; background: #F8FAFC; border-bottom: 1px solid var(--border); color: #0F172A; list-style-type: none;">
-                                        <div style="display: flex; align-items: center;"><i class="fas fa-birthday-cake" style="color: #FBBF24; margin-right: 8px; width: 20px; text-align: center;"></i> <span>Aniversário da Cliente</span></div>
+                                <details
+                                    style="border: 1px solid var(--border); border-radius: 8px; background: white;">
+                                    <summary
+                                        style="padding: 16px; font-weight: 600; cursor: pointer; outline: none; background: #F8FAFC; border-bottom: 1px solid var(--border); color: #0F172A; list-style-type: none;">
+                                        <div style="display: flex; align-items: center;"><i class="fas fa-birthday-cake"
+                                                style="color: #FBBF24; margin-right: 8px; width: 20px; text-align: center;"></i>
+                                            <span>Aniversário da Cliente</span></div>
                                     </summary>
                                     <div style="padding: 16px;">
-                                        <textarea id="tpl-birthday" rows="3" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; resize: vertical; font-family: inherit; font-size: 14px; margin-bottom: 12px;"></textarea>
+                                        <textarea id="tpl-birthday" rows="3"
+                                            style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; resize: vertical; font-family: inherit; font-size: 14px; margin-bottom: 12px;"></textarea>
                                         <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-                                            <button type="button" class="btn-primary" style="padding: 8px 16px; background: #64748B; font-size: 13px; box-shadow: none;" onclick="document.getElementById('tpl-birthday-file').click()">
+                                            <button type="button" class="btn-primary"
+                                                style="padding: 8px 16px; background: #64748B; font-size: 13px; box-shadow: none;"
+                                                onclick="document.getElementById('tpl-birthday-file').click()">
                                                 <i class="fas fa-paperclip"></i> Adicionar Imagem/Anexo
                                             </button>
-                                            <div style="display: flex; flex: 1; min-width: 200px; gap: 4px; align-items: center; background: #F8FAFC; border: 1px dashed var(--border); border-radius: 8px; padding-right: 4px;">
-                                                <input type="url" id="tpl-birthday-img" placeholder="Sem anexo..." style="flex: 1; min-width: 0; padding: 8px 12px; border: none; outline: none; font-size: 12px; color: var(--text-muted); background: transparent; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;" readonly>
-                                                <button type="button" class="btn-icon" style="color: #EF4444; font-size: 14px; padding: 4px; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 4px; background: transparent; border: none; cursor: pointer;" onclick="app.removeTemplateImage('tpl-birthday-img')" title="Remover anexo"><i class="fas fa-trash"></i></button>
+                                            <div
+                                                style="display: flex; flex: 1; min-width: 200px; gap: 4px; align-items: center; background: #F8FAFC; border: 1px dashed var(--border); border-radius: 8px; padding-right: 4px;">
+                                                <input type="url" id="tpl-birthday-img" placeholder="Sem anexo..."
+                                                    style="flex: 1; min-width: 0; padding: 8px 12px; border: none; outline: none; font-size: 12px; color: var(--text-muted); background: transparent; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;"
+                                                    readonly>
+                                                <button type="button" class="btn-icon"
+                                                    style="color: #EF4444; font-size: 14px; padding: 4px; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 4px; background: transparent; border: none; cursor: pointer;"
+                                                    onclick="app.removeTemplateImage('tpl-birthday-img')"
+                                                    title="Remover anexo"><i class="fas fa-trash"></i></button>
                                             </div>
-                                            <input type="file" id="tpl-birthday-file" accept="image/*" style="display: none;" onchange="app.uploadTemplateImage(event, 'tpl-birthday-img')">
+                                            <input type="file" id="tpl-birthday-file" accept="image/*"
+                                                style="display: none;"
+                                                onchange="app.uploadTemplateImage(event, 'tpl-birthday-img')">
                                         </div>
                                     </div>
                                 </details>
                             </div>
-                            
-                            <div class="form-actions" style="display: flex; justify-content: space-between; align-items: center;">
-                                <button type="button" id="btn-trigger-funnels" class="btn-primary" style="padding: 12px 24px; background: #10B981; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.2);" onclick="app.triggerDailyFunnels()" title="Forçar a varredura e o envio de todas as mensagens agendadas para hoje.">
+
+                            <div class="form-actions"
+                                style="display: flex; justify-content: space-between; align-items: center;">
+                                <button type="button" id="btn-trigger-funnels" class="btn-primary"
+                                    style="padding: 12px 24px; background: #10B981; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.2);"
+                                    onclick="app.triggerDailyFunnels()"
+                                    title="Forçar a varredura e o envio de todas as mensagens agendadas para hoje.">
                                     <i class="fas fa-play"></i> Executar Varredura de Hoje
                                 </button>
-                                <button type="submit" class="btn-primary" style="padding: 12px 32px;"><i class="fas fa-save"></i> Salvar Automações</button>
+                                <button type="submit" class="btn-primary" style="padding: 12px 32px;"><i
+                                        class="fas fa-save"></i> Salvar Automações</button>
                             </div>
                         </div>
-                        
+
                         <!-- TAB 2: PROMOS -->
                         <div id="tab-content-promo" class="settings-tab-content" style="display: none;">
                             <div class="form-card" style="margin-bottom: 24px;">
                                 <h3>Biblioteca de Promoções</h3>
                                 <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 16px;">
                                     Crie pacotes promocionais para disparar em massa.<br>
-                                    Variáveis aceitas: <strong>{nome}</strong>, <strong>{produto}</strong>, <strong>{link}</strong>.
+                                    Variáveis aceitas: <strong>{nome}</strong>, <strong>{produto}</strong>,
+                                    <strong>{link}</strong>.
                                 </p>
-                                
+
                                 <div class="promo-layout-grid">
                                     <div>
-                                        <div id="promo-templates-container" style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 16px;">
+                                        <div id="promo-templates-container"
+                                            style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 16px;">
                                             <!-- JS will populate -->
                                         </div>
-                                        <button type="button" class="btn-primary" style="background: #F8FAFC; color: var(--primary); border: 2px dashed var(--primary-light); box-shadow: none; width: 100%; justify-content: center; padding: 12px;" onclick="app.addPromoTemplate()">
+                                        <button type="button" class="btn-primary"
+                                            style="background: #F8FAFC; color: var(--primary); border: 2px dashed var(--primary-light); box-shadow: none; width: 100%; justify-content: center; padding: 12px;"
+                                            onclick="app.addPromoTemplate()">
                                             <i class="fas fa-plus"></i> Adicionar Configuração de Disparo
                                         </button>
                                     </div>
-                                    
+
                                     <div class="whatsapp-preview-container">
                                         <div class="smartphone" style="position: sticky; top: 16px;">
                                             <div class="wa-header">
@@ -826,17 +1050,20 @@
                                             <div class="wa-chat-area">
                                                 <div class="wa-bubble wa-bubble-agent">
                                                     <img id="wa-preview-img" class="wa-bubble-img" src="" alt="Anexo">
-                                                    <span id="wa-preview-text">Selecione uma campanha e edite os campos para visualizar...</span>
-                                                    <div class="wa-bubble-time">agora <i class="fas fa-check-double"></i></div>
+                                                    <span id="wa-preview-text">Selecione uma campanha e edite os campos
+                                                        para visualizar...</span>
+                                                    <div class="wa-bubble-time">agora <i
+                                                            class="fas fa-check-double"></i></div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div class="form-actions" style="display: flex; justify-content: flex-end;">
-                                <button type="submit" class="btn-primary" style="padding: 12px 32px;"><i class="fas fa-save"></i> Salvar Campanhas</button>
+                                <button type="submit" class="btn-primary" style="padding: 12px 32px;"><i
+                                        class="fas fa-save"></i> Salvar Campanhas</button>
                             </div>
                         </div>
                     </form>
@@ -845,18 +1072,24 @@
                     <div id="tab-content-api" class="settings-tab-content" style="display: none;">
                         <div class="form-card" style="margin-bottom: 24px;">
                             <h3>Provedor de Conexão WhatsApp</h3>
-                            <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 16px;">Configure a API que disparará as mensagens silenciosamente (Evolution API, Z-API, ou compatíveis).</p>
-                            
+                            <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 16px;">Configure a API
+                                que disparará as mensagens silenciosamente (Evolution API, Z-API, ou compatíveis).</p>
+
                             <form id="form-api-settings">
-                                <div id="api-instances-container" style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px;">
+                                <div id="api-instances-container"
+                                    style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px;">
                                     <!-- JS will populate -->
                                 </div>
-                                <button type="button" class="btn-primary" style="background: #F8FAFC; color: var(--primary); border: 2px dashed var(--primary-light); box-shadow: none; width: 100%; justify-content: center; padding: 12px; margin-bottom: 24px;" onclick="app.addApiInstance()">
+                                <button type="button" class="btn-primary"
+                                    style="background: #F8FAFC; color: var(--primary); border: 2px dashed var(--primary-light); box-shadow: none; width: 100%; justify-content: center; padding: 12px; margin-bottom: 24px;"
+                                    onclick="app.addApiInstance()">
                                     <i class="fas fa-plus"></i> Adicionar Configuração de WhatsApp
                                 </button>
-                                
-                                <div class="form-actions" style="margin-top: 24px; border-top: 1px solid var(--border); padding-top: 24px;">
-                                    <button type="submit" class="btn-primary" style="justify-content: center; width: 100%; padding: 14px; font-size: 16px;">
+
+                                <div class="form-actions"
+                                    style="margin-top: 24px; border-top: 1px solid var(--border); padding-top: 24px;">
+                                    <button type="submit" class="btn-primary"
+                                        style="justify-content: center; width: 100%; padding: 14px; font-size: 16px;">
                                         <i class="fas fa-plug"></i> Salvar Conexões
                                     </button>
                                 </div>
@@ -867,16 +1100,20 @@
                     <!-- TAB 4: TEAM / ROLES -->
                     <div id="tab-content-team" class="settings-tab-content" style="display: none;">
                         <div class="form-card" style="margin-bottom: 24px;">
-                            <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:16px;">
+                            <div
+                                style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:16px;">
                                 <div>
                                     <h3>Gestão de Equipe e Lojas</h3>
-                                    <p style="color: var(--text-muted); font-size: 14px; margin: 4px 0 0 0;">Adicione vendedores ou novos diretores ao sistema.</p>
+                                    <p style="color: var(--text-muted); font-size: 14px; margin: 4px 0 0 0;">Adicione
+                                        vendedores ou novos diretores ao sistema.</p>
                                 </div>
-                                <button type="button" class="btn-primary" style="padding: 10px 16px; font-size: 14px; background: var(--primary);" onclick="app.openTeamModal()">
+                                <button type="button" class="btn-primary"
+                                    style="padding: 10px 16px; font-size: 14px; background: var(--primary);"
+                                    onclick="app.openTeamModal()">
                                     <i class="fas fa-user-plus"></i> Convidar Colaborador
                                 </button>
                             </div>
-                            
+
                             <table class="data-table" style="margin-top: 16px;">
                                 <thead>
                                     <tr>
@@ -894,7 +1131,7 @@
                             </table>
                         </div>
                     </div>
-               </section>
+                </section>
 
                 <!-- Auditoria Page -->
                 <section class="page admin-only" id="page-audit" style="display: none;">
@@ -903,16 +1140,21 @@
                             <h2>Logs de Auditoria</h2>
                             <p>Rastreio ativo de alterações de dados de clientes, vendas e configurações.</p>
                         </div>
-                        <div class="filters-bar" style="width: 100%; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; border-top: 1px solid var(--border); padding-top: 16px;">
+                        <div class="filters-bar"
+                            style="width: 100%; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; border-top: 1px solid var(--border); padding-top: 16px;">
                             <div style="display:flex; align-items:center; gap:8px;">
                                 <i class="fas fa-calendar-alt" style="color: var(--text-muted); font-size: 14px;"></i>
-                                <input type="date" id="audit-filter-start" onchange="app.loadAuditLogs()" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; outline: none; background: white; font-size: 13px; color: var(--text-main);">
+                                <input type="date" id="audit-filter-start" onchange="app.loadAuditLogs()"
+                                    style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; outline: none; background: white; font-size: 13px; color: var(--text-main);">
                                 <span style="color: var(--text-muted); font-size: 13px;">até</span>
-                                <input type="date" id="audit-filter-end" onchange="app.loadAuditLogs()" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; outline: none; background: white; font-size: 13px; color: var(--text-main);">
+                                <input type="date" id="audit-filter-end" onchange="app.loadAuditLogs()"
+                                    style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; outline: none; background: white; font-size: 13px; color: var(--text-main);">
                             </div>
                             <div style="display:flex; align-items:center; gap:8px;">
-                                <i class="fas fa-box" style="color: var(--text-muted); font-size: 14px; margin-left: 8px;"></i>
-                                <select id="audit-filter-resource" onchange="app.loadAuditLogs()" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; outline: none; background: white; font-size: 13px; color: var(--text-main); cursor: pointer; min-width: 150px;">
+                                <i class="fas fa-box"
+                                    style="color: var(--text-muted); font-size: 14px; margin-left: 8px;"></i>
+                                <select id="audit-filter-resource" onchange="app.loadAuditLogs()"
+                                    style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; outline: none; background: white; font-size: 13px; color: var(--text-main); cursor: pointer; min-width: 150px;">
                                     <option value="all">Todos os Recursos</option>
                                     <option value="client">Cliente</option>
                                     <option value="sale">Venda Histórico</option>
@@ -920,10 +1162,16 @@
                                 </select>
                             </div>
                             <div style="display:flex; align-items:center; gap:8px;">
-                                <i class="fas fa-user-tie" style="color: var(--text-muted); font-size: 14px; margin-left: 8px;"></i>
-                                <input type="text" id="audit-filter-user" placeholder="Nome do Consultor..." oninput="app.loadAuditLogs()" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; outline: none; background: white; font-size: 13px; color: var(--text-main); min-width: 150px;">
+                                <i class="fas fa-user-tie"
+                                    style="color: var(--text-muted); font-size: 14px; margin-left: 8px;"></i>
+                                <input type="text" id="audit-filter-user" placeholder="Nome do Consultor..."
+                                    oninput="app.loadAuditLogs()"
+                                    style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; outline: none; background: white; font-size: 13px; color: var(--text-main); min-width: 150px;">
                             </div>
-                            <button class="btn-secondary" onclick="document.getElementById('audit-filter-start').value=''; document.getElementById('audit-filter-end').value=''; document.getElementById('audit-filter-resource').value='all'; document.getElementById('audit-filter-user').value=''; app.loadAuditLogs();" style="padding: 6px 12px; font-size: 12px; border-radius: 6px; background: transparent; color: #EF4444; border: 1px solid #EF4444; cursor: pointer; margin-left: auto;">Limpar Filtros</button>
+                            <button class="btn-secondary"
+                                onclick="document.getElementById('audit-filter-start').value=''; document.getElementById('audit-filter-end').value=''; document.getElementById('audit-filter-resource').value='all'; document.getElementById('audit-filter-user').value=''; app.loadAuditLogs();"
+                                style="padding: 6px 12px; font-size: 12px; border-radius: 6px; background: transparent; color: #EF4444; border: 1px solid #EF4444; cursor: pointer; margin-left: auto;">Limpar
+                                Filtros</button>
                         </div>
                     </div>
                     <div class="form-card">
@@ -938,8 +1186,10 @@
                             </thead>
                             <tbody id="audit-logs-body">
                                 <tr>
-                                    <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 32px;">
-                                        <i class="fas fa-spinner fa-spin" style="margin-right: 8px;"></i> Carregando logs de auditoria...
+                                    <td colspan="4"
+                                        style="text-align: center; color: var(--text-muted); padding: 32px;">
+                                        <i class="fas fa-spinner fa-spin" style="margin-right: 8px;"></i> Carregando
+                                        logs de auditoria...
                                     </td>
                                 </tr>
                             </tbody>
@@ -949,24 +1199,34 @@
 
                 <!-- Funil de Vendas Page -->
                 <section class="page" id="page-funnel" style="height: calc(100vh - 100px);">
-                    <div class="page-header" style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px;">
+                    <div class="page-header"
+                        style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px;">
                         <div>
                             <h2>Funil de Vendas</h2>
                             <p>Acompanhe suas oportunidades de negócio. Arraste e solte os clientes entre as etapas.</p>
                         </div>
                         <div class="admin-only funnel-batch-actions" style="display: none; gap: 8px;">
-                            <span id="funnel-selected-count" style="align-self: center; margin-right: 8px; font-weight: 500; font-size: 14px; color: var(--text-muted); display: none;">0 selecionados</span>
-                            <button id="btn-funnel-select-all" class="btn-primary" style="background: #F1F5F9; color: var(--text-main); border: 1px solid var(--border); box-shadow: none;" onclick="app.toggleSelectAllFunnel()">
+                            <span id="funnel-selected-count"
+                                style="align-self: center; margin-right: 8px; font-weight: 500; font-size: 14px; color: var(--text-muted); display: none;">0
+                                selecionados</span>
+                            <button id="btn-funnel-select-all" class="btn-primary"
+                                style="background: #F1F5F9; color: var(--text-main); border: 1px solid var(--border); box-shadow: none;"
+                                onclick="app.toggleSelectAllFunnel()">
                                 <i class="fas fa-check-square"></i> Selecionar Tudo
                             </button>
-                            <button id="btn-funnel-delete" class="btn-primary" style="background: #EF4444; display: none;" onclick="app.deleteSelectedFunnelCards()">
+                            <button id="btn-funnel-delete" class="btn-primary"
+                                style="background: #EF4444; display: none;" onclick="app.deleteSelectedFunnelCards()">
                                 <i class="fas fa-trash"></i> Excluir Selecionados
                             </button>
                         </div>
                     </div>
 
-                    <div class="filters-bar" style="margin-bottom: 24px; display: flex; gap: 16px; flex-wrap: wrap; align-items: center;">
-                        <input type="text" id="filter-funnel-search" placeholder="Buscar conversa por nome ou telefone..." style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; flex: 1; min-width: 250px; outline: none; font-size: 14px; transition: border-color 0.2s;" oninput="app.renderFunnelBoard()">
+                    <div class="filters-bar"
+                        style="margin-bottom: 24px; display: flex; gap: 16px; flex-wrap: wrap; align-items: center;">
+                        <input type="text" id="filter-funnel-search"
+                            placeholder="Buscar conversa por nome ou telefone..."
+                            style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; flex: 1; min-width: 250px; outline: none; font-size: 14px; transition: border-color 0.2s;"
+                            oninput="app.renderFunnelBoard()">
                     </div>
 
                     <div class="kanban-board">
@@ -995,7 +1255,8 @@
                         <!-- Column 3 -->
                         <div class="kanban-column" data-status="waiting">
                             <div class="kanban-header">
-                                <h3><i class="fas fa-hourglass-half" style="color: #F59E0B;"></i> Aguardando Pagamento</h3>
+                                <h3><i class="fas fa-hourglass-half" style="color: #F59E0B;"></i> Aguardando Pagamento
+                                </h3>
                                 <span class="k-count" id="count-waiting">0</span>
                             </div>
                             <div class="kanban-cards" id="list-waiting">
@@ -1032,27 +1293,37 @@
 
     <!-- Confirm Dialog Overlay -->
     <div class="login-overlay" id="confirm-overlay" style="align-items: center; justify-content: center;">
-        <div class="modal" style="max-width: 400px; text-align: center; padding: 32px 24px; background: white; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%;">
-            <div id="confirm-icon-bg" style="width: 64px; height: 64px; border-radius: 50%; background: #FEE2E2; color: #EF4444; display: flex; align-items: center; justify-content: center; font-size: 28px; margin: 0 auto 16px;">
+        <div class="modal"
+            style="max-width: 400px; text-align: center; padding: 32px 24px; background: white; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%;">
+            <div id="confirm-icon-bg"
+                style="width: 64px; height: 64px; border-radius: 50%; background: #FEE2E2; color: #EF4444; display: flex; align-items: center; justify-content: center; font-size: 28px; margin: 0 auto 16px;">
                 <i id="confirm-icon" class="fas fa-exclamation-triangle"></i>
             </div>
             <h3 id="confirm-title" style="margin: 0 0 12px; font-size: 20px; color: var(--text-main);">Confirmação</h3>
-            <p id="confirm-message" style="color: var(--text-muted); font-size: 15px; margin-bottom: 24px; line-height: 1.5; white-space: pre-line;">Tem certeza?</p>
+            <p id="confirm-message"
+                style="color: var(--text-muted); font-size: 15px; margin-bottom: 24px; line-height: 1.5; white-space: pre-line;">
+                Tem certeza?</p>
             <div style="display: flex; gap: 12px; justify-content: center;">
-                <button class="btn-primary" style="background: #E2E8F0; color: var(--text-main); flex: 1; box-shadow: none; justify-content: center;" onclick="app.closeConfirm()">Cancelar</button>
-                <button class="btn-primary" id="confirm-btn-yes" style="background: #EF4444; flex: 1; justify-content: center;">Sim, Excluir</button>
+                <button class="btn-primary"
+                    style="background: #E2E8F0; color: var(--text-main); flex: 1; box-shadow: none; justify-content: center;"
+                    onclick="app.closeConfirm()">Cancelar</button>
+                <button class="btn-primary" id="confirm-btn-yes"
+                    style="background: #EF4444; flex: 1; justify-content: center;">Sim, Excluir</button>
             </div>
         </div>
     </div>
 
     <!-- Team Add Modal -->
     <div id="team-overlay" class="login-overlay">
-        <div class="login-card" style="max-width: 500px; max-height: 90vh; overflow-y:auto; display: flex; flex-direction: column;">
+        <div class="login-card"
+            style="max-width: 500px; max-height: 90vh; overflow-y:auto; display: flex; flex-direction: column;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                <h2 style="margin: 0; text-align: left; font-size: 20px;"><i class="fas fa-user-tie" style="color: var(--primary); margin-right: 8px;"></i> Novo Colaborador</h2>
-                <button class="btn-icon" onclick="app.closeTeamModal()" style="font-size: 28px; line-height: 1;">&times;</button>
+                <h2 style="margin: 0; text-align: left; font-size: 20px;"><i class="fas fa-user-tie"
+                        style="color: var(--primary); margin-right: 8px;"></i> Novo Colaborador</h2>
+                <button class="btn-icon" onclick="app.closeTeamModal()"
+                    style="font-size: 28px; line-height: 1;">&times;</button>
             </div>
-            
+
             <form id="form-team" style="display: flex; flex-direction: column; gap: 16px;">
                 <input type="hidden" id="t-id" value="">
                 <div class="form-group">
@@ -1064,20 +1335,25 @@
                     <input type="email" id="t-email" required placeholder="joana@empresa.com">
                 </div>
                 <div class="form-group">
-                    <label>Senha Provisória <span id="t-password-hint" style="font-weight:normal; font-size:11px; color:var(--text-muted); display:none;">(Deixe em branco para não alterar)</span></label>
+                    <label>Senha Provisória <span id="t-password-hint"
+                            style="font-weight:normal; font-size:11px; color:var(--text-muted); display:none;">(Deixe em
+                            branco para não alterar)</span></label>
                     <input type="password" id="t-password" placeholder="Crie uma senha de acesso">
                 </div>
                 <div class="form-group" style="display:flex; gap:16px;">
                     <div style="flex:1;">
                         <label>Perfil (Role)</label>
-                        <select id="t-role" required style="width:100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer;" onchange="document.getElementById('t-store-container').style.display = this.value === 'admin' ? 'none' : 'block'; if(this.value==='admin') document.getElementById('t-store').value = 'all'; ">
+                        <select id="t-role" required
+                            style="width:100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer;"
+                            onchange="document.getElementById('t-store-container').style.display = this.value === 'admin' ? 'none' : 'block'; if(this.value==='admin') document.getElementById('t-store').value = 'all'; ">
                             <option value="seller">Consultor de Vendas (Acesso Restrito)</option>
                             <option value="admin">Administrador (Mestre)</option>
                         </select>
                     </div>
                     <div style="flex:1;" id="t-store-container">
                         <label>Loja Vinculada</label>
-                        <select id="t-store" required style="width:100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer;">
+                        <select id="t-store" required
+                            style="width:100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer;">
                             <option value="matriz">Loja 1</option>
                             <option value="filial_1">Loja 2</option>
                         </select>
@@ -1085,8 +1361,11 @@
                 </div>
 
                 <div class="form-actions" style="margin-top: 8px; display: flex; gap: 12px;">
-                    <button type="button" class="btn-primary" style="background:#E2E8F0; color:var(--text-main); flex:1; justify-content:center; box-shadow:none;" onclick="app.closeTeamModal()">Cancelar</button>
-                    <button type="submit" class="btn-primary" style="flex:2; padding: 14px; font-size: 16px; justify-content: center;">
+                    <button type="button" class="btn-primary"
+                        style="background:#E2E8F0; color:var(--text-main); flex:1; justify-content:center; box-shadow:none;"
+                        onclick="app.closeTeamModal()">Cancelar</button>
+                    <button type="submit" class="btn-primary"
+                        style="flex:2; padding: 14px; font-size: 16px; justify-content: center;">
                         <i class="fas fa-plus-circle"></i> Cadastrar Acesso
                     </button>
                 </div>
@@ -1101,16 +1380,26 @@
     <div id="history-overlay" class="login-overlay">
         <div class="login-card" style="max-width: 600px; max-height: 80vh; display: flex; flex-direction: column;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                <h2 style="margin: 0; text-align: left; font-size: 20px;"><i class="fas fa-history" style="color: var(--primary); margin-right: 8px;"></i> Histórico da Cliente</h2>
-                <button class="btn-icon" onclick="app.closeHistoryModal()" style="font-size: 28px; line-height: 1;">&times;</button>
+                <h2 style="margin: 0; text-align: left; font-size: 20px;"><i class="fas fa-history"
+                        style="color: var(--primary); margin-right: 8px;"></i> Histórico da Cliente</h2>
+                <button class="btn-icon" onclick="app.closeHistoryModal()"
+                    style="font-size: 28px; line-height: 1;">&times;</button>
             </div>
-            <div id="history-client-info" style="margin-bottom: 16px; padding: 16px; background: var(--bg-color); border-radius: 8px; border: 1px solid var(--border);">
+            <div id="history-client-info"
+                style="margin-bottom: 16px; padding: 16px; background: var(--bg-color); border-radius: 8px; border: 1px solid var(--border);">
             </div>
-            <div id="history-filters" style="display: flex; gap: 8px; align-items: center; margin-bottom: 16px; flex-wrap: wrap;">
-                <input type="date" id="history-filter-start" style="padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; outline: none; color: var(--text-muted); font-size: 13px; transition: border-color 0.2s;" onchange="app.renderClientHistory()" title="Data Inicial">
+            <div id="history-filters"
+                style="display: flex; gap: 8px; align-items: center; margin-bottom: 16px; flex-wrap: wrap;">
+                <input type="date" id="history-filter-start"
+                    style="padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; outline: none; color: var(--text-muted); font-size: 13px; transition: border-color 0.2s;"
+                    onchange="app.renderClientHistory()" title="Data Inicial">
                 <span style="color: var(--text-muted); font-size: 13px; font-weight: 500;">até</span>
-                <input type="date" id="history-filter-end" style="padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; outline: none; color: var(--text-muted); font-size: 13px; transition: border-color 0.2s;" onchange="app.renderClientHistory()" title="Data Final">
-                <button class="btn-primary" style="padding: 10px 16px; font-size: 13px; margin-left: auto;" onclick="document.getElementById('history-filter-start').value=''; document.getElementById('history-filter-end').value=''; app.renderClientHistory();"><i class="fas fa-eraser" style="font-size: 12px;"></i> Limpar</button>
+                <input type="date" id="history-filter-end"
+                    style="padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; outline: none; color: var(--text-muted); font-size: 13px; transition: border-color 0.2s;"
+                    onchange="app.renderClientHistory()" title="Data Final">
+                <button class="btn-primary" style="padding: 10px 16px; font-size: 13px; margin-left: auto;"
+                    onclick="document.getElementById('history-filter-start').value=''; document.getElementById('history-filter-end').value=''; app.renderClientHistory();"><i
+                        class="fas fa-eraser" style="font-size: 12px;"></i> Limpar</button>
             </div>
             <div id="history-modal-content" style="overflow-y: auto; flex: 1; padding-right: 4px;">
             </div>
@@ -1121,38 +1410,54 @@
     <div id="promo-overlay" class="login-overlay">
         <div class="login-card" style="max-width: 600px; display: flex; flex-direction: column;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                <h2 style="margin: 0; text-align: left; font-size: 20px;"><i class="fas fa-bullhorn" style="color: #8B5CF6; margin-right: 8px;"></i> Disparar Campanha Promocional</h2>
-                <button class="btn-icon" onclick="app.closePromoModal()" style="font-size: 28px; line-height: 1;">&times;</button>
+                <h2 style="margin: 0; text-align: left; font-size: 20px;"><i class="fas fa-bullhorn"
+                        style="color: #8B5CF6; margin-right: 8px;"></i> Disparar Campanha Promocional</h2>
+                <button class="btn-icon" onclick="app.closePromoModal()"
+                    style="font-size: 28px; line-height: 1;">&times;</button>
             </div>
-            
+
             <div style="margin-bottom: 16px; font-size: 14px; color: var(--text-muted);">
-                Esta campanha será enviada para <strong id="promo-target-count" style="color: var(--text-main);">0</strong> cliente(s) selecionada(s).
+                Esta campanha será enviada para <strong id="promo-target-count"
+                    style="color: var(--text-main);">0</strong> cliente(s) selecionada(s).
             </div>
 
             <form id="form-promo" style="display: flex; flex-direction: column; gap: 16px;">
                 <div class="form-group">
-                    <label>Modelo de Mensagem <span style="font-weight: normal; color: var(--text-muted); font-size: 12px;">(Edite em Configurações)</span></label>
-                    <select id="promo-template-select" required style="padding: 14px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer;" onchange="app.updatePromoPreview()">
+                    <label>Modelo de Mensagem <span
+                            style="font-weight: normal; color: var(--text-muted); font-size: 12px;">(Edite em
+                            Configurações)</span></label>
+                    <select id="promo-template-select" required
+                        style="padding: 14px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer;"
+                        onchange="app.updatePromoPreview()">
                         <!-- JS fills -->
                     </select>
                 </div>
                 <div class="form-group">
                     <label>Produto em Promoção</label>
-                    <input type="text" id="promo-product" required placeholder="Ex: Batom Matte Vermelho" list="products-datalist">
+                    <input type="text" id="promo-product" required placeholder="Ex: Batom Matte Vermelho"
+                        list="products-datalist">
                 </div>
                 <div class="form-group">
-                    <label>Link de Compra / Catálogo <span style="font-weight: normal; color: var(--text-muted); font-size: 12px;">(Opcional)</span></label>
-                    <input type="url" id="promo-link" placeholder="https://wa.me/c/..." >
+                    <label>Link de Compra / Catálogo <span
+                            style="font-weight: normal; color: var(--text-muted); font-size: 12px;">(Opcional)</span></label>
+                    <input type="url" id="promo-link" placeholder="https://wa.me/c/...">
                 </div>
-                
+
                 <div style="background: #F8FAFC; border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
-                    <label style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; display: block;">Pré-visualização da Mensagem</label>
-                    <div id="promo-preview" style="font-size: 14px; color: var(--text-main); line-height: 1.5; white-space: pre-wrap;"></div>
+                    <label
+                        style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; display: block;">Pré-visualização
+                        da Mensagem</label>
+                    <div id="promo-preview"
+                        style="font-size: 14px; color: var(--text-main); line-height: 1.5; white-space: pre-wrap;">
+                    </div>
                 </div>
 
                 <div class="form-actions" style="margin-top: 8px; display: flex; gap: 12px;">
-                    <button type="button" class="btn-primary" style="background:#E2E8F0; color:var(--text-main); flex:1; justify-content:center; box-shadow:none;" onclick="app.closePromoModal()">Cancelar</button>
-                    <button type="submit" id="btn-send-promo" class="btn-primary" style="flex:2; padding: 14px; font-size: 16px; justify-content: center; background: #8B5CF6;">
+                    <button type="button" class="btn-primary"
+                        style="background:#E2E8F0; color:var(--text-main); flex:1; justify-content:center; box-shadow:none;"
+                        onclick="app.closePromoModal()">Cancelar</button>
+                    <button type="submit" id="btn-send-promo" class="btn-primary"
+                        style="flex:2; padding: 14px; font-size: 16px; justify-content: center; background: #8B5CF6;">
                         <i class="fas fa-paper-plane"></i> Iniciar Disparos
                     </button>
                 </div>
@@ -1162,15 +1467,19 @@
 
     <!-- Kanban Lead Modal -->
     <div id="lead-sidebar-overlay" class="login-overlay" style="justify-content: center; align-items: center;">
-        <div class="login-card" style="position: relative; width: 700px; max-width: 95%; height: 85vh; border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; padding: 0; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);">
+        <div class="login-card"
+            style="position: relative; width: 700px; max-width: 95%; height: 85vh; border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; padding: 0; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);">
             <div class="card-header" style="background: var(--surface); z-index: 10; padding: 20px;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                <div
+                    style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
                     <div>
                         <h2 id="lead-sb-name" style="margin: 0; font-size: 18px; color: var(--text-main);">...</h2>
-                        <span id="lead-sb-status" style="font-size: 11px; background: #E2E8F0; padding: 2px 6px; border-radius: 4px; font-weight: 600;">...</span>
+                        <span id="lead-sb-status"
+                            style="font-size: 11px; background: #E2E8F0; padding: 2px 6px; border-radius: 4px; font-weight: 600;">...</span>
                     </div>
                     <div style="display: flex; gap: 12px; align-items: center;">
-                        <button class="btn-icon" onclick="app.closeLeadSidebar()" style="font-size: 24px;">&times;</button>
+                        <button class="btn-icon" onclick="app.closeLeadSidebar()"
+                            style="font-size: 24px;">&times;</button>
                     </div>
                 </div>
                 <div style="font-size: 13px; color: var(--text-muted); display: flex; gap: 12px; margin-top: 8px;">
@@ -1178,34 +1487,53 @@
                     <span id="lead-sb-value" style="color: #10B981; font-weight: bold;"></span>
                 </div>
             </div>
-            
-            <div id="lead-sb-chat" style="flex: 1; background: #E5DBD5; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-size: cover; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+
+            <div id="lead-sb-chat"
+                style="flex: 1; background: #E5DBD5; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-size: cover; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px;">
                 <!-- Mensagens Renderizadas Aqui -->
-                <div style="text-align: center; font-size: 12px; color: #667781; background: rgba(255,255,255,0.8); margin: 0 auto; padding: 4px 10px; border-radius: 8px; margin-bottom: 8px;">Esta é uma prévia do Chat Integrado via Webhook</div>
+                <div
+                    style="text-align: center; font-size: 12px; color: #667781; background: rgba(255,255,255,0.8); margin: 0 auto; padding: 4px 10px; border-radius: 8px; margin-bottom: 8px;">
+                    Esta é uma prévia do Chat Integrado via Webhook</div>
             </div>
-            <div id="lead-sb-reply-preview" style="display: none; padding: 10px 16px; background: white; border-top: 1px solid var(--border); border-left: 4px solid var(--primary); align-items: center; justify-content: space-between;">
-                <div style="font-size: 13px; color: var(--text-muted); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 90%;" id="lead-sb-reply-text"></div>
-                <button class="btn-icon" onclick="app.cancelReply()" style="font-size: 16px; width: 24px; height: 24px; padding:0; display:flex; align-items:center; justify-content:center;">&times;</button>
+            <div id="lead-sb-reply-preview"
+                style="display: none; padding: 10px 16px; background: white; border-top: 1px solid var(--border); border-left: 4px solid var(--primary); align-items: center; justify-content: space-between;">
+                <div style="font-size: 13px; color: var(--text-muted); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 90%;"
+                    id="lead-sb-reply-text"></div>
+                <button class="btn-icon" onclick="app.cancelReply()"
+                    style="font-size: 16px; width: 24px; height: 24px; padding:0; display:flex; align-items:center; justify-content:center;">&times;</button>
             </div>
 
-            <div id="emoji-picker-container" style="display: none; position: absolute; bottom: 80px; left: 16px; z-index: 100; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden;">
+            <div id="emoji-picker-container"
+                style="display: none; position: absolute; bottom: 80px; left: 16px; z-index: 100; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden;">
                 <emoji-picker></emoji-picker>
             </div>
 
-            <div id="lead-sb-upload-preview" style="display: none; padding: 10px 16px; background: white; border-top: 1px solid var(--border); align-items: center; justify-content: space-between;">
+            <div id="lead-sb-upload-preview"
+                style="display: none; padding: 10px 16px; background: white; border-top: 1px solid var(--border); align-items: center; justify-content: space-between;">
                 <div style="display: flex; align-items: center; gap: 12px;">
                     <i class="fas fa-image" style="color: var(--primary); font-size: 24px;"></i>
-                    <div style="font-size: 13px; color: var(--text-main); font-weight: 500;" id="lead-sb-upload-name">imagem.jpg</div>
+                    <div style="font-size: 13px; color: var(--text-main); font-weight: 500;" id="lead-sb-upload-name">
+                        imagem.jpg</div>
                 </div>
-                <button class="btn-icon" onclick="app.cancelUpload()" style="font-size: 16px; width: 24px; height: 24px; padding:0; display:flex; align-items:center; justify-content:center; color: #EF4444;">&times;</button>
+                <button class="btn-icon" onclick="app.cancelUpload()"
+                    style="font-size: 16px; width: 24px; height: 24px; padding:0; display:flex; align-items:center; justify-content:center; color: #EF4444;">&times;</button>
             </div>
 
-            <div style="padding: 16px; background: #F0F2F5; border-top: 1px solid var(--border); display: flex; gap: 8px; align-items: center;">
-                <button class="btn-icon" onclick="app.toggleEmojiPicker()" title="Adicionar Emoji" style="font-size: 20px;"><i class="far fa-smile"></i></button>
-                <input type="file" id="chat-file-upload" style="display:none;" accept="image/*,application/pdf" onchange="app.handleChatFileUpload(event)">
-                <button class="btn-icon" onclick="document.getElementById('chat-file-upload').click()" title="Anexar Arquivo" style="font-size: 20px;"><i class="fas fa-paperclip"></i></button>
-                <input type="text" id="lead-sb-input" placeholder="Digite uma mensagem..." onkeydown="if(event.key === 'Enter') app.sendLeadMessage()" style="flex: 1; padding: 12px 16px; border: none; border-radius: 20px; outline: none; font-size: 14px; box-shadow: 0 1px 1px rgba(0,0,0,0.05);">
-                <button class="btn-primary" style="border-radius: 50%; width: 44px; height: 44px; padding: 0; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1);" onclick="app.sendLeadMessage()"><i class="fas fa-paper-plane" style="margin-right:2px;"></i></button>
+            <div
+                style="padding: 16px; background: #F0F2F5; border-top: 1px solid var(--border); display: flex; gap: 8px; align-items: center;">
+                <button class="btn-icon" onclick="app.toggleEmojiPicker()" title="Adicionar Emoji"
+                    style="font-size: 20px;"><i class="far fa-smile"></i></button>
+                <input type="file" id="chat-file-upload" style="display:none;" accept="image/*,application/pdf"
+                    onchange="app.handleChatFileUpload(event)">
+                <button class="btn-icon" onclick="document.getElementById('chat-file-upload').click()"
+                    title="Anexar Arquivo" style="font-size: 20px;"><i class="fas fa-paperclip"></i></button>
+                <input type="text" id="lead-sb-input" placeholder="Digite uma mensagem..."
+                    onkeydown="if(event.key === 'Enter') app.sendLeadMessage()"
+                    style="flex: 1; padding: 12px 16px; border: none; border-radius: 20px; outline: none; font-size: 14px; box-shadow: 0 1px 1px rgba(0,0,0,0.05);">
+                <button class="btn-primary"
+                    style="border-radius: 50%; width: 44px; height: 44px; padding: 0; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1);"
+                    onclick="app.sendLeadMessage()"><i class="fas fa-paper-plane"
+                        style="margin-right:2px;"></i></button>
             </div>
         </div>
     </div>
@@ -1217,7 +1545,8 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-functions.js"></script>
     <script type="module" src="https://unpkg.com/emoji-picker-element@1"></script>
-    
+
     <script type="module" src="js/app.js"></script>
 </body>
+
 </html>
