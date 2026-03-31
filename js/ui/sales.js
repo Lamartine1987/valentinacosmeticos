@@ -6,9 +6,12 @@ export const salesModule = {
         if (!container) return;
         const row = document.createElement('div');
         row.className = 'sale-item-row';
-        row.style.cssText = 'display:flex; flex-wrap:wrap; gap:8px; align-items:center;';
+        row.style.cssText = 'display:flex; flex-wrap:wrap; gap:8px; align-items:center; position:relative;';
         row.innerHTML = `
-            <div style="flex: 1 1 200px;"><input type="text" class="sale-item-product" title="Nome do Produto" placeholder="Ex: Hidratação..." list="products-datalist" style="padding:12px 14px; border:1px solid var(--border); border-radius:8px; font-size:14px; width:100%; box-sizing:border-box; outline:none;"></div>
+            <div style="flex: 1 1 200px; position:relative;">
+                <input type="text" class="sale-item-product" title="Nome do Produto" autocomplete="off" placeholder="Ex: Hidratação..." style="padding:12px 14px; border:1px solid var(--border); border-radius:8px; font-size:14px; width:100%; box-sizing:border-box; outline:none;">
+                <div class="product-suggestions autocomplete-suggestions" style="display:none; position:absolute; top:calc(100% + 4px); left:0; width: max-content; min-width: 100%; max-width: 80vw; max-height: 280px; overflow-y: auto; background: white; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 100;"></div>
+            </div>
             <div style="flex: 0 0 110px; position:relative;" title="Valor Unitário"><span style="position:absolute; left:12px; top:13px; color:#94A3B8; font-size:13px;">R$</span><input type="number" class="sale-item-price" placeholder="0.00" step="0.01" style="padding:12px 8px 12px 34px; border:1px solid var(--border); border-radius:8px; font-size:14px; width:100%; box-sizing:border-box; outline:none;"></div>
             <div style="flex: 0 0 70px;" title="Quantidade"><input type="number" class="sale-item-qty" placeholder="Qtd" min="1" value="1" style="padding:12px 4px; border:1px solid var(--border); border-radius:8px; font-size:14px; text-align:center; width:100%; box-sizing:border-box; outline:none;"></div>
             <div style="flex: 0 0 110px; position:relative;" title="Subtotal do Item"><span style="position:absolute; left:12px; top:13px; color:#94A3B8; font-size:13px;">R$</span><input type="text" class="sale-item-total" readonly placeholder="0.00" style="padding:12px 4px 12px 34px; border:1px solid var(--border); border-radius:8px; font-size:14px; font-weight:bold; color:var(--text-main); background:#F8FAFC; width:100%; box-sizing:border-box; outline:none;"></div>
@@ -18,13 +21,14 @@ export const salesModule = {
         const prodInput = row.querySelector('.sale-item-product');
         const priceInput = row.querySelector('.sale-item-price');
         const qtyInput = row.querySelector('.sale-item-qty');
+        const suggDiv = row.querySelector('.product-suggestions');
 
         prodInput.addEventListener('change', () => {
             if (this.products) {
                 const prodName = prodInput.value.trim().toLowerCase();
                 const prod = this.products.find(p => 
-                    (p.name && p.name.trim().toLowerCase() === prodName) ||
-                    (p.barcode && p.barcode.trim() === prodInput.value.trim())
+                    ((p.name && p.name.trim().toLowerCase() === prodName) ||
+                    (p.barcode && p.barcode.trim() === prodInput.value.trim())) && p.active !== false
                 );
                 if (prod && prod.price !== undefined) {
                     priceInput.value = parseFloat(prod.price).toFixed(2);
@@ -33,7 +37,53 @@ export const salesModule = {
             this.calculateSaleTotal();
         });
 
-        prodInput.addEventListener('input', () => this.calculateSaleTotal());
+        prodInput.addEventListener('input', () => {
+            const val = prodInput.value.toLowerCase().trim();
+            suggDiv.innerHTML = '';
+            
+            if (val.length < 2) {
+                suggDiv.style.display = 'none';
+                this.calculateSaleTotal();
+                return;
+            }
+            
+            const matches = this.products ? this.products.filter(p => 
+                ((p.name && p.name.toLowerCase().includes(val)) ||
+                (p.barcode && p.barcode.includes(val))) && p.active !== false
+            ).slice(0, 15) : [];
+
+            if (matches.length > 0) {
+                matches.forEach(m => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'suggestion-item';
+                    itemDiv.innerHTML = `
+                        <div class="suggestion-name" style="white-space: normal;">${m.name}</div>
+                        <div class="suggestion-phone" style="display:flex; justify-content:space-between; margin-top:4px;">
+                            <span>Cód: ${m.barcode || '-'}</span>
+                            <span style="color:var(--primary); font-weight:bold;">R$ ${parseFloat(m.price||0).toFixed(2)}</span>
+                        </div>
+                    `;
+                    itemDiv.addEventListener('click', () => {
+                        prodInput.value = m.name;
+                        suggDiv.style.display = 'none';
+                        priceInput.value = parseFloat(m.price || 0).toFixed(2);
+                        this.calculateSaleTotal();
+                    });
+                    suggDiv.appendChild(itemDiv);
+                });
+                suggDiv.style.display = 'block';
+            } else {
+                suggDiv.style.display = 'none';
+            }
+            this.calculateSaleTotal();
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!row.contains(e.target)) {
+                if (suggDiv) suggDiv.style.display = 'none';
+            }
+        });
+
         priceInput.addEventListener('input', () => this.calculateSaleTotal());
         qtyInput.addEventListener('input', () => this.calculateSaleTotal());
         
@@ -78,8 +128,8 @@ export const salesModule = {
                 
                 // Try case-insensitive exact match
                 const prod = this.products ? this.products.find(p => 
-                    (p.name && p.name.trim().toLowerCase() === prodName.toLowerCase()) ||
-                    (p.barcode && p.barcode.trim() === prodName.trim())
+                    ((p.name && p.name.trim().toLowerCase() === prodName.toLowerCase()) ||
+                    (p.barcode && p.barcode.trim() === prodName.trim())) && p.active !== false
                 ) : null;
                 
                 let warningDiv = row.querySelector('.unrecognized-warning');

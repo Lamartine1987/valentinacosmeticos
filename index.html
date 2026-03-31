@@ -672,11 +672,27 @@
                             <h2>Catálogo de Produtos</h2>
                             <p>Sua lista de produtos e serviços disponíveis.</p>
                         </div>
-                        <div style="display: flex; gap: 8px;">
-                            <button class="btn-primary" style="background: #EF4444;"
-                                onclick="app.deleteSelectedProducts()">
-                                <i class="fas fa-trash"></i> Excluir Selecionados
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end;">
+                            <button class="btn-primary admin-only" id="btn-undo-import" style="background: #EAB308; display: none;" onclick="app.undoLastImport()">
+                                <i class="fas fa-undo"></i> Desfazer Importação
                             </button>
+                            <button class="btn-primary admin-only" id="btn-import-xml" style="background: #10B981;" onclick="document.getElementById('xml-upload').click()">
+                                <i class="fas fa-file-upload"></i> Importar XML
+                            </button>
+                            <input type="file" id="xml-upload" accept=".xml,.jrpxml" style="display: none;" onchange="app.importProductXML(event)" />
+                            
+                            <span id="products-selected-count" style="display: none; align-items: center; padding: 0 12px; font-size: 13px; font-weight: 600; color: var(--primary); background: var(--primary-light); border-radius: 8px;">0 selecionados</span>
+                            
+                            <button class="btn-primary" id="btn-bulk-inactivate" style="background: #F59E0B; display: none;" onclick="app.toggleSelectedProductsStatus(false)">
+                                <i class="fas fa-pause-circle"></i> Inativar
+                            </button>
+                            <button class="btn-primary" id="btn-bulk-activate" style="background: #10B981; display: none;" onclick="app.toggleSelectedProductsStatus(true)">
+                                <i class="fas fa-play-circle"></i> Ativar
+                            </button>
+                            <button class="btn-primary" id="btn-bulk-delete" style="background: #EF4444; display: none;" onclick="app.deleteSelectedProducts()">
+                                <i class="fas fa-trash"></i> Excluir
+                            </button>
+
                             <button class="btn-primary" onclick="app.navigateTo('product-register')">
                                 <i class="fas fa-plus"></i> Novo Produto
                             </button>
@@ -688,6 +704,14 @@
                         <input type="text" id="filter-product-catalog"
                             placeholder="Buscar por Nome ou Código de Barras..."
                             style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); transition: border-color 0.2s; flex: 1; min-width: 200px;">
+                    </div>
+
+                    <div id="products-pagination-top" style="display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-bottom: 16px; font-size: 14px; font-weight: 500; color: var(--text-muted); display: none;">
+                        <button class="btn-icon" id="btn-prod-top-first" onclick="app.goToProductPage(1)" style="border: 1px solid var(--border); padding: 6px 10px; border-radius: 6px;" title="Primeira Página"><i class="fas fa-angle-double-left"></i></button>
+                        <button class="btn-icon" id="btn-prod-top-prev" onclick="app.changeProductPage(-1)" style="border: 1px solid var(--border); padding: 6px 10px; border-radius: 6px;" title="Página Anterior"><i class="fas fa-angle-left"></i></button>
+                        <span id="prod-page-info-top" style="padding: 0 8px;">1 de 1</span>
+                        <button class="btn-icon" id="btn-prod-top-next" onclick="app.changeProductPage(1)" style="border: 1px solid var(--border); padding: 6px 10px; border-radius: 6px;" title="Próxima Página"><i class="fas fa-angle-right"></i></button>
+                        <button class="btn-icon" id="btn-prod-top-last" onclick="app.goToProductPage('last')" style="border: 1px solid var(--border); padding: 6px 10px; border-radius: 6px;" title="Última Página"><i class="fas fa-angle-double-right"></i></button>
                     </div>
 
                     <div class="table-card" style="overflow-x: auto;">
@@ -706,6 +730,14 @@
                             <tbody id="products-list-body">
                             </tbody>
                         </table>
+                    </div>
+                    
+                    <div id="products-pagination" style="display: flex; justify-content: center; align-items: center; gap: 12px; margin-top: 16px; padding: 12px; background: white; border: 1px solid var(--border); border-radius: 12px; font-size: 14px; font-weight: 500; color: var(--text-muted); display: none;">
+                        <button class="btn-icon" id="btn-prod-first" onclick="app.goToProductPage(1)" style="border: 1px solid var(--border); padding: 6px 12px; border-radius: 6px;" title="Primeira Página"><i class="fas fa-angle-double-left"></i></button>
+                        <button class="btn-icon" id="btn-prod-prev" onclick="app.changeProductPage(-1)" style="border: 1px solid var(--border); padding: 6px 12px; border-radius: 6px;"><i class="fas fa-chevron-left"></i> Anterior</button>
+                        <span id="prod-page-info">Página 1 de 1</span>
+                        <button class="btn-icon" id="btn-prod-next" onclick="app.changeProductPage(1)" style="border: 1px solid var(--border); padding: 6px 12px; border-radius: 6px;">Próxima <i class="fas fa-chevron-right"></i></button>
+                        <button class="btn-icon" id="btn-prod-last" onclick="app.goToProductPage('last')" style="border: 1px solid var(--border); padding: 6px 12px; border-radius: 6px;" title="Última Página"><i class="fas fa-angle-double-right"></i></button>
                     </div>
                 </section>
 
