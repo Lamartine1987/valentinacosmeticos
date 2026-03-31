@@ -188,7 +188,7 @@ export const funnelModule = {
             else if(status === 'waiting') tagHtml = '<span class="k-card-tag" style="background:#FEF3C7; color:#D97706;">Pendente</span>';
 
             let storeBadgeId = lead.storeId || 'matriz';
-            let storeBadgeLabel = storeBadgeId === 'matriz' ? 'MATRIZ' : storeBadgeId.replace('_', ' ').toUpperCase();
+            let storeBadgeLabel = storeBadgeId === 'matriz' ? 'Loja 1' : 'Loja 2';
             let storeTagHtml = `<span style="font-size: 9px; padding: 2px 5px; border-radius: 4px; background: #F3F4F6; border: 1px solid #E5E7EB; color: #4B5563; font-weight: bold; align-self: flex-start;"><i class="fas fa-store" style="font-size: 9px; margin-right: 3px;"></i>${storeBadgeLabel}</span>`;
 
             card.innerHTML = `
