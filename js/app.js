@@ -45,6 +45,7 @@ const app = {
         this.setupGlobalSearch();
         this.setupFunnel();
         this.setupTeamListeners();
+        this.setupTemplateFormatters();
         
         // Setup date defaulting to today
         document.getElementById('r-date').valueAsDate = new Date();
@@ -55,6 +56,107 @@ const app = {
                 document.body.classList.add('sidebar-collapsed');
             }
         }
+    },
+
+    setupTemplateFormatters() {
+        const textareas = ['tpl-thanks', 'tpl-15d', 'tpl-restock', 'tpl-dormant', 'tpl-lost', 'tpl-birthday', 'tpl-promo-text'];
+        textareas.forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (el.previousElementSibling && el.previousElementSibling.classList.contains('wa-format-toolbar')) return;
+
+            const toolbar = document.createElement('div');
+            toolbar.className = 'wa-format-toolbar';
+            toolbar.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px; background: #F8FAFC; padding: 6px; border-radius: 6px; border: 1px solid var(--border);';
+            
+            const createBtn = (icon, title, clickHandler) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'btn-icon';
+                btn.style.cssText = 'font-size: 14px; padding: 4px 8px; background: white; border: 1px solid var(--border); border-radius: 4px; display: flex; align-items: center; justify-content: center;';
+                btn.innerHTML = `<i class="${icon}"></i>`;
+                btn.title = title;
+                btn.onclick = clickHandler;
+                return btn;
+            };
+
+            const btnBold = createBtn('fas fa-bold', 'Negrito', () => this.waFormat(id, '*', '*'));
+            const btnItalic = createBtn('fas fa-italic', 'Itálico', () => this.waFormat(id, '_', '_'));
+            const btnStrike = createBtn('fas fa-strikethrough', 'Tachado', () => this.waFormat(id, '~', '~'));
+            
+            const emojiWrapper = document.createElement('div');
+            emojiWrapper.style.position = 'relative';
+            const btnEmoji = createBtn('far fa-smile', 'Emoji', (e) => { e.stopPropagation(); this.toggleTemplateEmojiPicker(id, btnEmoji); });
+            emojiWrapper.appendChild(btnEmoji);
+            
+            toolbar.appendChild(btnBold);
+            toolbar.appendChild(btnItalic);
+            toolbar.appendChild(btnStrike);
+            toolbar.appendChild(emojiWrapper);
+            
+            el.parentElement.insertBefore(toolbar, el);
+        });
+    },
+
+    waFormat(id, startTag, endTag) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const start = el.selectionStart;
+        const end = el.selectionEnd;
+        const text = el.value;
+        const before = text.substring(0, start);
+        const selected = text.substring(start, end);
+        const after = text.substring(end, text.length);
+        
+        el.value = before + startTag + selected + endTag + after;
+        el.selectionStart = start + startTag.length;
+        el.selectionEnd = start + startTag.length + selected.length;
+        el.focus();
+    },
+
+    toggleTemplateEmojiPicker(id, btnRef) {
+        let container = document.getElementById('emoji-picker-container-template');
+        if (container) {
+            if (container.dataset.target === id && container.style.display !== 'none') {
+                 container.style.display = 'none';
+                 return;
+            }
+        } else {
+             container = document.createElement('div');
+             container.id = 'emoji-picker-container-template';
+             container.style.cssText = 'position: absolute; z-index: 1000; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden; display: none;';
+             container.innerHTML = '<emoji-picker></emoji-picker>';
+             document.body.appendChild(container);
+             
+             container.querySelector('emoji-picker').addEventListener('emoji-click', event => {
+                 const targetId = container.dataset.target;
+                 if (targetId) {
+                     const el = document.getElementById(targetId);
+                     if (el) {
+                         const start = el.selectionStart;
+                         const end = el.selectionEnd;
+                         const text = el.value;
+                         el.value = text.substring(0, start) + event.detail.unicode + text.substring(end, text.length);
+                         el.selectionStart = el.selectionEnd = start + event.detail.unicode.length;
+                         el.focus();
+                     }
+                 }
+                 container.style.display = 'none';
+             });
+             
+             document.addEventListener('click', e => {
+                 if (container.style.display !== 'none' && !container.contains(e.target) && !e.target.closest('.wa-format-toolbar')) {
+                     container.style.display = 'none';
+                 }
+             });
+        }
+        
+        container.dataset.target = id;
+        container.style.display = 'block';
+        
+        const rect = btnRef.getBoundingClientRect();
+        container.style.top = (rect.bottom + window.scrollY + 5) + 'px';
+        container.style.left = (rect.left + window.scrollX) + 'px';
     },
 
     setupGlobalSearch() {
