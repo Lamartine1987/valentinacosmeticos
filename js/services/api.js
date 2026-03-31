@@ -87,6 +87,16 @@ export const apiModule = {
                         finalUrl = finalUrl.replace(/\/$/, '') + '/send-text';
                     }
                 }
+            } else if (provider === 'meumotor') {
+                if (finalMediaPayload !== '') {
+                    finalUrl = finalUrl.replace('/send-text', '').replace(/\/$/, '') + '/send-image';
+                    body = { phone: destPhone, image: finalMediaPayload, caption: message, message: message }; 
+                } else {
+                    body = { phone: destPhone, message: message };
+                    if (!finalUrl.endsWith('/send-text')) {
+                        finalUrl = finalUrl.replace(/\/$/, '') + '/send-text';
+                    }
+                }
             } else {
                 body = { phone: destPhone, message: finalMessage }; 
             }
@@ -96,7 +106,7 @@ export const apiModule = {
                 const t = apiToken;
                 headers['Authorization'] = t.toLowerCase().startsWith('bearer') ? t : `Bearer ${t}`;
                 headers['apikey'] = t; 
-                if(provider === 'zapi') headers['Client-Token'] = t;
+                if(provider === 'zapi' || provider === 'meumotor') headers['Client-Token'] = t;
             }
             
             console.log("URL Final disparada:", finalUrl);

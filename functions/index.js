@@ -42,7 +42,11 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
             groupName = payload.chatName || "Grupo WhatsApp";
             senderName = payload.senderName || "Membro";
         } else {
-            senderName = payload.senderName || payload.chatName || "Desconhecido";
+            if (isFromMe) {
+                senderName = payload.chatName || "Desconhecido";
+            } else {
+                senderName = payload.senderName || payload.chatName || "Desconhecido";
+            }
         }
 
         textBody = (payload.text && payload.text.message) ? payload.text.message : "";
@@ -100,11 +104,20 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
         const leadsRef = db.collection('leads');
         
         let variations = [];
+        let cleanPhone = "";
         
         if (isGroup) {
-            variations = [phoneNum]; // O ID do grupo é único e literal
+            // Normalizar ID do grupo para o formato padrão do CRM (Z-API style)
+            let standardGroupPhone = phoneNum;
+            if (!standardGroupPhone.includes('-group') && !standardGroupPhone.includes('@g.us')) {
+                standardGroupPhone = standardGroupPhone + '-group';
+            } else if (standardGroupPhone.includes('@g.us')) {
+                standardGroupPhone = standardGroupPhone.replace('@g.us', '-group');
+            }
+            phoneNum = standardGroupPhone; // Atualiza para salvar formatado
+            variations = [phoneNum]; // O ID do grupo é único
         } else {
-            let cleanPhone = phoneNum.replace(/\D/g, '');
+            cleanPhone = phoneNum.replace(/\D/g, '');
             let base = cleanPhone.startsWith('55') ? cleanPhone.substring(2) : cleanPhone;
             let pWith9 = base;
             let pWithout9 = base;
@@ -168,9 +181,12 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
             } else {
                 // Criar o lead se você iniciou a conversa
                 const newLeadRef = leadsRef.doc(deterministicId);
+                const contactName = (senderName && senderName !== 'Desconhecido') ? senderName : cleanPhone;
+                const initName = isGroup ? groupName : contactName;
+                
                 await newLeadRef.set({
-                    name: isGroup ? groupName : phoneNum,
-                    phone: phoneNum,
+                    name: initName,
+                    phone: isGroup ? phoneNum : cleanPhone,
                     status: 'negotiation',
                     value: 0,
                     storeId: storeId,
@@ -198,9 +214,10 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
         if (snapshot.empty) {
             // CUIDADO CONTRA RACE CONDITION - Set with merge usando deterministic ID
             leadId = deterministicId;
+            const initName = isGroup ? groupName : senderName;
             await leadsRef.doc(leadId).set({
-                name: isGroup ? groupName : senderName,
-                phone: phoneNum,
+                name: initName !== 'Desconhecido' ? initName : (isGroup ? groupName : cleanPhone),
+                phone: isGroup ? phoneNum : cleanPhone,
                 status: 'inbox',
                 value: 0,
                 unread: true,
@@ -220,6 +237,20 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
                 unread: true,
                 storeId: storeId // Atualiza a pátria do Lead para a loja que está respondendo
             };
+
+            // Se o card ainda está com nome "fantasma" (número) e temos o nome real agora, atualize!
+            const currentName = leadData.name || '';
+            const onlyDigitsRegex = /^\d+$/;
+            if (onlyDigitsRegex.test(currentName) || currentName === 'Desconhecido' || currentName === leadData.phone) {
+                if (senderName && senderName !== 'Desconhecido') {
+                    updatePayload.name = senderName;
+                }
+            }
+            
+            // Consertar contatos que estavam com números zoados
+            if (!isGroup && leadData.phone !== cleanPhone) {
+                updatePayload.phone = cleanPhone;
+            }
 
             // Automação 4.1: Retornar à Caixa de Entrada se o negócio já estava 'Ganho' (Pós-Venda ativo)
             if (leadData.status === 'won') {
@@ -324,6 +355,9 @@ exports.triggerDailyFunnels = functions.https.onRequest((req, res) => {
                         
                         if (mostRecentSale.date > target.dateStr) {
                             console.log(`Disparo ${target.days}d abortado para ${phone}: comprou em ${mostRecentSale.date}`);
+                            db.collection("sales").doc(saleData.id).update({
+                                [`msg_${target.tplName}_status`]: 'aborted'
+                            }).catch(e => console.error(e));
                             continue;
                         }
                     }
@@ -342,6 +376,20 @@ exports.triggerDailyFunnels = functions.https.onRequest((req, res) => {
                             body = { phone: formattedPhone, image: target.img, caption: target.text.replace(/\{nome\}/g, saleData.name).replace(/\{produto\}/g, saleData.product) };
                         } else {
                             body = { phone: formattedPhone, message: target.text.replace(/\{nome\}/g, saleData.name).replace(/\{produto\}/g, saleData.product) };
+                        }
+                    } else if (apiConfig.provider === 'meumotor' || finalUrl.includes('187.127.4.145')) {
+                        if(apiConfig.token) {
+                            headers['Client-Token'] = apiConfig.token;
+                            headers['apikey'] = apiConfig.token;
+                        }
+                        if(target.img && target.img.trim() !== '') {
+                            finalUrl = finalUrl.replace('/send-text', '').replace(/\/$/, '') + '/send-image';
+                            body = { phone: formattedPhone, image: target.img, caption: target.text.replace(/\{nome\}/g, saleData.name).replace(/\{produto\}/g, saleData.product), message: target.text.replace(/\{nome\}/g, saleData.name).replace(/\{produto\}/g, saleData.product) };
+                        } else {
+                            body = { phone: formattedPhone, message: target.text.replace(/\{nome\}/g, saleData.name).replace(/\{produto\}/g, saleData.product) };
+                            if (!finalUrl.endsWith('/send-text')) {
+                                finalUrl = finalUrl.replace(/\/$/, '') + '/send-text';
+                            }
                         }
                     } else { // Evolution
                         if(apiConfig.token) headers['apikey'] = apiConfig.token;
@@ -369,6 +417,9 @@ exports.triggerDailyFunnels = functions.https.onRequest((req, res) => {
                         if (response.ok) {
                             sentCount++;
                             logDetails.push({ phone, date: target.dateStr, type: target.days });
+                            await db.collection("sales").doc(saleData.id).update({
+                                [`msg_${target.tplName}_status`]: 'sent'
+                            });
                         }
                     } catch(err) {
                         console.error('Falha no fetch para API do WA:', err);
@@ -401,6 +452,20 @@ exports.triggerDailyFunnels = functions.https.onRequest((req, res) => {
                                 body = { phone: formattedPhone, image: templates.birthdayImg, caption: msgText };
                             } else {
                                 body = { phone: formattedPhone, message: msgText };
+                            }
+                        } else if (apiConfig.provider === 'meumotor' || finalUrl.includes('187.127.4.145')) {
+                            if(apiConfig.token) {
+                                headers['Client-Token'] = apiConfig.token;
+                                headers['apikey'] = apiConfig.token;
+                            }
+                            if(templates.birthdayImg && templates.birthdayImg.trim() !== '') {
+                                finalUrl = finalUrl.replace('/send-text', '').replace(/\/$/, '') + '/send-image';
+                                body = { phone: formattedPhone, image: templates.birthdayImg, caption: msgText, message: msgText };
+                            } else {
+                                body = { phone: formattedPhone, message: msgText };
+                                if (!finalUrl.endsWith('/send-text')) {
+                                    finalUrl = finalUrl.replace(/\/$/, '') + '/send-text';
+                                }
                             }
                         } else {
                             if(apiConfig.token) headers['apikey'] = apiConfig.token;
@@ -532,6 +597,64 @@ exports.createUser = onCall({ invoker: "public" }, async (request) => {
         
     } catch (error) {
         console.error("Erro ao tentar criar novo usuário Firebase:", error);
+        throw new functions.https.HttpsError('internal', error.message);
+    }
+});
+
+exports.updateUser = onCall({ invoker: "public" }, async (request) => {
+    const authInfo = request.auth;
+    const payload = request.data;
+    if (!authInfo) throw new functions.https.HttpsError('unauthenticated', 'Usuário não autenticado no sistema.');
+    
+    const callerDoc = await db.collection('users').doc(authInfo.uid).get();
+    if (!callerDoc.exists || callerDoc.data().role !== 'admin') {
+        throw new functions.https.HttpsError('permission-denied', 'Apenas administradores podem gerenciar a equipe.');
+    }
+
+    const { uid, email, password, name, role, storeId } = payload;
+    if (!uid) throw new functions.https.HttpsError('invalid-argument', 'UID não informado.');
+
+    try {
+        const updateData = {};
+        if (email) updateData.email = email;
+        if (password && password.trim() !== '') updateData.password = password;
+        if (name) updateData.displayName = name;
+        
+        if (Object.keys(updateData).length > 0) {
+            await admin.auth().updateUser(uid, updateData);
+        }
+
+        const dbData = {};
+        if (email) dbData.email = email;
+        if (name) dbData.name = name;
+        if (role) dbData.role = role;
+        if (storeId) dbData.storeId = storeId;
+
+        if (Object.keys(dbData).length > 0) {
+            await db.collection('users').doc(uid).update(dbData);
+        }
+        return { success: true };
+    } catch (error) {
+        throw new functions.https.HttpsError('internal', error.message);
+    }
+});
+
+exports.deleteUser = onCall({ invoker: "public" }, async (request) => {
+    const authInfo = request.auth;
+    const { uid } = request.data;
+    
+    if (!authInfo) throw new functions.https.HttpsError('unauthenticated', 'Usuário não autenticado.');
+    const callerDoc = await db.collection('users').doc(authInfo.uid).get();
+    if (!callerDoc.exists || callerDoc.data().role !== 'admin') {
+        throw new functions.https.HttpsError('permission-denied', 'Apenas administradores podem excluir da equipe.');
+    }
+    if (!uid) throw new functions.https.HttpsError('invalid-argument', 'UID não informado.');
+
+    try {
+        await admin.auth().deleteUser(uid);
+        await db.collection('users').doc(uid).delete();
+        return { success: true };
+    } catch (error) {
         throw new functions.https.HttpsError('internal', error.message);
     }
 });

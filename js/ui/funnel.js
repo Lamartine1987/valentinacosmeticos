@@ -203,9 +203,11 @@ export const funnelModule = {
                             </span>
                         </span>
                     </span>
+                    ${(app && app.currentUserProfile && app.currentUserProfile.role === 'admin') ? `
                     <button class="btn-icon" style="color: #EF4444; padding: 2px;" onclick="event.stopPropagation(); app.deleteLeadCard('${lead.id}')" title="Excluir Conversa">
                         <i class="fas fa-trash" style="font-size: 13px;"></i>
                     </button>
+                    ` : ''}
                 </div>
                 <div class="k-card-meta" style="margin-bottom: 8px;">
                     <span style="display:flex; flex-direction:column; gap:4px;">

@@ -182,6 +182,15 @@ export const dashboardModule = {
                         <i class="fas fa-check-double"></i><span>Enviado pela API</span>
                     </div>
                 `;
+            } else if (action.status === 'aborted') {
+                actionHtml += `
+                    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+                        <div style="display: flex; align-items: center; gap: 6px; color: #F59E0B; font-weight: 600;">
+                            <i class="fas fa-shield-alt"></i><span>Cancelado (Anti-Spam)</span>
+                        </div>
+                        <span style="font-size: 11px; color: var(--text-muted);">Cliente comprou recentemente.</span>
+                    </div>
+                `;
             } else {
                 let isFailed = action.status === 'failed';
                 let btnText = isFailed ? 'Tentar de Novo' : 'Disparar na API';

@@ -150,9 +150,8 @@ const app = {
                 spans[0].textContent = this.currentUserProfile.name || 'Usuário';
                 
                 let storeLabel = 'Acesso Global';
-                if (storeId === 'matriz') storeLabel = 'Loja Matriz';
-                else if (storeId === 'filial_1') storeLabel = 'Filial 1';
-                else if (storeId === 'filial_2') storeLabel = 'Filial 2';
+                if (storeId === 'matriz') storeLabel = 'Loja 1';
+                else if (storeId === 'filial_1') storeLabel = 'Loja 2';
                 
                 spans[1].textContent = role === 'admin' ? `Mestre (${storeLabel})` : storeLabel;
             }
@@ -172,7 +171,40 @@ const app = {
             this.loadAdminFilters();
         } else {
             document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
+            this.loadSellerStoreFilters();
         }
+    },
+
+    loadSellerStoreFilters() {
+        const selects = ['filter-client-store', 'filter-sale-store', 'dash-filter-store', 'report-filter-store'];
+        selects.forEach(selectId => {
+            const selectEl = document.getElementById(selectId);
+            if (selectEl) {
+                // Remove the admin-only lock
+                if (selectEl.parentElement) {
+                    selectEl.parentElement.style.display = 'flex';
+                    selectEl.parentElement.classList.remove('admin-only'); // Prevent it from being hidden in subsequent calls
+                }
+                
+                const label = selectEl.parentElement.querySelector('span');
+                if (label) label.innerHTML = '<i class="fas fa-filter" style="margin-right:4px;"></i> Minhas Vendas / Loja';
+                
+                let html = '<option value="all">Faturamento Total (Todas as Lojas)</option>';
+                html += '<option value="matriz">🏢 Apenas Loja 1</option>';
+                html += '<option value="filial_1">🏢 Apenas Loja 2</option>';
+                
+                selectEl.innerHTML = html;
+            }
+        });
+        
+        // Also fix the assigned seller in the sales and clients form so they can assign to themselves, but for any store.
+        const assignSelect = document.getElementById('r-seller-assigned');
+        const clientAssignSelect = document.getElementById('c-seller-assigned');
+        const sellerOption = `<option value="${this.currentUserProfile.id || this.user.uid}" data-name="${this.currentUserProfile.name}" data-store="${this.currentUserProfile.storeId}">Minha Venda (${this.currentUserProfile.name})</option>`;
+        const clientSellerOption = `<option value="${this.currentUserProfile.id || this.user.uid}" data-name="${this.currentUserProfile.name}" data-store="${this.currentUserProfile.storeId}">Minha Carteira (${this.currentUserProfile.name})</option>`;
+        
+        if (assignSelect) assignSelect.innerHTML = sellerOption;
+        if (clientAssignSelect) clientAssignSelect.innerHTML = clientSellerOption;
     },
 
     loadAdminFilters() {
@@ -195,13 +227,13 @@ const app = {
                     let html = '<option value="all">Rede Completa</option>';
                     
                     uniqueStores.forEach(store => {
-                        const storeName = store === 'matriz' ? 'Matriz' : (store === 'filial_1' ? 'Filial 1' : 'Filial 2');
+                        const storeName = store === 'matriz' ? 'Loja 1' : 'Loja 2';
                         html += `<option value="${store}">🏢 Somente Loja ${storeName} (Consolidado)</option>`;
                     });
                     
                     html += '<optgroup label="Desempenho por Vendedor">';
                     sellers.forEach(s => {
-                        const storeName = s.storeId === 'matriz' ? 'Matriz' : (s.storeId === 'filial_1' ? 'Filial 1' : 'Filial 2');
+                        const storeName = s.storeId === 'matriz' ? 'Loja 1' : 'Loja 2';
                         html += `<option value="${s.id}">${storeName} - ${s.name}</option>`;
                     });
                     html += '</optgroup>';
@@ -211,13 +243,15 @@ const app = {
             });
 
             const assignSelect = document.getElementById('r-seller-assigned');
-            if (assignSelect) {
+            const clientAssignSelect = document.getElementById('c-seller-assigned');
+            if (assignSelect || clientAssignSelect) {
                 let assignHtml = '<option value="me">Deixar Comigo (Minha Autoria)</option>';
                 sellers.forEach(s => {
-                    const storeName = s.storeId === 'matriz' ? 'Matriz' : (s.storeId === 'filial_1' ? 'Filial 1' : 'Filial 2');
+                    const storeName = s.storeId === 'matriz' ? 'Loja 1' : 'Loja 2';
                     assignHtml += `<option value="${s.id}" data-name="${s.name}" data-store="${s.storeId}">${storeName} - ${s.name}</option>`;
                 });
-                assignSelect.innerHTML = assignHtml;
+                if (assignSelect) assignSelect.innerHTML = assignHtml;
+                if (clientAssignSelect) clientAssignSelect.innerHTML = assignHtml;
             }
 
             this.updateActiveViews();
@@ -231,10 +265,9 @@ const app = {
         
         let salesQuery = db.collection("sales");
         
-        // Multi-Tenant: Ocultar dados financeiros de outras filiais para vendedores
+        // Multi-Tenant: Vendedores veem APENAS suas próprias vendas (em toda a rede/todas as lojas)
         if (this.currentUserProfile.role !== 'admin') {
-            const storeId = this.currentUserProfile.storeId || 'matriz';
-            salesQuery = salesQuery.where('storeId', '==', storeId);
+            salesQuery = salesQuery.where('sellerId', '==', this.user.uid);
         }
 
         this.unsubSales = salesQuery.onSnapshot((snapshot) => {
@@ -682,16 +715,24 @@ const app = {
                 product: productNames,
                 quantity: totalQty,
                 items: items,
-                value: parseFloat(document.getElementById('r-value').value),
+                value: parseFloat(document.getElementById('r-value').value) || 0,
+                discount: parseFloat(document.getElementById('r-discount') ? document.getElementById('r-discount').value : 0) || 0,
                 date: document.getElementById('r-date').value,
             };
 
+            const storeSelect = document.getElementById('r-store-assigned');
+            if (storeSelect && storeSelect.value) {
+                newSale.overrideStoreId = storeSelect.value;
+            }
+
             const assignSelect = document.getElementById('r-seller-assigned');
-            if (assignSelect && assignSelect.value !== 'me') {
+            if (assignSelect && assignSelect.value && assignSelect.value !== 'me') {
                 newSale.overrideSellerId = assignSelect.value;
                 const opt = assignSelect.options[assignSelect.selectedIndex];
-                newSale.overrideSellerName = opt.getAttribute('data-name');
-                newSale.overrideStoreId = opt.getAttribute('data-store');
+                if (opt) {
+                    newSale.overrideSellerName = opt.getAttribute('data-name');
+                    newSale.overrideStoreId = opt.getAttribute('data-store');
+                }
             }
 
             // Auto-register client if not exists
@@ -744,6 +785,21 @@ const app = {
                     birthdate: document.getElementById('c-birthdate').value || '',
                     city: document.getElementById('c-city').value || ''
                 };
+                
+                const assignedSellerSel = document.getElementById('c-seller-assigned');
+                if (assignedSellerSel && !assignedSellerSel.disabled) {
+                    let sellerId = assignedSellerSel.value;
+                    if (sellerId === 'me') sellerId = this.user.uid;
+                    
+                    newClient.sellerId = sellerId;
+                    
+                    const opt = assignedSellerSel.options[assignedSellerSel.selectedIndex];
+                    if (opt && opt.dataset.name) newClient.sellerName = opt.dataset.name;
+                    else if (sellerId === this.user.uid) newClient.sellerName = this.currentUserProfile.name;
+                    
+                    if (opt && opt.dataset.store) newClient.storeId = opt.dataset.store;
+                    else if (sellerId === this.user.uid) newClient.storeId = this.currentUserProfile.storeId;
+                }
                 if (this.editingClientId) {
                     const oldClient = this.clients.find(c => c.id === this.editingClientId) || {};
                     await this.updateClient(this.editingClientId, newClient);

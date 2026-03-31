@@ -6,15 +6,37 @@ export const salesModule = {
         if (!container) return;
         const row = document.createElement('div');
         row.className = 'sale-item-row';
-        row.style.cssText = 'display:grid; grid-template-columns:1fr 90px 36px; gap:8px; align-items:center;';
+        row.style.cssText = 'display:flex; flex-wrap:wrap; gap:8px; align-items:center;';
         row.innerHTML = `
-            <input type="text" class="sale-item-product" placeholder="Ex: Hidratação de Cabelo" list="products-datalist" style="padding:12px 16px; border:1px solid var(--border); border-radius:8px; font-size:14px; outline:none; font-family:inherit; width:100%; box-sizing:border-box;">
-            <input type="number" class="sale-item-qty" placeholder="Qtd" min="1" value="1" style="padding:12px 10px; border:1px solid var(--border); border-radius:8px; font-size:14px; outline:none; text-align:center; width:100%; box-sizing:border-box;">
-            <button type="button" onclick="app.removeSaleItem(this)" style="border:none; background:#FEE2E2; color:#EF4444; border-radius:8px; cursor:pointer; width:36px; height:44px; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0;"><i class="fas fa-times"></i></button>
+            <div style="flex: 1 1 200px;"><input type="text" class="sale-item-product" title="Nome do Produto" placeholder="Ex: Hidratação..." list="products-datalist" style="padding:12px 14px; border:1px solid var(--border); border-radius:8px; font-size:14px; width:100%; box-sizing:border-box; outline:none;"></div>
+            <div style="flex: 0 0 110px; position:relative;" title="Valor Unitário"><span style="position:absolute; left:12px; top:13px; color:#94A3B8; font-size:13px;">R$</span><input type="number" class="sale-item-price" placeholder="0.00" step="0.01" style="padding:12px 8px 12px 34px; border:1px solid var(--border); border-radius:8px; font-size:14px; width:100%; box-sizing:border-box; outline:none;"></div>
+            <div style="flex: 0 0 70px;" title="Quantidade"><input type="number" class="sale-item-qty" placeholder="Qtd" min="1" value="1" style="padding:12px 4px; border:1px solid var(--border); border-radius:8px; font-size:14px; text-align:center; width:100%; box-sizing:border-box; outline:none;"></div>
+            <div style="flex: 0 0 110px; position:relative;" title="Subtotal do Item"><span style="position:absolute; left:12px; top:13px; color:#94A3B8; font-size:13px;">R$</span><input type="text" class="sale-item-total" readonly placeholder="0.00" style="padding:12px 4px 12px 34px; border:1px solid var(--border); border-radius:8px; font-size:14px; font-weight:bold; color:var(--text-main); background:#F8FAFC; width:100%; box-sizing:border-box; outline:none;"></div>
+            <button type="button" title="Excluir Linha" onclick="app.removeSaleItem(this)" style="border:none; background:#FEE2E2; color:#EF4444; border-radius:8px; cursor:pointer; width:44px; height:44px; display:flex; align-items:center; justify-content:center; flex-shrink:0;"><i class="fas fa-times"></i></button>
         `;
-        row.querySelector('.sale-item-product').addEventListener('input', () => this.calculateSaleTotal());
-        row.querySelector('.sale-item-product').addEventListener('change', () => this.calculateSaleTotal());
-        row.querySelector('.sale-item-qty').addEventListener('input', () => this.calculateSaleTotal());
+        
+        const prodInput = row.querySelector('.sale-item-product');
+        const priceInput = row.querySelector('.sale-item-price');
+        const qtyInput = row.querySelector('.sale-item-qty');
+
+        prodInput.addEventListener('change', () => {
+            if (this.products) {
+                const prodName = prodInput.value.trim().toLowerCase();
+                const prod = this.products.find(p => 
+                    (p.name && p.name.trim().toLowerCase() === prodName) ||
+                    (p.barcode && p.barcode.trim() === prodInput.value.trim())
+                );
+                if (prod && prod.price !== undefined) {
+                    priceInput.value = parseFloat(prod.price).toFixed(2);
+                }
+            }
+            this.calculateSaleTotal();
+        });
+
+        prodInput.addEventListener('input', () => this.calculateSaleTotal());
+        priceInput.addEventListener('input', () => this.calculateSaleTotal());
+        qtyInput.addEventListener('input', () => this.calculateSaleTotal());
+        
         container.appendChild(row);
         this.updateRemoveButtons();
     },
@@ -43,15 +65,22 @@ export const salesModule = {
         rows.forEach(row => {
             const prodInput = row.querySelector('.sale-item-product');
             const qtyInput = row.querySelector('.sale-item-qty');
-            if (prodInput && qtyInput) {
+            const priceInput = row.querySelector('.sale-item-price');
+            const totalInput = row.querySelector('.sale-item-total');
+
+            if (prodInput && qtyInput && priceInput) {
                 const prodName = prodInput.value.trim();
                 const qty = parseInt(qtyInput.value) || 1;
+                const price = parseFloat(priceInput.value) || 0;
+                
+                const lineTotal = price * qty;
+                if(totalInput) totalInput.value = lineTotal.toFixed(2);
                 
                 // Try case-insensitive exact match
-                const prod = this.products.find(p => 
+                const prod = this.products ? this.products.find(p => 
                     (p.name && p.name.trim().toLowerCase() === prodName.toLowerCase()) ||
                     (p.barcode && p.barcode.trim() === prodName.trim())
-                );
+                ) : null;
                 
                 let warningDiv = row.querySelector('.unrecognized-warning');
 
@@ -61,10 +90,10 @@ export const salesModule = {
                     if (!warningDiv) {
                         warningDiv = document.createElement('div');
                         warningDiv.className = 'unrecognized-warning';
-                        warningDiv.style.cssText = 'grid-column: 1 / -1; font-size: 13px; color: #EF4444; padding-left: 4px;';
+                        warningDiv.style.cssText = 'flex-basis: 100%; font-size: 13px; color: #EF4444; padding-left: 4px;';
                         row.appendChild(warningDiv);
                     }
-                    warningDiv.innerHTML = `⚠️ Produto não cadastrado. <a href="#" onclick="app.registerUnknownBarcode('${prodName}'); return false;" style="color:var(--primary); font-weight:bold; margin-left:8px;">Cadastrar Agora</a>`;
+                    warningDiv.innerHTML = `⚠️ Produto não localizado no seu catálogo (cadastro invisível). <a href="#" onclick="app.registerUnknownBarcode('${prodName}'); return false;" style="color:var(--primary); font-weight:bold; margin-left:8px;">Cadastrar</a>`;
                 } else {
                     prodInput.style.borderColor = 'var(--border)';
                     if (warningDiv) {
@@ -72,17 +101,26 @@ export const salesModule = {
                     }
                 }
                 
-                if (prod && prod.price) {
-                    total += parseFloat(prod.price) * qty;
+                if (prodName.length > 0 || lineTotal > 0) {
+                    total += lineTotal;
                     foundAny = true;
                 }
             }
         });
         
         const valueInput = document.getElementById('r-value');
+        const discountInput = document.getElementById('r-discount');
+        let discount = 0;
+        if (discountInput) discount = parseFloat(discountInput.value) || 0;
+
+        const subtotalDisplay = document.getElementById('r-subtotal-display');
+        if (subtotalDisplay) subtotalDisplay.innerText = `R$ ${total.toFixed(2)}`;
+
         if (valueInput) {
-            if (foundAny || document.querySelectorAll('.sale-item-row').length > 0) {
-                valueInput.value = total.toFixed(2);
+            if (foundAny || document.querySelectorAll('.sale-item-row').length > 0 || total > 0) {
+                let finalTotal = total - discount;
+                if (finalTotal < 0) finalTotal = 0; // Previne valores negativos
+                valueInput.value = finalTotal.toFixed(2);
             }
         }
     },

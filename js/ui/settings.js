@@ -164,9 +164,8 @@ export const settingsModule = {
             div.style.cssText = "border: 1px solid var(--border); border-radius: 8px; padding: 16px; background: white; position: relative;";
             
             // Lógica para nome visual da loja
-            let storeLabel = 'Matriz Principal';
-            if (inst.storeId === 'filial_1') storeLabel = 'Filial 1';
-            if (inst.storeId === 'filial_2') storeLabel = 'Filial 2';
+            let storeLabel = 'Loja 1';
+            if (inst.storeId === 'filial_1') storeLabel = 'Loja 2';
             
             div.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 16px;">
@@ -177,9 +176,8 @@ export const settingsModule = {
                     <div class="form-group" style="grid-column: span 2;">
                         <label>Loja Vinculada</label>
                         <select class="api-v-store" required>
-                            <option value="matriz" ${inst.storeId === 'matriz' ? 'selected' : ''}>Matriz (Sede Principal)</option>
-                            <option value="filial_1" ${inst.storeId === 'filial_1' ? 'selected' : ''}>Filial 1</option>
-                            <option value="filial_2" ${inst.storeId === 'filial_2' ? 'selected' : ''}>Filial 2</option>
+                            <option value="matriz" ${inst.storeId === 'matriz' ? 'selected' : ''}>Loja 1</option>
+                            <option value="filial_1" ${inst.storeId === 'filial_1' ? 'selected' : ''}>Loja 2</option>
                         </select>
                     </div>
                     <div class="form-group" style="grid-column: span 2;">
@@ -187,6 +185,7 @@ export const settingsModule = {
                         <select class="api-v-provider" required>
                             <option value="zapi" ${inst.provider === 'zapi' ? 'selected' : ''}>Z-API / ChatPro</option>
                             <option value="evolution" ${inst.provider === 'evolution' ? 'selected' : ''}>Evolution API / WhaConnect</option>
+                            <option value="meumotor" ${inst.provider === 'meumotor' ? 'selected' : ''}>WhatsApp Motor (Próprio)</option>
                             <option value="webhook" ${inst.provider === 'webhook' ? 'selected' : ''}>Webhook Externo</option>
                         </select>
                     </div>
@@ -292,21 +291,27 @@ export const settingsModule = {
             tbody.innerHTML = '';
 
             if (snapshot.empty) {
-                tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #64748B; padding: 24px;">Nenhum usuário cadastrado.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #64748B; padding: 24px;">Nenhum usuário cadastrado.</td></tr>`;
                 return;
             }
 
+            window.app = window.app || {};
+            window.app.teamUsersList = [];
+
             snapshot.forEach(doc => {
                 const user = doc.data();
+                user.id = doc.id;
+                window.app.teamUsersList.push(user);
+
                 const tr = document.createElement('tr');
                 
                 let roleBadge = user.role === 'admin' 
                     ? `<span style="background: #FEF3C7; color: #D97706; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;"><i class="fas fa-crown"></i> Admin</span>` 
-                    : `<span style="background: #E0E7FF; color: #4338CA; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;"><i class="fas fa-user-tag"></i> Vendedor</span>`;
+                    : `<span style="background: #E0E7FF; color: #4338CA; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;"><i class="fas fa-user-tag"></i> Consultor de Vendas</span>`;
                 
                 let storeLabel = 'Acesso Global';
                 if (user.storeId && user.storeId !== 'all') {
-                    storeLabel = user.storeId === 'matriz' ? 'Matriz Principal' : (user.storeId === 'filial_1' ? 'Filial 1' : 'Filial 2');
+                    storeLabel = user.storeId === 'matriz' ? 'Loja 1' : 'Loja 2';
                 }
 
                 tr.innerHTML = `
@@ -315,6 +320,10 @@ export const settingsModule = {
                     <td>${roleBadge}</td>
                     <td><span style="background: #F1F5F9; color: var(--text-muted); padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 500;"><i class="fas fa-store"></i> ${storeLabel}</span></td>
                     <td style="text-align: center;"><i class="fas fa-check-circle" style="color: #10B981;" title="Ativo"></i></td>
+                    <td style="text-align: center;">
+                        <button class="btn-icon" onclick="app.editTeamMember('${user.id}')" title="Editar" style="color: #3B82F6; margin-right: 8px;"><i class="fas fa-edit"></i></button>
+                        <button class="btn-icon" onclick="app.deleteTeamMember('${user.id}', '${(user.name || '').replace(/'/g, "\\'")}')" title="Excluir" style="color: #EF4444;"><i class="fas fa-trash"></i></button>
+                    </td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -323,12 +332,68 @@ export const settingsModule = {
         }
     },
 
-    openTeamModal() {
+    openTeamModal(editUser = null) {
         const overlay = document.getElementById('team-overlay');
         const form = document.getElementById('form-team');
         if (form) form.reset();
-        document.getElementById('t-store-container').style.display = 'block';
+        
+        const titleEl = overlay ? overlay.querySelector('h2') : null;
+        const submitBtn = overlay ? overlay.querySelector('button[type="submit"]') : null;
+        const hintEl = document.getElementById('t-password-hint');
+        
+        if (editUser && editUser.id) {
+            document.getElementById('t-id').value = editUser.id;
+            document.getElementById('t-name').value = editUser.name || '';
+            document.getElementById('t-email').value = editUser.email || '';
+            document.getElementById('t-role').value = editUser.role || 'seller';
+            if(document.getElementById('t-store')) document.getElementById('t-store').value = editUser.storeId || 'matriz';
+            document.getElementById('t-password').required = false;
+            
+            if(titleEl) titleEl.innerHTML = '<i class="fas fa-user-edit" style="color: var(--primary); margin-right: 8px;"></i> Editar Colaborador';
+            if(submitBtn) submitBtn.innerHTML = '<i class="fas fa-save"></i> Atualizar Acesso';
+            if(hintEl) hintEl.style.display = 'inline';
+        } else {
+            document.getElementById('t-id').value = '';
+            document.getElementById('t-password').required = true;
+            
+            if(titleEl) titleEl.innerHTML = '<i class="fas fa-user-tie" style="color: var(--primary); margin-right: 8px;"></i> Novo Colaborador';
+            if(submitBtn) submitBtn.innerHTML = '<i class="fas fa-plus-circle"></i> Cadastrar Acesso';
+            if(hintEl) hintEl.style.display = 'none';
+        }
+
+        document.getElementById('t-store-container').style.display = (editUser && editUser.role === 'admin') ? 'none' : 'block';
         if(overlay) overlay.classList.add('active');
+    },
+
+    editTeamMember(id) {
+        if (!window.app || !window.app.teamUsersList) return;
+        const user = window.app.teamUsersList.find(u => u.id === id);
+        if(user) this.openTeamModal(user);
+    },
+
+    deleteTeamMember(id, name) {
+        this.confirmAction(
+            "Excluir Colaborador",
+            `Tem certeza que deseja excluir o acesso de ${name}? Esta ação não pode ser desfeita e o usuário perderá acesso imediato.`,
+            async () => {
+                try {
+                    const functions = firebase.app().functions('us-central1');
+                    const deleteUserFn = functions.httpsCallable('deleteUser');
+                    const result = await deleteUserFn({ uid: id });
+                    
+                    if (result.data.success) {
+                        if (typeof this.showToast === 'function') this.showToast('Colaborador removido com sucesso!');
+                        this.loadTeamList();
+                        if(window.app && typeof window.app.loadUsers === 'function') {
+                            window.app.loadUsers();
+                        }
+                    }
+                } catch(e) {
+                    console.error("Erro na exclusão:", e);
+                    if (typeof this.showToast === 'function') this.showToast('Erro ao remover colaborador: ' + e.message, 'error');
+                }
+            }
+        );
     },
 
     closeTeamModal() {
@@ -348,6 +413,7 @@ export const settingsModule = {
                 btn.disabled = true;
 
                 try {
+                    const editId = document.getElementById('t-id').value;
                     const payload = {
                         name: document.getElementById('t-name').value.trim(),
                         email: document.getElementById('t-email').value.trim(),
@@ -357,16 +423,32 @@ export const settingsModule = {
                     };
 
                     const functions = firebase.app().functions('us-central1');
-                    const createUserFn = functions.httpsCallable('createUser');
                     
-                    const result = await createUserFn(payload);
-                    
-                    if (result.data.success) {
-                        if(window.app && typeof window.app.showToast === 'function') {
-                            window.app.showToast('Novo colaborador criado com sucesso!');
+                    if (editId) {
+                        payload.uid = editId;
+                        const updateUserFn = functions.httpsCallable('updateUser');
+                        const result = await updateUserFn(payload);
+                        
+                        if (result.data.success) {
+                            if(window.app && typeof window.app.showToast === 'function') {
+                                window.app.showToast('Acesso atualizado com sucesso!');
+                            }
                         }
-                        this.closeTeamModal();
-                        this.loadTeamList();
+                    } else {
+                        const createUserFn = functions.httpsCallable('createUser');
+                        const result = await createUserFn(payload);
+                        
+                        if (result.data.success) {
+                            if(window.app && typeof window.app.showToast === 'function') {
+                                window.app.showToast('Novo colaborador criado com sucesso!');
+                            }
+                        }
+                    }
+
+                    this.closeTeamModal();
+                    this.loadTeamList();
+                    if(window.app && typeof window.app.loadUsers === 'function') {
+                        window.app.loadUsers();
                     }
                 } catch (error) {
                     console.error("Erro ao registrar membro:", error);

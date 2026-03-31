@@ -10,6 +10,36 @@ export const clientsModule = {
         document.getElementById('c-email').value = client.email || '';
         document.getElementById('c-birthdate').value = client.birthdate || '';
         document.getElementById('c-city').value = client.city || '';
+        
+        const sellerAssigned = document.getElementById('c-seller-assigned');
+        if (sellerAssigned) {
+            if (client.sellerId) {
+                // Se a opção para esse sellerId não existe no select (ex: vendedor só vê a si mesmo),
+                // adicionamos a opção antes de setar o valor, para não ficar em branco.
+                let optionFound = Array.from(sellerAssigned.options).find(opt => opt.value === client.sellerId || (client.sellerId === window.app.user.uid && opt.value === 'me'));
+                
+                if (!optionFound) {
+                    const newOpt = document.createElement('option');
+                    newOpt.value = client.sellerId;
+                    newOpt.text = client.sellerName ? `Pertence a: ${client.sellerName}` : 'Pertence a outro consultor';
+                    sellerAssigned.add(newOpt);
+                }
+                sellerAssigned.value = (client.sellerId === window.app.user.uid && Array.from(sellerAssigned.options).some(o=>o.value==='me')) ? 'me' : client.sellerId;
+            } else {
+                sellerAssigned.value = 'me';
+            }
+            
+            if (window.app.currentUserProfile && window.app.currentUserProfile.role !== 'admin') {
+                sellerAssigned.disabled = true;
+                sellerAssigned.style.opacity = '0.7';
+                sellerAssigned.title = 'Apenas administradores podem transferir carteira';
+            } else {
+                sellerAssigned.disabled = false;
+                sellerAssigned.style.opacity = '1';
+                sellerAssigned.title = '';
+            }
+        }
+        
         document.getElementById('client-form-title').innerText = "Editar Cliente";
         document.getElementById('client-form-desc').innerText = "Atualize os dados deste cliente na sua base.";
         document.getElementById('client-submit-text').innerText = "Atualizar Cliente";
@@ -19,7 +49,20 @@ export const clientsModule = {
     cancelClientEdit() {
         this.editingClientId = null;
         const form = document.getElementById('form-client');
-        if(form) form.reset();
+        if(form) {
+            form.reset();
+            const sellerAssigned = document.getElementById('c-seller-assigned');
+            // reset logic so it defaults back to 'me' and isn't disabled if they are creating a new one
+            if (sellerAssigned) {
+                if (window.app.currentUserProfile && window.app.currentUserProfile.role !== 'admin') {
+                    sellerAssigned.value = window.app.currentUserProfile.id || window.app.user.uid;
+                    sellerAssigned.disabled = false;
+                    sellerAssigned.style.opacity = '1';
+                } else {
+                    sellerAssigned.value = 'me';
+                }
+            }
+        }
         document.getElementById('client-form-title').innerText = "Cadastrar Cliente";
         document.getElementById('client-form-desc').innerText = "Adicione um novo contato à sua base manualmente.";
         document.getElementById('client-submit-text').innerText = "Salvar Cliente";
@@ -196,15 +239,26 @@ export const clientsModule = {
             const clientObj = this.clients.find(c => c.phone && sale.phone && c.phone.replace(/\D/g, '') === sale.phone.replace(/\D/g, ''));
             const clientIdAttr = clientObj ? clientObj.id : sale.phone;
 
+            const discountVal = parseFloat(sale.discount || 0);
+            const subtotalGeral = parseFloat(sale.value || 0) + discountVal;
+
+            let storeBadge = '';
+            if (sale.storeId) {
+                let sName = sale.storeId === 'matriz' ? 'Loja 1' : (sale.storeId === 'filial_1' ? 'Loja 2' : 'Global');
+                storeBadge = `<br><span style="font-size: 11px; color: #64748B;" title="Loja do Fechamento"><i class="fas fa-store" style="font-size:10px; margin-right:2px;"></i> ${sName}</span>`;
+            }
+
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td style="text-align: center;"><input type="checkbox" class="sale-checkbox" value="${sale.id}" style="cursor: pointer; width: 16px; height: 16px;"></td>
                 <td><strong>${sale.name}</strong><br><small style="color:#64748B">${sale.phone}</small></td>
-                <td><div style="display: flex; flex-direction: column;">${productsHtml}</div></td>
-                <td><div style="display: flex; flex-direction: column;">${qtyHtml}</div></td>
-                <td><div style="display: flex; flex-direction: column;">${subtotalHtml}</div></td>
-                <td>${saleDate.toLocaleDateString('pt-BR')}</td>
-                <td><strong>R$ ${sale.value.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong></td>
+                <td><div style="display: flex; flex-direction: column; gap:4px;">${productsHtml}</div></td>
+                <td><div style="display: flex; flex-direction: column; gap:4px;">${qtyHtml}</div></td>
+                <td><div style="display: flex; flex-direction: column; gap:4px;">${subtotalHtml}</div></td>
+                <td>${saleDate.toLocaleDateString('pt-BR')}${storeBadge}</td>
+                <td><span style="color:var(--text-muted); font-weight:500;">R$ ${subtotalGeral.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span></td>
+                <td><span style="color:#EF4444; font-weight:500;">${discountVal > 0 ? '-R$ '+discountVal.toLocaleString('pt-BR', {minimumFractionDigits: 2}) : '-'}</span></td>
+                <td><strong style="color:var(--text-main);">R$ ${parseFloat(sale.value || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong></td>
                 <td>${timeStatus}</td>
                 <td class="admin-only" style="${this.currentUserProfile && this.currentUserProfile.role === 'admin' ? '' : 'display:none;'} color:var(--text-muted); font-size:12px; text-transform:capitalize;">${sale.sellerName || 'Sistema'}</td>
                 <td style="text-align: center;">
@@ -474,14 +528,28 @@ export const clientsModule = {
                 if (diffDays >= 90) timeStatus = `<span style="color:#EF4444; font-weight: 500; font-size:12px;"><i class="fas fa-circle" style="font-size:8px; margin-right:4px;"></i>Inativo (${timeText})</span>`;
                 if (diffDays >= 180) timeStatus = `<span style="color:#64748B; font-weight: 500; font-size:12px;"><i class="fas fa-circle" style="font-size:8px; margin-right:4px;"></i>Ex-cliente (${timeText})</span>`;
 
+                let discountStr = '';
+                if (parseFloat(sale.discount || 0) > 0) {
+                    discountStr = `<div style="font-size: 11px; color: #EF4444; margin-top:2px;" title="Desconto"><i class="fas fa-ticket-alt"></i> -R$ ${parseFloat(sale.discount).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</div>`;
+                }
+
+                let storeBadge = '';
+                if (sale.storeId) {
+                    let sName = sale.storeId === 'matriz' ? 'Loja 1' : (sale.storeId === 'filial_1' ? 'Loja 2' : 'Global');
+                    storeBadge = `<span style="color: #64748B;"><i class="fas fa-store" style="font-size:10px;"></i> ${sName}</span> • `;
+                }
+
                 html += `
                     <div style="padding: 16px; border: 1px solid var(--border); border-radius: 8px; background: white; display: flex; justify-content: space-between; align-items: center; box-shadow: var(--shadow-sm);">
                         <div>
                             <div style="font-weight: 600; color: var(--text-main); margin-bottom: 4px; font-size: 15px;">${sale.product} ${sale.quantity > 1 ? `<span style="color:var(--text-muted); font-weight:500;">x${sale.quantity}</span>` : ''}</div>
-                            <div style="color: var(--text-muted); font-size: 13px; display: flex; align-items: center; gap: 8px;">${pDate} • ${timeStatus}</div>
+                            <div style="color: var(--text-muted); font-size: 13px; display: flex; align-items: center; gap: 8px;">${storeBadge}${pDate} • ${timeStatus}</div>
                         </div>
-                        <div style="font-weight: 700; color: var(--primary); font-size: 15px;">
-                            R$ ${sale.value.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                        <div style="text-align:right;">
+                            <div style="font-weight: 700; color: var(--primary); font-size: 15px;">
+                                R$ ${sale.value.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                            </div>
+                            ${discountStr}
                         </div>
                     </div>
                 `;
