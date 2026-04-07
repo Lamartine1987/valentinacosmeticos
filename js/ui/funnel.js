@@ -416,11 +416,21 @@ export const funnelModule = {
                     displayHtml = groupMatch[2]; // Pega apenas a mensagem limpa
                 }
                 
-                if (msg.imageUrl) {
-                    const fallbackHtml = `this.style.display='none'; this.insertAdjacentHTML('afterend', '<div style=\\'background:rgba(239, 68, 68, 0.1); color:#ef4444; font-size:11px; padding:6px 10px; border-radius:6px; margin-bottom:6px; display:flex; align-items:center; gap:6px;\\'><i class=\\'fas fa-image-slash\\'></i> Mídia expirada ou formato indisponível</div>');`;
-                    displayHtml = `<a href="${msg.imageUrl}" target="_blank"><img src="${msg.imageUrl}" onerror="${fallbackHtml}" style="max-width:100%; border-radius:6px; margin-bottom:6px; max-height: 200px; object-fit: cover; display:block;"></a>` + displayHtml;
+                let displayImageUrl = msg.imageUrl;
+                if (displayImageUrl && displayImageUrl.startsWith('http://') && window.location.protocol === 'https:') {
+                    displayImageUrl = 'https://us-central1-valentinacosmeticos-5f239.cloudfunctions.net/apiProxy?targetUrl=' + encodeURIComponent(displayImageUrl);
                 }
                 
+                if (msg.imageUrl) {
+                    const fallbackHtml = `this.style.display='none'; this.insertAdjacentHTML('afterend', '<div style=\\'background:rgba(239, 68, 68, 0.1); color:#ef4444; font-size:11px; padding:6px 10px; border-radius:6px; margin-bottom:6px; display:flex; align-items:center; gap:6px;\\'><i class=\\'fas fa-image-slash\\'></i> Mídia expirada ou formato indisponível</div>');`;
+                    displayHtml = `<a href="${displayImageUrl}" target="_blank"><img src="${displayImageUrl}" onerror="${fallbackHtml}" style="max-width:100%; border-radius:6px; margin-bottom:6px; max-height: 200px; object-fit: cover; display:block;"></a>` + displayHtml;
+                }
+                
+                let displayAudioUrl = msg.audioUrl;
+                if (displayAudioUrl && displayAudioUrl.startsWith('http://') && window.location.protocol === 'https:') {
+                    displayAudioUrl = 'https://us-central1-valentinacosmeticos-5f239.cloudfunctions.net/apiProxy?targetUrl=' + encodeURIComponent(displayAudioUrl);
+                }
+
                 if (msg.audioUrl) {
                     const avatarSrc = `https://ui-avatars.com/api/?name=${encodeURIComponent(senderName)}&background=random&color=fff`;
                     const micColor = msg.sender === 'agent' ? '#53BDEB' : '#8BA1AD';
@@ -439,7 +449,7 @@ export const funnelModule = {
                                     <span class="wa-audio-time">0:00</span>
                                 </div>
                             </div>
-                            <audio src="${msg.audioUrl}" ontimeupdate="app.updateWaAudioTime(this)" onloadedmetadata="app.loadedWaAudio(this)" onended="app.endedWaAudio(this)" style="display: none;"></audio>
+                            <audio src="${displayAudioUrl}" ontimeupdate="app.updateWaAudioTime(this)" onloadedmetadata="app.loadedWaAudio(this)" onended="app.endedWaAudio(this)" style="display: none;"></audio>
                         </div>
                     ` + displayHtml;
                 }

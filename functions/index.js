@@ -10,6 +10,7 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
     res.status(200).send("Recebido");
 
     const payload = req.body;
+    console.log("WEBHOOK_PAYLOAD:", JSON.stringify(payload).substring(0, 500));
     
     // Identificação Multi-Tenant (Lojas) pela URL do Webhook
     // Ex: https://.../whatsappWebhook?storeId=filial_1
@@ -92,7 +93,7 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
     // Ignorar Status e LIDs
     if (phoneNum.includes('@broadcast') || phoneNum.includes('@lid')) {
         console.log("Mensagem ignorada (status/lid)", { phoneNum });
-        return res.status(200).send("Ignored status/lid");
+        return;
     }
 
     if (!textBody) {
@@ -103,7 +104,7 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
     // Se não houver texto E não houver media, aborta.
     if (!phoneNum || textBody.trim() === "") {
         console.log("Mensagem ignorada (sem texto ou media)", { phoneNum });
-        return res.status(200).send("Ignored");
+        return;
     }
 
     // Formatar texto para grupos
@@ -217,7 +218,7 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
                 
                 await newLeadRef.collection('messages').add(msgObj);
             }
-            return res.status(200).send("Agent message saved.");
+            return;
         }
 
         // MENSAGEM RECEBIDA DO CLIENTE
@@ -666,8 +667,14 @@ exports.updateUser = onCall({ invoker: "public" }, async (request) => {
 
 exports.debugLeads = functions.https.onRequest(async (req, res) => {
     try {
-        const snap = await db.collection("leads").limit(10).get();
-        const leads = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const snap = await db.collection("leads").orderBy('updatedAt', 'desc').limit(5).get();
+        const leads = [];
+        for (const doc of snap.docs) {
+            const data = { id: doc.id, ...doc.data() };
+            const msgsSnap = await db.collection("leads").doc(doc.id).collection("messages").orderBy('timestamp', 'desc').limit(10).get();
+            data.messages = msgsSnap.docs.map(m => m.data());
+            leads.push(data);
+        }
         res.json(leads);
     } catch(e) {
         res.status(500).json({ error: e.message });
@@ -703,11 +710,19 @@ exports.apiProxy = functions.https.onRequest(async (req, res) => {
         return res.status(204).send('');
     }
 
-    if (req.method !== 'POST') {
-        return res.status(405).send('Method Not Allowed');
-    }
-
     try {
+        if (req.method === 'GET') {
+            const targetUrl = req.query.targetUrl;
+            if (!targetUrl) return res.status(400).send('targetUrl query parameter is required');
+            
+            const response = await fetch(targetUrl);
+            const contentType = response.headers.get('content-type');
+            if (contentType) res.set('Content-Type', contentType);
+            
+            const buffer = await response.arrayBuffer();
+            return res.status(response.status).send(Buffer.from(buffer));
+        }
+
         const { targetUrl, targetHeaders, targetBody } = req.body;
         if (!targetUrl) return res.status(400).send('targetUrl is required');
 
