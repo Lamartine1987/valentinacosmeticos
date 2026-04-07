@@ -55,6 +55,7 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
         
         if (payload.image && payload.image.imageUrl) imageUrl = payload.image.imageUrl;
         else if (payload.imageUrl) imageUrl = payload.imageUrl;
+        else if (payload.photo) imageUrl = payload.photo; // Z-API legacy/alternative structure
     }
     // 2. Tentar ler no formato Evolution API (message.upsert)
     else if (payload.data && payload.data.message) {
@@ -69,11 +70,22 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
             senderName = payload.data.pushName || "Membro";
         }
 
-        // Tentar pegar o texto (pode vir de conversation ou extendedTextMessage)
+        // Tentar pegar o texto (pode vir de conversation ou extendedTextMessage ou caption da imagem)
         if (msgData.message) {
-            textBody = msgData.message.conversation || (msgData.message.extendedTextMessage && msgData.message.extendedTextMessage.text) || "";
-            if (msgData.message.audioMessage) audioUrl = msgData.message.audioMessage.url || "evolution-audio";
-            if (msgData.message.imageMessage) imageUrl = msgData.message.imageMessage.url || "evolution-image";
+            textBody = msgData.message.conversation || (msgData.message.extendedTextMessage && msgData.message.extendedTextMessage.text) || (msgData.message.imageMessage && msgData.message.imageMessage.caption) || "";
+            
+            // Suporte para Base64 da Evolution API (precisa estar ativado no webhook deles: base64: true)
+            if (payload.data.message && payload.data.message.base64) {
+                const base64Str = payload.data.message.base64;
+                if (msgData.message.audioMessage) {
+                    audioUrl = base64Str.startsWith('data:') ? base64Str : 'data:audio/ogg;base64,' + base64Str;
+                } else if (msgData.message.imageMessage || msgData.message.documentMessage) {
+                    imageUrl = base64Str.startsWith('data:') ? base64Str : 'data:image/jpeg;base64,' + base64Str;
+                }
+            } else {
+                if (msgData.message.audioMessage) audioUrl = msgData.message.audioMessage.url || "evolution-audio";
+                if (msgData.message.imageMessage) imageUrl = msgData.message.imageMessage.url || "evolution-image";
+            }
         }
     }
 

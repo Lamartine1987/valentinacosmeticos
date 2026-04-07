@@ -398,6 +398,7 @@ export const funnelModule = {
                 return;
             }
             
+            let htmlBuffer = '';
             snapshot.forEach(doc => {
                 const msg = doc.data();
                 const d = msg.timestamp ? msg.timestamp.toDate() : new Date();
@@ -416,7 +417,8 @@ export const funnelModule = {
                 }
                 
                 if (msg.imageUrl) {
-                    displayHtml = `<a href="${msg.imageUrl}" target="_blank"><img src="${msg.imageUrl}" style="max-width:100%; border-radius:6px; margin-bottom:6px; max-height: 200px; object-fit: cover; display:block;"></a>` + displayHtml;
+                    const fallbackHtml = `this.style.display='none'; this.insertAdjacentHTML('afterend', '<div style=\\'background:rgba(239, 68, 68, 0.1); color:#ef4444; font-size:11px; padding:6px 10px; border-radius:6px; margin-bottom:6px; display:flex; align-items:center; gap:6px;\\'><i class=\\'fas fa-image-slash\\'></i> Mídia expirada ou formato indisponível</div>');`;
+                    displayHtml = `<a href="${msg.imageUrl}" target="_blank"><img src="${msg.imageUrl}" onerror="${fallbackHtml}" style="max-width:100%; border-radius:6px; margin-bottom:6px; max-height: 200px; object-fit: cover; display:block;"></a>` + displayHtml;
                 }
                 
                 if (msg.audioUrl) {
@@ -444,17 +446,18 @@ export const funnelModule = {
                 
                 // Removemos espaços brancos em torno do displayHtml na string porque a classe tem white-space: pre-wrap
                 if (msg.sender === 'agent') {
-                    chatArea.innerHTML += `
+                    htmlBuffer += `
                         <div class="wa-bubble wa-bubble-agent" onclick="app.quoteMessage(this.getAttribute('data-text'), this.getAttribute('data-sender'))" data-text="${safeText}" data-sender="${senderName}" style="cursor: pointer; animation: fadeIn 0.3s ease;">
 ${displayHtml}
 <div class="wa-bubble-time">${timeStr} <i class="fas fa-check" style="color:#8BA1AD;"></i></div></div>`;
                 } else {
-                    chatArea.innerHTML += `
+                    htmlBuffer += `
                         <div class="wa-bubble wa-bubble-client" onclick="app.quoteMessage(this.getAttribute('data-text'), this.getAttribute('data-sender'))" data-text="${safeText}" data-sender="${senderName}" style="cursor: pointer; animation: fadeIn 0.3s ease;">
 ${groupSenderHtml}${displayHtml}
 <div class="wa-bubble-time" style="justify-content: flex-start;">${timeStr}</div></div>`;
                 }
             });
+            chatArea.innerHTML = htmlBuffer;
             
             chatArea.scrollTop = chatArea.scrollHeight;
         });
@@ -578,15 +581,7 @@ ${groupSenderHtml}${displayHtml}
         const currentLead = this.leadsList.find(l => l.id === this.activeLeadId);
         const sourceStore = currentLead ? (currentLead.storeId || 'loja_1') : 'loja_1';
 
-        // Despacha a mensagem usando a API conectada
-        if (typeof this.sendWhatsAppMessage === 'function') {
-            const success = await this.sendWhatsAppMessage(this.activeLeadPhone, sentText, imageUrl, sourceStore);
-            if (!success) {
-                if(this.showToast) this.showToast('Erro ao enviar mensagem pelo WhatsApp.', 'error');
-                return;
-            }
-        }
-        
+        // Salva localmente IMEDIATAMENTE (optimistic UI)
         try {
             const msgObj = {
                 text: sentText,
@@ -598,17 +593,24 @@ ${groupSenderHtml}${displayHtml}
             await db.collection('leads').doc(this.activeLeadId).collection('messages').add(msgObj);
 
             // Automação 4.2: Envio de mensagem move o cliente para 'Em Atendimento'
-            const currentLead = this.leadsList.find(l => l.id === this.activeLeadId);
-            if (currentLead && currentLead.status === 'inbox') {
+            const curLead = this.leadsList.find(l => l.id === this.activeLeadId);
+            if (curLead && curLead.status === 'inbox') {
                 await db.collection('leads').doc(this.activeLeadId).update({
                     status: 'negotiation',
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
             }
-
-            input.value = '';
         } catch(e) {
-            console.error("Erro ao salvar mensagem ou status:", e);
+            console.error("Erro ao salvar mensagem otimista no banco:", e);
+        }
+
+        // Despacha a mensagem usando a API conectada paralelamente
+        if (typeof this.sendWhatsAppMessage === 'function') {
+            const success = await this.sendWhatsAppMessage(this.activeLeadPhone, sentText, imageUrl, sourceStore);
+            if (!success) {
+                if(this.showToast) this.showToast('Erro ao enviar mensagem pelo WhatsApp.', 'error');
+                // Could update message state if we tracked ID, but for now we just show a toast.
+            }
         }
     },
     
