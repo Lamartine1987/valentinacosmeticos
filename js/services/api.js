@@ -113,10 +113,26 @@ export const apiModule = {
             console.log("Headers formatados:", headers);
             console.log("Corpo da requisição (Body):", JSON.stringify(body));
 
-            const response = await fetch(finalUrl, {
+            let reqUrl = finalUrl;
+            let reqBody = JSON.stringify(body);
+            let reqHeaders = headers;
+
+            // Bloqueio Mixed Content (HTTPS -> HTTP)
+            if (window.location.protocol === 'https:' && finalUrl.startsWith('http://')) {
+                console.log("⚠️ Redirecionando via Proxy para evitar bloqueio Mixed Content do Navegador.");
+                reqUrl = 'https://us-central1-valentinacosmeticos-5f239.cloudfunctions.net/apiProxy';
+                reqHeaders = { 'Content-Type': 'application/json' };
+                reqBody = JSON.stringify({
+                    targetUrl: finalUrl,
+                    targetHeaders: headers,
+                    targetBody: body
+                });
+            }
+
+            const response = await fetch(reqUrl, {
                 method: 'POST',
-                headers,
-                body: JSON.stringify(body)
+                headers: reqHeaders,
+                body: reqBody
             });
             
             if(!response.ok) {

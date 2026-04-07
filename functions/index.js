@@ -681,3 +681,34 @@ exports.deleteUser = onCall({ invoker: "public" }, async (request) => {
         throw new functions.https.HttpsError('internal', error.message);
     }
 });
+
+exports.apiProxy = functions.https.onRequest(async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, apikey, Client-Token');
+
+    if (req.method === 'OPTIONS') {
+        return res.status(204).send('');
+    }
+
+    if (req.method !== 'POST') {
+        return res.status(405).send('Method Not Allowed');
+    }
+
+    try {
+        const { targetUrl, targetHeaders, targetBody } = req.body;
+        if (!targetUrl) return res.status(400).send('targetUrl is required');
+
+        const response = await fetch(targetUrl, {
+            method: 'POST',
+            headers: targetHeaders || {},
+            body: JSON.stringify(targetBody || {})
+        });
+
+        const data = await response.text();
+        return res.status(response.status).send(data);
+    } catch (error) {
+        console.error("Proxy error:", error);
+        return res.status(500).send(error.message);
+    }
+});
