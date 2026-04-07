@@ -69,6 +69,17 @@ export const settingsModule = {
                 }
                 this.renderPromoTemplates();
             }
+
+            const docPix = await db.collection("settings").doc("pix_config").get();
+            if (docPix.exists) {
+                this.pixConfig = docPix.data();
+                const pk = document.getElementById('pix-key');
+                const pm = document.getElementById('pix-merchant');
+                const pc = document.getElementById('pix-city');
+                if(pk) pk.value = this.pixConfig.pixKey || '';
+                if(pm) pm.value = this.pixConfig.merchant || '';
+                if(pc) pc.value = this.pixConfig.city || '';
+            }
         } catch(e) { console.error(e); }
     },
 
@@ -238,7 +249,8 @@ export const settingsModule = {
             'funnel': 'tab-content-funnel',
             'promo': 'tab-content-promo',
             'api': 'tab-content-api',
-            'team': 'tab-content-team'
+            'team': 'tab-content-team',
+            'pix': 'tab-content-pix'
         };
         const contentId = tabContents[tabId];
         const contentEl = document.getElementById(contentId);

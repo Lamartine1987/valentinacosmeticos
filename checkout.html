@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout de Compra Seguro</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
+    <style>
+        :root {
+            --primary: #0F172A;
+            --primary-light: #F8FAFC;
+            --text-main: #1E293B;
+            --text-muted: #64748B;
+            --border: #E2E8F0;
+            --bg: #FFFFFF;
+            --success: #10B981;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .checkout-container {
+            width: 100%;
+            max-width: 480px;
+            padding: 48px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+        }
+
+        .co-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .back-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 18px;
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        .co-merchant {
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .co-merchant-avatar {
+            width: 24px;
+            height: 24px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 700;
+        }
+
+        .co-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .co-price {
+            font-size: 40px;
+            font-weight: 700;
+            letter-spacing: -1px;
+            display: flex;
+            align-items: flex-start;
+            gap: 4px;
+        }
+
+        .co-price span.currency {
+            font-size: 20px;
+            margin-top: 6px;
+        }
+
+        .co-summary {
+            border-top: 1px solid var(--border);
+            padding-top: 24px;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            font-size: 15px;
+        }
+
+        .summary-row.total {
+            font-weight: 600;
+            color: var(--text-main);
+            font-size: 16px;
+        }
+
+        .summary-product-name {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+        }
+
+        .placeholder-img {
+            width: 32px;
+            height: 32px;
+            background: #F1F5F9;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+        }
+
+        .pix-section {
+            border: 1px solid var(--success);
+            background: #F0FDF4;
+            border-radius: 12px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .pix-badge {
+            background: var(--success);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 16px;
+        }
+
+        #qrcode {
+            background: white;
+            padding: 12px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 24px;
+        }
+
+        .copypaste-input-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        .copypaste-input {
+            width: 100%;
+            padding: 14px 44px 14px 14px;
+            border: 1px solid #A7F3D0;
+            border-radius: 8px;
+            background: white;
+            color: #065F46;
+            font-size: 13px;
+            outline: none;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            overflow: hidden;
+            font-family: monospace;
+        }
+
+        .copy-btn {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--success);
+            color: white;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+        }
+
+        .copy-btn:hover {
+            background: #059669;
+        }
+
+        .pix-instructions {
+            font-size: 13px;
+            color: #065F46;
+            margin-top: 16px;
+            line-height: 1.5;
+        }
+        
+        .powered-by {
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: auto;
+            opacity: 0.7;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="checkout-container">
+        <!-- HEADER -->
+        <div class="co-header">
+            <button class="back-btn" onclick="window.close()" title="Voltar"><i class="fas fa-arrow-left"></i></button>
+            <div class="co-merchant">
+                <div class="co-merchant-avatar" id="ui-merchant-initials">M</div>
+                <span id="ui-merchant-name">Carregando Loja...</span>
+            </div>
+        </div>
+
+        <!-- PRODUCT TITLE & PRICE -->
+        <div>
+            <div class="co-title" id="ui-subtitle">Comprar Produto</div>
+            <div class="co-price">
+                <span class="currency">R$</span>
+                <span id="ui-price">0,00</span>
+            </div>
+        </div>
+
+        <!-- SUMMARY -->
+        <div class="co-summary">
+            <div class="summary-row">
+                <div class="summary-product-name">
+                    <div class="placeholder-img"><i class="fas fa-box"></i></div>
+                    <span id="ui-product-name">Produto...</span>
+                </div>
+                <div id="ui-summary-price">R$ 0,00</div>
+            </div>
+            
+            <div class="summary-row total" style="margin-top: 24px;">
+                <span>Total a pagar hoje</span>
+                <span id="ui-total-price">R$ 0,00</span>
+            </div>
+        </div>
+
+        <!-- PIX PAYMENT MODULE -->
+        <div class="pix-section">
+            <div class="pix-badge">
+                <i class="fab fa-pix"></i> Pagar via PIX
+            </div>
+            
+            <div id="qrcode"></div>
+            
+            <div class="copypaste-input-wrapper">
+                <input type="text" id="pix-hash" class="copypaste-input" readonly value="">
+                <button class="copy-btn" id="btn-copy" onclick="copyPixCode()" title="Copiar PIX Copia e Cola">
+                    <i class="fas fa-copy"></i>
+                </button>
+            </div>
+            
+            <p class="pix-instructions">
+                1. Abra o app do seu banco<br>
+                2. Escolha pagar via <b>PIX Copia e Cola</b><br>
+                3. Cole o código acima e confirme o pagamento.
+            </p>
+        </div>
+        
+        <div class="powered-by">
+            <i class="fas fa-lock" style="margin-right: 4px;"></i> Checkout Dinâmico Privado
+        </div>
+    </div>
+
+    <script src="js/checkout.js"></script>
+</body>
+</html>

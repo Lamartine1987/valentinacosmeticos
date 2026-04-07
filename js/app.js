@@ -1088,11 +1088,20 @@ const app = {
 
                 try {
                     await db.collection("settings").doc("msg_templates").set(this.msgTemplates);
-                    this.showToast('Modelos de mensagens salvos!');
+                    
+                    const pixConfig = {
+                        pixKey: document.getElementById('pix-key') ? document.getElementById('pix-key').value.trim() : '',
+                        merchant: document.getElementById('pix-merchant') ? document.getElementById('pix-merchant').value.trim() : '',
+                        city: document.getElementById('pix-city') ? document.getElementById('pix-city').value.trim() : ''
+                    };
+                    await db.collection("settings").doc("pix_config").set(pixConfig);
+                    this.pixConfig = pixConfig;
+
+                    this.showToast('Configurações salvas atualizadas com sucesso!');
                     this.renderDashboard(); 
                 } catch(err) {
                     console.error(err);
-                    this.showToast('Erro ao salvar modelos.');
+                    this.showToast('Erro ao salvar as configurações.');
                 }
                 
                 btn.innerHTML = originalText;

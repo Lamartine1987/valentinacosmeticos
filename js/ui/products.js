@@ -274,6 +274,9 @@ export const productsModule = {
                 <td>${price}</td>
                 <td style="color:var(--text-muted); font-size:12px; text-transform:capitalize;">${prod.sellerName || 'Sistema'}</td>
                 <td style="text-align: center;">
+                    <button class="btn-icon" style="color: #10B981; margin-right: 12px;" onclick="app.copyPixLink('${prod.id}')" title="Gerar Link de Checkout PIX">
+                        <i class="fas fa-link"></i>
+                    </button>
                     <button class="btn-icon" style="color: var(--primary); margin-right: 12px;" onclick="app.editProduct('${prod.id}')" title="Editar Produto">
                         <i class="fas fa-edit"></i>
                     </button>
@@ -469,6 +472,43 @@ export const productsModule = {
                     }
                 }
             );
+        }
+    },
+
+    copyPixLink(id) {
+        if (!this.pixConfig || !this.pixConfig.pixKey) {
+            if (typeof this.showToast === 'function') this.showToast('Configure sua Chave PIX primeiro na aba de Configurações!', 'warning');
+            return;
+        }
+        
+        const prod = this.products.find(p => p.id === id);
+        if(!prod) return;
+
+        const baseUrl = window.location.href.split('?')[0].replace('index.html', '').replace(/\/$/, '') + '/';
+        const checkoutUrl = `${baseUrl}checkout.html?key=${encodeURIComponent(this.pixConfig.pixKey)}&merchant=${encodeURIComponent(this.pixConfig.merchant)}&city=${encodeURIComponent(this.pixConfig.city)}&product=${encodeURIComponent(prod.name)}&price=${encodeURIComponent(prod.price || 0)}`;
+        
+        const fallbackCopy = () => {
+            const tempInput = document.createElement("input");
+            tempInput.value = checkoutUrl;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            try {
+                document.execCommand("copy");
+                if (typeof this.showToast === 'function') this.showToast('Link copiado (Modo de Compatibilidade)!', 'info');
+            } catch (err) {
+                prompt('Copie o link gerado:', checkoutUrl);
+            }
+            document.body.removeChild(tempInput);
+        };
+
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(checkoutUrl).then(() => {
+                if (typeof this.showToast === 'function') this.showToast('Link de PIX gerado e copiado para a área de transferência!', 'info');
+            }).catch(err => {
+                fallbackCopy();
+            });
+        } else {
+            fallbackCopy();
         }
     }
 };

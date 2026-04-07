@@ -809,9 +809,48 @@
                             style="background: none; border: none; padding: 12px 4px; font-size: 15px; font-weight: 500; color: var(--text-muted); border-bottom: 2px solid transparent; cursor: pointer; margin-bottom: -2px;">
                             <i class="fas fa-users-cog"></i> Gestão de Equipe
                         </button>
+                        <button type="button" class="tab-btn admin-only" id="tab-btn-pix" onclick="app.switchSettingsTab('pix')"
+                            style="background: none; border: none; padding: 12px 4px; font-size: 15px; font-weight: 500; color: var(--text-muted); border-bottom: 2px solid transparent; cursor: pointer; margin-bottom: -2px;">
+                            <i class="fab fa-pix"></i> Gateway de Pagamento
+                        </button>
                     </div>
 
                     <form id="form-templates">
+                        <!-- TAB 5: PIX GATEWAY -->
+                        <div id="tab-content-pix" class="settings-tab-content" style="display: none; width: 100%;">
+                            <div class="form-card" style="margin-bottom: 24px;">
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px;">
+                                    <div>
+                                        <h3 style="color: #10B981; display: flex; align-items: center; gap: 8px;"><i class="fab fa-pix"></i> Checkout PIX Transparente Gratuito</h3>
+                                        <p style="color: var(--text-muted); font-size: 14px; margin-top: 4px;">
+                                            Configure as suas informações bancárias para ativar o Checkout Seguro e receber pagamentos diretamente na sua conta, <b>sem nenhuma taxa</b> de terceiros.
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="form-grid">
+                                    <div class="form-group" style="grid-column: span 2;">
+                                        <label>Chave PIX (Telefone, E-mail, CPF ou CNPJ)</label>
+                                        <input type="text" id="pix-key" placeholder="ex: 11999999999 ou empresa@email.com">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Nome Completo do Beneficiário</label>
+                                        <input type="text" id="pix-merchant" placeholder="ex: Valentina Cosmeticos LTDA">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Cidade do Beneficiário (obrigatório)</label>
+                                        <input type="text" id="pix-city" placeholder="ex: SAO PAULO">
+                                    </div>
+                                </div>
+                                <div style="margin-top: 16px; background: #ECFDF5; border: 1px solid #10B981; color: #065F46; padding: 12px; border-radius: 8px; font-size: 13px;">
+                                    <i class="fas fa-info-circle"></i> Ao configurar essas chaves, o botão <b>"Gerar Link de Checkout"</b> ficará disponível no seu catálogo de produtos.
+                                </div>
+                            </div>
+                            
+                            <div class="form-actions" style="display: flex; justify-content: flex-end;">
+                                <button type="submit" class="btn-primary" style="padding: 12px 32px;"><i class="fas fa-save"></i> Salvar Gateway</button>
+                            </div>
+                        </div>
+
                         <!-- TAB 1: FUNNEL -->
                         <div id="tab-content-funnel" class="settings-tab-content" style="display: block;">
                             <div class="form-card" style="margin-bottom: 24px;">
@@ -1481,7 +1520,7 @@
                         style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; display: block;">Pré-visualização
                         da Mensagem</label>
                     <div id="promo-preview"
-                        style="font-size: 14px; color: var(--text-main); line-height: 1.5; white-space: pre-wrap;">
+                        style="font-size: 14px; color: var(--text-main); line-height: 1.5; white-space: pre-wrap; word-break: break-all; overflow-wrap: anywhere;">
                     </div>
                 </div>
 
