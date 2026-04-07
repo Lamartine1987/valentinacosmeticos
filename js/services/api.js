@@ -1,7 +1,7 @@
 import { db } from '../config/firebase.js';
 
 export const apiModule = {
-    async sendWhatsAppMessage(phone, message, imageUrl = '', targetStoreId = 'matriz') {
+    async sendWhatsAppMessage(phone, message, imageUrl = '', targetStoreId = 'loja_1') {
         const settings = this.apiSettings;
         if (!settings) return false;
         
@@ -12,7 +12,7 @@ export const apiModule = {
         if (settings.instances && Array.isArray(settings.instances) && settings.instances.length > 0) {
              let inst = settings.instances.find(i => i.storeId === targetStoreId);
              if (!inst || !inst.active) {
-                 inst = settings.instances.find(i => i.storeId === 'matriz'); // fallback
+                 inst = settings.instances.find(i => i.storeId === 'loja_1'); // fallback
              }
              if (inst && inst.active) {
                  provider = inst.provider;
@@ -170,7 +170,7 @@ export const apiModule = {
             if (this.user && this.currentUserProfile) {
                 enrichedClient.sellerId = clientData.overrideSellerId || this.user.uid;
                 enrichedClient.sellerName = clientData.overrideSellerName || this.currentUserProfile.name || 'Sistema';
-                enrichedClient.storeId = clientData.overrideStoreId || this.currentUserProfile.storeId || 'matriz';
+                enrichedClient.storeId = clientData.overrideStoreId || this.currentUserProfile.storeId || 'loja_1';
             }
             await db.collection("clients").add(enrichedClient);
             this.syncToBrevo(clientData);
@@ -187,7 +187,7 @@ export const apiModule = {
             if (this.user && this.currentUserProfile) {
                 enrichedProduct.sellerId = this.user.uid;
                 enrichedProduct.sellerName = this.currentUserProfile.name || 'Sistema';
-                enrichedProduct.storeId = this.currentUserProfile.storeId || 'matriz';
+                enrichedProduct.storeId = this.currentUserProfile.storeId || 'loja_1';
             }
             await db.collection("products").add(enrichedProduct);
             this.showToast('Produto salvo no catálogo com sucesso!');
@@ -203,7 +203,7 @@ export const apiModule = {
             if (this.user && this.currentUserProfile) {
                 enrichedSale.sellerId = saleData.overrideSellerId || this.user.uid;
                 enrichedSale.sellerName = saleData.overrideSellerName || this.currentUserProfile.name || 'Sistema';
-                enrichedSale.storeId = saleData.overrideStoreId || this.currentUserProfile.storeId || 'matriz';
+                enrichedSale.storeId = saleData.overrideStoreId || this.currentUserProfile.storeId || 'loja_1';
             }
             
             const docRef = await db.collection("sales").add(enrichedSale);
@@ -235,7 +235,7 @@ export const apiModule = {
                         await db.collection("leads").doc(leadDoc.id).update({
                             value: currentVal + saleVal,
                             status: 'won', // Marca como ganho automaticamente na venda
-                            storeId: enrichedSale.storeId || 'matriz', // Garante a posse do lead na conversão
+                            storeId: enrichedSale.storeId || 'loja_1', // Garante a posse do lead na conversão
                             updatedAt: new Date().toISOString()
                         });
                     }

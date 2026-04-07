@@ -13,7 +13,7 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
     
     // Identificação Multi-Tenant (Lojas) pela URL do Webhook
     // Ex: https://.../whatsappWebhook?storeId=filial_1
-    const storeId = req.query.storeId || 'matriz';
+    const storeId = req.query.storeId || 'loja_1';
 
     // Filtros de Proteção
     // Ignorar status de mensagem, focar apenas em MENSAGENS RECEBIDAS (NÃO da própria empresa)
@@ -584,6 +584,9 @@ exports.createUser = onCall({ invoker: "public" }, async (request) => {
             displayName: name
         });
 
+        // Add custom claims to avoid Permission Denied in Firestore Rules
+        await admin.auth().setCustomUserClaims(userRecord.uid, { role: role, storeId: storeId });
+
         // 2. Registrar a "Identidade" e restrições na Coleção de Users
         await db.collection('users').doc(userRecord.uid).set({
             email: email,
@@ -624,6 +627,16 @@ exports.updateUser = onCall({ invoker: "public" }, async (request) => {
             await admin.auth().updateUser(uid, updateData);
         }
 
+        if (role || storeId) {
+            // Update custom claims too
+            const userRec = await admin.auth().getUser(uid);
+            const currentClaims = userRec.customClaims || {};
+            await admin.auth().setCustomUserClaims(uid, {
+                role: role || currentClaims.role,
+                storeId: storeId || currentClaims.storeId
+            });
+        }
+
         const dbData = {};
         if (email) dbData.email = email;
         if (name) dbData.name = name;
@@ -636,6 +649,16 @@ exports.updateUser = onCall({ invoker: "public" }, async (request) => {
         return { success: true };
     } catch (error) {
         throw new functions.https.HttpsError('internal', error.message);
+    }
+});
+
+exports.debugLeads = functions.https.onRequest(async (req, res) => {
+    try {
+        const snap = await db.collection("leads").limit(10).get();
+        const leads = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        res.json(leads);
+    } catch(e) {
+        res.status(500).json({ error: e.message });
     }
 });
 

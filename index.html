@@ -406,8 +406,8 @@
                                         Loja do Atendimento</label>
                                     <select id="r-store-assigned"
                                         style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer;">
-                                        <option value="matriz">Loja 1</option>
-                                        <option value="filial_1">Loja 2</option>
+                                        <option value="loja_1">Loja 1</option>
+                                        <option value="loja_2">Loja 2</option>
                                     </select>
                                 </div>
                                 <div class="form-group admin-only" style="grid-column: span 2; display: none;">
@@ -505,8 +505,8 @@
                                 style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer; transition: border-color 0.2s;"
                                 onchange="app.renderClientsList()">
                                 <option value="all">Rede Completa (Todas as Lojas)</option>
-                                <option value="matriz">Loja 1</option>
-                                <option value="filial_1">Loja 2</option>
+                                <option value="loja_1">Loja 1</option>
+                                <option value="loja_2">Loja 2</option>
                             </select>
                         </div>
                     </div>
@@ -631,8 +631,8 @@
                                 style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer; transition: border-color 0.2s;"
                                 onchange="app.renderClientsTable()">
                                 <option value="all">Rede Completa (Todas as Lojas)</option>
-                                <option value="matriz">Loja 1</option>
-                                <option value="filial_1">Loja 2</option>
+                                <option value="loja_1">Loja 1</option>
+                                <option value="loja_2">Loja 2</option>
                             </select>
                         </div>
                     </div>
@@ -1377,7 +1377,7 @@
                         <label>Perfil (Role)</label>
                         <select id="t-role" required
                             style="width:100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer;"
-                            onchange="document.getElementById('t-store-container').style.display = this.value === 'admin' ? 'none' : 'block'; if(this.value==='admin') document.getElementById('t-store').value = 'all'; ">
+                            onchange="const st = document.getElementById('t-store'); document.getElementById('t-store-container').style.display = this.value === 'admin' ? 'none' : 'block'; st.required = this.value !== 'admin'; if(this.value === 'admin') st.value = 'all'; else if(st.value === 'all' || !st.value) st.value = 'loja_1';">
                             <option value="seller">Consultor de Vendas (Acesso Restrito)</option>
                             <option value="admin">Administrador (Mestre)</option>
                         </select>
@@ -1386,8 +1386,9 @@
                         <label>Loja Vinculada</label>
                         <select id="t-store" required
                             style="width:100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer;">
-                            <option value="matriz">Loja 1</option>
-                            <option value="filial_1">Loja 2</option>
+                            <option value="all" style="display: none;">Todas as Lojas</option>
+                            <option value="loja_1">Loja 1</option>
+                            <option value="loja_2">Loja 2</option>
                         </select>
                     </div>
                 </div>

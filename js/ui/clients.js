@@ -244,7 +244,10 @@ export const clientsModule = {
 
             let storeBadge = '';
             if (sale.storeId) {
-                let sName = sale.storeId === 'matriz' ? 'Loja 1' : (sale.storeId === 'filial_1' ? 'Loja 2' : 'Global');
+                let sId = sale.storeId;
+                if (sId === 'matriz') sId = 'loja_1';
+                if (sId === 'filial_1') sId = 'loja_2';
+                let sName = sId === 'loja_1' ? 'Loja 1' : (sId === 'loja_2' ? 'Loja 2' : 'Global');
                 storeBadge = `<br><span style="font-size: 11px; color: #64748B;" title="Loja do Fechamento"><i class="fas fa-store" style="font-size:10px; margin-right:2px;"></i> ${sName}</span>`;
             }
 
@@ -535,7 +538,10 @@ export const clientsModule = {
 
                 let storeBadge = '';
                 if (sale.storeId) {
-                    let sName = sale.storeId === 'matriz' ? 'Loja 1' : (sale.storeId === 'filial_1' ? 'Loja 2' : 'Global');
+                    let sId = sale.storeId;
+                    if (sId === 'matriz') sId = 'loja_1';
+                    if (sId === 'filial_1') sId = 'loja_2';
+                    let sName = sId === 'loja_1' ? 'Loja 1' : (sId === 'loja_2' ? 'Loja 2' : 'Global');
                     storeBadge = `<span style="color: #64748B;"><i class="fas fa-store" style="font-size:10px;"></i> ${sName}</span> • `;
                 }
 

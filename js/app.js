@@ -252,8 +252,8 @@ const app = {
                 spans[0].textContent = this.currentUserProfile.name || 'Usuário';
                 
                 let storeLabel = 'Acesso Global';
-                if (storeId === 'matriz') storeLabel = 'Loja 1';
-                else if (storeId === 'filial_1') storeLabel = 'Loja 2';
+                if (storeId === 'loja_1') storeLabel = 'Loja 1';
+                else if (storeId === 'loja_2') storeLabel = 'Loja 2';
                 
                 spans[1].textContent = role === 'admin' ? `Mestre (${storeLabel})` : storeLabel;
             }
@@ -267,7 +267,17 @@ const app = {
                 }
             }
         }
-        
+        // Auto-selecionar no form de venda
+        const storeAssigned = document.getElementById('r-store-assigned');
+        if (storeAssigned && role !== 'admin') {
+            let sId = storeId;
+            if (sId === 'matriz') sId = 'loja_1';
+            if (sId === 'filial_1') sId = 'loja_2';
+            if (sId === 'loja_1' || sId === 'loja_2') {
+                storeAssigned.value = sId;
+            }
+        }
+
         if (role === 'admin') {
             document.querySelectorAll('.admin-only').forEach(el => el.style.display = '');
             this.loadAdminFilters();
@@ -292,8 +302,8 @@ const app = {
                 if (label) label.innerHTML = '<i class="fas fa-filter" style="margin-right:4px;"></i> Minhas Vendas / Loja';
                 
                 let html = '<option value="all">Faturamento Total (Todas as Lojas)</option>';
-                html += '<option value="matriz">🏢 Apenas Loja 1</option>';
-                html += '<option value="filial_1">🏢 Apenas Loja 2</option>';
+                html += '<option value="loja_1">🏢 Apenas Loja 1</option>';
+                html += '<option value="loja_2">🏢 Apenas Loja 2</option>';
                 
                 selectEl.innerHTML = html;
             }
@@ -329,13 +339,19 @@ const app = {
                     let html = '<option value="all">Rede Completa</option>';
                     
                     uniqueStores.forEach(store => {
-                        const storeName = store === 'matriz' ? 'Loja 1' : 'Loja 2';
+                        let sId = store;
+                        if (sId === 'matriz') sId = 'loja_1';
+                        if (sId === 'filial_1') sId = 'loja_2';
+                        const storeName = sId === 'loja_1' ? 'Loja 1' : (sId === 'loja_2' ? 'Loja 2' : 'Global');
                         html += `<option value="${store}">🏢 Somente Loja ${storeName} (Consolidado)</option>`;
                     });
                     
                     html += '<optgroup label="Desempenho por Vendedor">';
                     sellers.forEach(s => {
-                        const storeName = s.storeId === 'matriz' ? 'Loja 1' : 'Loja 2';
+                        let sId = s.storeId;
+                        if (sId === 'matriz') sId = 'loja_1';
+                        if (sId === 'filial_1') sId = 'loja_2';
+                        const storeName = sId === 'loja_1' ? 'Loja 1' : (sId === 'loja_2' ? 'Loja 2' : 'Global');
                         html += `<option value="${s.id}">${storeName} - ${s.name}</option>`;
                     });
                     html += '</optgroup>';
@@ -349,7 +365,10 @@ const app = {
             if (assignSelect || clientAssignSelect) {
                 let assignHtml = '<option value="me">Deixar Comigo (Minha Autoria)</option>';
                 sellers.forEach(s => {
-                    const storeName = s.storeId === 'matriz' ? 'Loja 1' : 'Loja 2';
+                    let sId = s.storeId;
+                    if (sId === 'matriz') sId = 'loja_1';
+                    if (sId === 'filial_1') sId = 'loja_2';
+                    const storeName = sId === 'loja_1' ? 'Loja 1' : (sId === 'loja_2' ? 'Loja 2' : 'Global');
                     assignHtml += `<option value="${s.id}" data-name="${s.name}" data-store="${s.storeId}">${storeName} - ${s.name}</option>`;
                 });
                 if (assignSelect) assignSelect.innerHTML = assignHtml;
@@ -532,6 +551,18 @@ const app = {
             cont.innerHTML = ''; 
             if(typeof this.addSaleItem === 'function') this.addSaleItem(); 
         }
+
+        const storeAssigned = document.getElementById('r-store-assigned');
+        if (storeAssigned && this.currentUserProfile) {
+            let sId = this.currentUserProfile.storeId;
+            if (sId === 'matriz') sId = 'loja_1';
+            if (sId === 'filial_1') sId = 'loja_2';
+            if (sId === 'loja_1' || sId === 'loja_2') {
+                storeAssigned.value = sId;
+            } else {
+                storeAssigned.value = 'loja_1';
+            }
+        }
         
         // Se limpou manualmente, desvincula do funil anterior pra não bugar próximos saves
         const btnCancel = document.getElementById('btn-cancel-sale');
@@ -702,6 +733,23 @@ const app = {
     },
 
     setupForm() {
+        const rSellerAssigned = document.getElementById('r-seller-assigned');
+        const rStoreAssigned = document.getElementById('r-store-assigned');
+        if (rSellerAssigned && rStoreAssigned) {
+            rSellerAssigned.addEventListener('change', (e) => {
+                if (e.target.value !== 'me') {
+                    const opt = e.target.options[e.target.selectedIndex];
+                    const sellerStore = opt.getAttribute('data-store');
+                    if (sellerStore) {
+                        let sId = sellerStore;
+                        if (sId === 'matriz') sId = 'loja_1';
+                        if (sId === 'filial_1') sId = 'loja_2';
+                        rStoreAssigned.value = sId;
+                    }
+                }
+            });
+        }
+
         // Autocomplete da cliente
         const inputName = document.getElementById('r-name');
         const inputPhone = document.getElementById('r-phone');
@@ -833,7 +881,7 @@ const app = {
                 const opt = assignSelect.options[assignSelect.selectedIndex];
                 if (opt) {
                     newSale.overrideSellerName = opt.getAttribute('data-name');
-                    newSale.overrideStoreId = opt.getAttribute('data-store');
+                    // Store é definida unicamente pelo select "Loja do Atendimento"
                 }
             }
 
@@ -854,7 +902,7 @@ const app = {
 
             if (isApiActive && saleId) {
                 const actionMsg = this.parseTemplate('thanks', newSale.name, newSale.product);
-                const targetStore = newSale.overrideStoreId || (this.currentUserProfile ? this.currentUserProfile.storeId : 'matriz');
+                const targetStore = newSale.overrideStoreId || (this.currentUserProfile ? this.currentUserProfile.storeId : 'loja_1');
                 this.sendWhatsAppMessage(newSale.phone, actionMsg, this.msgTemplates.thanksImg, targetStore).then(async (success) => {
                     const status = success ? 'sent' : 'failed';
                     await db.collection('sales').doc(saleId).update({ msg_thanks_status: status });

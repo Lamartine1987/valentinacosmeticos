@@ -58,7 +58,7 @@ export const funnelModule = {
         let query = db.collection('leads');
         
         if (this.currentUserProfile.role !== 'admin') {
-            const storeId = this.currentUserProfile.storeId || 'matriz';
+            const storeId = this.currentUserProfile.storeId || 'loja_1';
             query = query.where('storeId', '==', storeId);
         }
 
@@ -187,8 +187,11 @@ export const funnelModule = {
             if(status === 'inbox') tagHtml = '<span class="k-card-tag" style="background:#E0E7FF; color:#4F46E5;">Novo</span>';
             else if(status === 'waiting') tagHtml = '<span class="k-card-tag" style="background:#FEF3C7; color:#D97706;">Pendente</span>';
 
-            let storeBadgeId = lead.storeId || 'matriz';
-            let storeBadgeLabel = storeBadgeId === 'matriz' ? 'Loja 1' : 'Loja 2';
+            let storeBadgeId = lead.storeId || 'loja_1';
+            // Fallback for unmigrated historic leads
+            if (storeBadgeId === 'matriz') storeBadgeId = 'loja_1';
+            if (storeBadgeId === 'filial_1') storeBadgeId = 'loja_2';
+            let storeBadgeLabel = storeBadgeId === 'loja_1' ? 'Loja 1' : (storeBadgeId === 'loja_2' ? 'Loja 2' : 'Global');
             let storeTagHtml = `<span style="font-size: 9px; padding: 2px 5px; border-radius: 4px; background: #F3F4F6; border: 1px solid #E5E7EB; color: #4B5563; font-weight: bold; align-self: flex-start;"><i class="fas fa-store" style="font-size: 9px; margin-right: 3px;"></i>${storeBadgeLabel}</span>`;
 
             card.innerHTML = `
@@ -573,7 +576,7 @@ ${groupSenderHtml}${displayHtml}
 
         // Recuperar a loja que esse cliente pertence para rotear a mensagem pela API correta
         const currentLead = this.leadsList.find(l => l.id === this.activeLeadId);
-        const sourceStore = currentLead ? (currentLead.storeId || 'matriz') : 'matriz';
+        const sourceStore = currentLead ? (currentLead.storeId || 'loja_1') : 'loja_1';
 
         // Despacha a mensagem usando a API conectada
         if (typeof this.sendWhatsAppMessage === 'function') {

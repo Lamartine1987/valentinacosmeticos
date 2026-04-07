@@ -13,7 +13,7 @@ export const settingsModule = {
                     if (this.apiSettings.url) {
                         this.apiSettings.instances.push({
                             id: Date.now(),
-                            storeId: 'matriz',
+                            storeId: 'loja_1',
                             provider: this.apiSettings.provider || 'evolution',
                             url: this.apiSettings.url,
                             token: this.apiSettings.token || '',
@@ -22,7 +22,7 @@ export const settingsModule = {
                     }
                 }
                 if(this.apiSettings.instances.length === 0) {
-                    this.apiSettings.instances.push({id: Date.now(), storeId: 'matriz', provider: 'zapi', url: '', token: '', active: true});
+                    this.apiSettings.instances.push({id: Date.now(), storeId: 'loja_1', provider: 'zapi', url: '', token: '', active: true});
                 }
                 if (typeof this.renderApiInstances === 'function') {
                     this.renderApiInstances();
@@ -165,7 +165,7 @@ export const settingsModule = {
             
             // Lógica para nome visual da loja
             let storeLabel = 'Loja 1';
-            if (inst.storeId === 'filial_1') storeLabel = 'Loja 2';
+            if (inst.storeId === 'loja_2') storeLabel = 'Loja 2';
             
             div.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 16px;">
@@ -176,8 +176,8 @@ export const settingsModule = {
                     <div class="form-group" style="grid-column: span 2;">
                         <label>Loja Vinculada</label>
                         <select class="api-v-store" required>
-                            <option value="matriz" ${inst.storeId === 'matriz' ? 'selected' : ''}>Loja 1</option>
-                            <option value="filial_1" ${inst.storeId === 'filial_1' ? 'selected' : ''}>Loja 2</option>
+                            <option value="loja_1" ${inst.storeId === 'loja_1' ? 'selected' : ''}>Loja 1</option>
+                            <option value="loja_2" ${inst.storeId === 'loja_2' ? 'selected' : ''}>Loja 2</option>
                         </select>
                     </div>
                     <div class="form-group" style="grid-column: span 2;">
@@ -212,7 +212,7 @@ export const settingsModule = {
         if (!Array.isArray(this.apiSettings.instances)) this.apiSettings.instances = [];
         this.apiSettings.instances.push({
             id: Date.now(),
-            storeId: 'filial_1',
+            storeId: 'loja_2',
             provider: 'zapi',
             url: '',
             token: '',
@@ -311,7 +311,7 @@ export const settingsModule = {
                 
                 let storeLabel = 'Acesso Global';
                 if (user.storeId && user.storeId !== 'all') {
-                    storeLabel = user.storeId === 'matriz' ? 'Loja 1' : 'Loja 2';
+                    storeLabel = user.storeId === 'loja_1' ? 'Loja 1' : 'Loja 2';
                 }
 
                 tr.innerHTML = `
@@ -346,7 +346,7 @@ export const settingsModule = {
             document.getElementById('t-name').value = editUser.name || '';
             document.getElementById('t-email').value = editUser.email || '';
             document.getElementById('t-role').value = editUser.role || 'seller';
-            if(document.getElementById('t-store')) document.getElementById('t-store').value = editUser.storeId || 'matriz';
+            if(document.getElementById('t-store')) document.getElementById('t-store').value = editUser.storeId || 'loja_1';
             document.getElementById('t-password').required = false;
             
             if(titleEl) titleEl.innerHTML = '<i class="fas fa-user-edit" style="color: var(--primary); margin-right: 8px;"></i> Editar Colaborador';
@@ -361,7 +361,10 @@ export const settingsModule = {
             if(hintEl) hintEl.style.display = 'none';
         }
 
-        document.getElementById('t-store-container').style.display = (editUser && editUser.role === 'admin') ? 'none' : 'block';
+        const isAdm = (editUser && editUser.role === 'admin');
+        document.getElementById('t-store-container').style.display = isAdm ? 'none' : 'block';
+        const st = document.getElementById('t-store');
+        if (st) st.required = !isAdm;
         if(overlay) overlay.classList.add('active');
     },
 
