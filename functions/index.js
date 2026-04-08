@@ -723,14 +723,19 @@ exports.apiProxy = functions.https.onRequest(async (req, res) => {
             return res.status(response.status).send(Buffer.from(buffer));
         }
 
-        const { targetUrl, targetHeaders, targetBody } = req.body;
+        const { targetUrl, targetHeaders, targetBody, targetMethod } = req.body;
         if (!targetUrl) return res.status(400).send('targetUrl is required');
 
-        const response = await fetch(targetUrl, {
-            method: 'POST',
+        const fetchOptions = {
+            method: targetMethod || 'POST',
             headers: targetHeaders || {},
-            body: JSON.stringify(targetBody || {})
-        });
+        };
+
+        if (fetchOptions.method !== 'GET' && fetchOptions.method !== 'HEAD') {
+            fetchOptions.body = JSON.stringify(targetBody || {});
+        }
+
+        const response = await fetch(targetUrl, fetchOptions);
 
         const data = await response.text();
         return res.status(response.status).send(data);

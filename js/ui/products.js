@@ -136,6 +136,7 @@ export const productsModule = {
         const btnDelete = document.getElementById('btn-bulk-delete');
         const btnInactivate = document.getElementById('btn-bulk-inactivate');
         const btnActivate = document.getElementById('btn-bulk-activate');
+        const btnCombo = document.getElementById('btn-bulk-combo');
         
         const isAdmin = this.currentUserProfile && this.currentUserProfile.role === 'admin';
 
@@ -143,6 +144,11 @@ export const productsModule = {
             countBadge.innerText = `${count} selecionado${count !== 1 ? 's' : ''}`;
             countBadge.style.display = count > 0 ? 'inline-flex' : 'none';
         }
+        
+        const btnPromo = document.getElementById('btn-bulk-promo');
+        if (btnPromo) btnPromo.style.display = count > 0 ? 'flex' : 'none';
+        
+        if (btnCombo) btnCombo.style.display = count > 1 ? 'flex' : 'none';
         
         if (isAdmin) {
             if (btnDelete) btnDelete.style.display = count > 0 ? 'flex' : 'none';
@@ -476,7 +482,30 @@ export const productsModule = {
     },
 
     copyPixLink(id) {
-        if (!this.pixConfig || !this.pixConfig.pixKey) {
+        if (!this.pixConfig) {
+            if (typeof this.showToast === 'function') this.showToast('As configurações de PIX ainda não foram carregadas.', 'warning');
+            return;
+        }
+
+        const storeSelector = document.getElementById('pix-store-selector');
+        const store = storeSelector ? storeSelector.value : (this.currentUserProfile?.storeId || 'loja_1');
+        let pKey = '', pMerchant = '', pCity = '';
+        
+        if (store === 'loja_2' && this.pixConfig.loja_2 && this.pixConfig.loja_2.pixKey) {
+            pKey = this.pixConfig.loja_2.pixKey;
+            pMerchant = this.pixConfig.loja_2.merchant;
+            pCity = this.pixConfig.loja_2.city;
+        } else if (this.pixConfig.loja_1 && this.pixConfig.loja_1.pixKey) {
+            pKey = this.pixConfig.loja_1.pixKey;
+            pMerchant = this.pixConfig.loja_1.merchant;
+            pCity = this.pixConfig.loja_1.city;
+        } else {
+            pKey = this.pixConfig.pixKey || '';
+            pMerchant = this.pixConfig.merchant || '';
+            pCity = this.pixConfig.city || '';
+        }
+
+        if (!pKey) {
             if (typeof this.showToast === 'function') this.showToast('Configure sua Chave PIX primeiro na aba de Configurações!', 'warning');
             return;
         }
@@ -485,7 +514,8 @@ export const productsModule = {
         if(!prod) return;
 
         const baseUrl = window.location.href.split('?')[0].replace('index.html', '').replace(/\/$/, '') + '/';
-        const checkoutUrl = `${baseUrl}checkout.html?key=${encodeURIComponent(this.pixConfig.pixKey)}&merchant=${encodeURIComponent(this.pixConfig.merchant)}&city=${encodeURIComponent(this.pixConfig.city)}&product=${encodeURIComponent(prod.name)}&price=${encodeURIComponent(prod.price || 0)}`;
+        
+        const checkoutUrl = `${baseUrl}checkout.html?key=${encodeURIComponent(pKey || '')}&merchant=${encodeURIComponent(pMerchant || '')}&city=${encodeURIComponent(pCity || '')}&product=${encodeURIComponent(prod.name)}&price=${encodeURIComponent(prod.price || 0)}`;
         
         const fallbackCopy = () => {
             const tempInput = document.createElement("input");
@@ -510,5 +540,120 @@ export const productsModule = {
         } else {
             fallbackCopy();
         }
+    },
+
+    preparePromoFromProducts() {
+        if (this.selectedProductIds.size < 1) {
+             if (typeof this.showToast === 'function') this.showToast('Selecione pelo menos 1 produto para a campanha.', 'warning');
+             return;
+        }
+
+        const productNames = [];
+        this.selectedProductIds.forEach(id => {
+            const prod = this.products.find(p => p.id === id);
+            if(prod && prod.name) {
+                productNames.push(prod.name);
+            }
+        });
+
+        if (productNames.length === 0) return;
+
+        let combinedNames = productNames.join(', ');
+        const lastComma = combinedNames.lastIndexOf(', ');
+        if (lastComma !== -1) {
+            combinedNames = combinedNames.substring(0, lastComma) + ' e ' + combinedNames.substring(lastComma + 2);
+        }
+
+        this.pendingPromoProducts = combinedNames;
+        
+        if (typeof this.showToast === 'function') {
+            this.showToast('Produtos salvos na memória! Agora escolha os Clientes e inicie a Promoção.', 'info');
+        }
+        
+        if (typeof this.navigateTo === 'function') {
+            this.navigateTo('clients');
+        }
+    },
+
+    generateComboLink() {
+        // Needs AT LEAST pixConfig to exist. Default or Store doesn't matter yet here, checkout handles it
+        if (!this.pixConfig) {
+            if (typeof this.showToast === 'function') this.showToast('Configure suas Chaves PIX primeiro na aba de Configurações!', 'warning');
+            return;
+        }
+
+        if (this.selectedProductIds.size < 2) {
+             if (typeof this.showToast === 'function') this.showToast('Selecione pelo menos 2 produtos para gerar o combo.', 'warning');
+             return;
+        }
+
+        const cart = [];
+        this.selectedProductIds.forEach(id => {
+            const prod = this.products.find(p => p.id === id);
+            if(prod) {
+                cart.push({ n: prod.name, p: parseFloat(prod.price) || 0 });
+            }
+        });
+
+        // Encode to base64, preserving utf-8 safe chars
+        const utf8Encoder = new TextEncoder();
+        const utf8Bytes = utf8Encoder.encode(JSON.stringify(cart));
+        const base64Bytes = btoa(String.fromCharCode.apply(null, Array.from(utf8Bytes)));
+
+        const storeSelector = document.getElementById('pix-store-selector');
+        const store = storeSelector ? storeSelector.value : (this.currentUserProfile?.storeId || 'loja_1');
+        let pKey = '', pMerchant = '', pCity = '';
+        
+        if (store === 'loja_2' && this.pixConfig.loja_2 && this.pixConfig.loja_2.pixKey) {
+            pKey = this.pixConfig.loja_2.pixKey;
+            pMerchant = this.pixConfig.loja_2.merchant;
+            pCity = this.pixConfig.loja_2.city;
+        } else if (this.pixConfig.loja_1 && this.pixConfig.loja_1.pixKey) {
+            pKey = this.pixConfig.loja_1.pixKey;
+            pMerchant = this.pixConfig.loja_1.merchant;
+            pCity = this.pixConfig.loja_1.city;
+        } else {
+            // Fallback for legacy configs before multi-store
+            pKey = this.pixConfig.pixKey || '';
+            pMerchant = this.pixConfig.merchant || '';
+            pCity = this.pixConfig.city || '';
+        }
+
+        if (!pKey) {
+            if (typeof this.showToast === 'function') this.showToast('Configure sua Chave PIX primeiro na aba de Configurações!', 'warning');
+            return;
+        }
+        
+        const baseUrl = window.location.href.split('?')[0].replace('index.html', '').replace(/\/$/, '') + '/';
+        const checkoutUrl = `${baseUrl}checkout.html?key=${encodeURIComponent(pKey || '')}&merchant=${encodeURIComponent(pMerchant || '')}&city=${encodeURIComponent(pCity || '')}&cart=${encodeURIComponent(base64Bytes)}`;
+        
+        const fallbackCopy = () => {
+            const tempInput = document.createElement("input");
+            tempInput.value = checkoutUrl;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            try {
+                document.execCommand("copy");
+                if (typeof this.showToast === 'function') this.showToast('Link do Combo PIX copiado (Modo de Compatibilidade)!', 'info');
+            } catch (err) {
+                prompt('Copie o link gerado:', checkoutUrl);
+            }
+            document.body.removeChild(tempInput);
+        };
+
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(checkoutUrl).then(() => {
+                if (typeof this.showToast === 'function') this.showToast('Link do Combo PIX gerado e copiado para a área de transferência!', 'info');
+            }).catch(err => {
+                fallbackCopy();
+            });
+        } else {
+            fallbackCopy();
+        }
+        
+        this.selectedProductIds.clear();
+        const selectAllCb = document.querySelector('.page.active th input[type="checkbox"]');
+        if (selectAllCb) selectAllCb.checked = false;
+        this.renderProductsList();
     }
 };

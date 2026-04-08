@@ -73,12 +73,17 @@ export const settingsModule = {
             const docPix = await db.collection("settings").doc("pix_config").get();
             if (docPix.exists) {
                 this.pixConfig = docPix.data();
-                const pk = document.getElementById('pix-key');
-                const pm = document.getElementById('pix-merchant');
-                const pc = document.getElementById('pix-city');
-                if(pk) pk.value = this.pixConfig.pixKey || '';
-                if(pm) pm.value = this.pixConfig.merchant || '';
-                if(pc) pc.value = this.pixConfig.city || '';
+                const setVal = (id, val) => { const el = document.getElementById(id); if (el && val !== undefined) el.value = val; };
+                
+                // Loja 1 (Falls back to legacy single-store properties if available)
+                setVal('pix-key-loja_1', this.pixConfig?.loja_1?.pixKey || this.pixConfig?.pixKey);
+                setVal('pix-merchant-loja_1', this.pixConfig?.loja_1?.merchant || this.pixConfig?.merchant);
+                setVal('pix-city-loja_1', this.pixConfig?.loja_1?.city || this.pixConfig?.city);
+
+                // Loja 2
+                setVal('pix-key-loja_2', this.pixConfig?.loja_2?.pixKey);
+                setVal('pix-merchant-loja_2', this.pixConfig?.loja_2?.merchant);
+                setVal('pix-city-loja_2', this.pixConfig?.loja_2?.city);
             }
         } catch(e) { console.error(e); }
     },

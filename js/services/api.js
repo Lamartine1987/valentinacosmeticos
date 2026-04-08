@@ -19,8 +19,10 @@ export const apiModule = {
                  apiUrl = inst.url;
                  apiToken = inst.token;
              } else {
-                 console.log("Instância API desabilitada ou incompatível para a loja:", targetStoreId);
-                 return false;
+                 if (!settings.active) {
+                     console.log("Nenhuma instância ativa disponível para", targetStoreId, "e a API master global está desabilitada.");
+                     return false;
+                 }
              }
         } else if (!settings.active) {
             console.log("API master global desabilitada.");
@@ -137,6 +139,77 @@ export const apiModule = {
         }
     },
 
+    async fetchDeviceContacts(targetStoreId = 'loja_1') {
+        const settings = this.apiSettings;
+        if (!settings) return [];
+        
+        let provider = settings.provider;
+        let apiUrl = settings.url;
+        let apiToken = settings.token;
+
+        if (settings.instances && Array.isArray(settings.instances) && settings.instances.length > 0) {
+             let inst = settings.instances.find(i => i.storeId === targetStoreId);
+             if (!inst || !inst.active) inst = settings.instances.find(i => i.storeId === 'loja_1');
+             if (inst && inst.active) {
+                 provider = inst.provider;
+                 apiUrl = inst.url;
+                 apiToken = inst.token;
+             }
+        }
+        if(!apiUrl) return [];
+
+        try {
+            let finalUrl = apiUrl;
+            
+            // Adjust the base URL for fetching contacts based on the provider
+            if (provider === 'evolution') {
+                finalUrl = finalUrl.replace('/message/sendText', '').replace('/sendText', '').replace(/\/$/, '') + '/chat/findContacts';
+            } else if (provider === 'zapi') {
+                finalUrl = finalUrl.replace('/send-text', '').replace(/\/$/, '') + '/contacts';
+            } else if (provider === 'meumotor') {
+                finalUrl = finalUrl.replace('/send-text', '').replace(/\/$/, '') + '/contacts';
+            }
+
+            const headers = { 'Content-Type': 'application/json' };
+            if (apiToken) {
+                const t = apiToken;
+                headers['Authorization'] = t.toLowerCase().startsWith('bearer') ? t : `Bearer ${t}`;
+                headers['apikey'] = t; 
+                headers['Client-Token'] = t;
+            }
+
+            let reqUrl = finalUrl;
+            let reqOptions = { method: 'GET', headers };
+
+            // Proxy to bypass block and CORS for HTTP targets
+            if (window.location.protocol === 'https:' && finalUrl.startsWith('http://')) {
+                reqUrl = 'https://us-central1-valentinacosmeticos-5f239.cloudfunctions.net/apiProxy';
+                reqOptions = {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        targetUrl: finalUrl,
+                        targetHeaders: headers,
+                        targetMethod: 'GET'
+                    })
+                };
+            }
+
+            const response = await fetch(reqUrl, reqOptions);
+            const data = await response.json();
+            
+            // Normalize return pattern
+            if (data && data.contacts) return data.contacts; // Custom Motor / Evolution format (often)
+            if (Array.isArray(data)) return data; // Z-API pattern
+            if (data && data.data) return data.data;
+
+            return [];
+        } catch (e) {
+            console.error("Erro ao buscar contatos da agenda:", e);
+            return [];
+        }
+    },
+
     async syncToBrevo(clientData) {
         if (!clientData.email || clientData.email.trim() === '') return;
         try {
@@ -170,9 +243,9 @@ export const apiModule = {
         try {
             const enrichedClient = { ...clientData, createdAt: new Date().toISOString() };
             if (this.user && this.currentUserProfile) {
-                enrichedClient.sellerId = clientData.overrideSellerId || this.user.uid;
-                enrichedClient.sellerName = clientData.overrideSellerName || this.currentUserProfile.name || 'Sistema';
-                enrichedClient.storeId = clientData.overrideStoreId || this.currentUserProfile.storeId || 'loja_1';
+                enrichedClient.sellerId = clientData.sellerId || clientData.overrideSellerId || this.user.uid;
+                enrichedClient.sellerName = clientData.sellerName || clientData.overrideSellerName || this.currentUserProfile.name || 'Sistema';
+                enrichedClient.storeId = clientData.storeId || clientData.overrideStoreId || this.currentUserProfile.storeId || 'loja_1';
             }
             await db.collection("clients").add(enrichedClient);
             this.syncToBrevo(clientData);

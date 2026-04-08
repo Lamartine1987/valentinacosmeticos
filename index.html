@@ -450,12 +450,15 @@
                             <p>Contatos e Lifetime Value (LTV) da sua carteira.</p>
                         </div>
                         <div style="display: flex; gap: 8px;">
-                            <button class="btn-primary" style="background: #EF4444;"
-                                onclick="app.deleteSelectedClients()">
+                            <button id="btn-delete-clients" class="btn-primary" style="background: #EF4444; opacity: 0.5; pointer-events: none;"
+                                onclick="app.deleteSelectedClients()" disabled>
                                 <i class="fas fa-trash"></i> Excluir Selecionados
                             </button>
                             <button class="btn-primary" style="background: #8B5CF6;" onclick="app.openPromoModal()">
                                 <i class="fas fa-bullhorn"></i> Disparar Promoção
+                            </button>
+                            <button class="btn-primary" style="background: #10B981;" onclick="app.openAgendaModal('clients')">
+                                <i class="fab fa-whatsapp"></i> Importar da Agenda
                             </button>
                             <button class="btn-primary" onclick="app.navigateTo('client-register')">
                                 <i class="fas fa-user-plus"></i> Nova Cliente
@@ -569,6 +572,14 @@
                                     <select id="c-seller-assigned"
                                         style="padding: 14px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 15px; color: var(--text-main); cursor: pointer;"></select>
                                 </div>
+                                <div class="form-group admin-only" id="c-store-container">
+                                    <label>Loja de Registro</label>
+                                    <select id="c-store-assigned"
+                                        style="padding: 14px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 15px; color: var(--text-main); cursor: pointer;">
+                                        <option value="loja_1">Loja 1</option>
+                                        <option value="loja_2">Loja 2</option>
+                                    </select>
+                                </div>
                             </div>
                             <div class="form-actions" style="display:flex; gap:16px;">
                                 <button type="button" class="btn-primary"
@@ -667,22 +678,32 @@
                 <!-- Products Page -->
                 <section class="page" id="page-products">
                     <div class="page-header"
-                        style="display: flex; justify-content: space-between; align-items: flex-end;">
-                        <div>
+                        style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 16px;">
+                        <div style="flex: 1; min-width: 250px;">
                             <h2>Catálogo de Produtos</h2>
                             <p>Sua lista de produtos e serviços disponíveis.</p>
                         </div>
-                        <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end;">
-                            <button class="btn-primary" id="btn-undo-import" style="background: #EAB308; display: none;" onclick="app.undoLastImport()">
-                                <i class="fas fa-undo"></i> Desfazer Importação
-                            </button>
-                            <button class="btn-primary admin-only" id="btn-import-xml" style="background: #10B981;" onclick="document.getElementById('xml-upload').click()">
-                                <i class="fas fa-file-upload"></i> Importar XML
-                            </button>
-                            <input type="file" id="xml-upload" accept=".xml,.jrpxml" style="display: none;" onchange="app.importProductXML(event)" />
-                            
-                            <span id="products-selected-count" style="display: none; align-items: center; padding: 0 12px; font-size: 13px; font-weight: 600; color: var(--primary); background: var(--primary-light); border-radius: 8px;">0 selecionados</span>
-                            
+                        <div class="actions" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: flex-end;">
+                                <div class="selected-count admin-only" id="products-selected-count"
+                                    style="display: none; padding: 8px 16px; background: #F8FAFC; border: 1px solid var(--border); border-radius: 8px; font-weight: 500; color: var(--primary);">
+                                    0 selecionado(s)
+                                </div>
+                                
+                                
+                                <button class="btn-primary admin-only" id="btn-import-xml" style="background: #10B981;" onclick="document.getElementById('xml-upload-input').click()">
+                                    <i class="fas fa-file-import"></i> Importar XML
+                                </button>
+                                <input type="file" id="xml-upload-input" accept=".xml" style="display: none;" onchange="app.handleXmlImport(event)">
+                                <button class="btn-primary admin-only" id="btn-undo-import" style="background: #64748B; display: none;" onclick="app.undoLastImport()">
+                                    <i class="fas fa-undo"></i> Desfazer
+                                </button>
+                                
+                                <button class="btn-primary" id="btn-bulk-promo" style="background: #8B5CF6; display: none;" onclick="app.preparePromoFromProducts()">
+                                    <i class="fas fa-bullhorn"></i> Criar Campanha
+                                </button>
+                                <button class="btn-primary" id="btn-bulk-combo" style="background: #3B82F6; display: none;" onclick="app.generateComboLink()">
+                                    <i class="fas fa-link"></i> Gerar Combo PIX
+                                </button>
                             <button class="btn-primary" id="btn-bulk-inactivate" style="background: #F59E0B; display: none;" onclick="app.toggleSelectedProductsStatus(false)">
                                 <i class="fas fa-pause-circle"></i> Inativar
                             </button>
@@ -823,22 +844,47 @@
                                     <div>
                                         <h3 style="color: #10B981; display: flex; align-items: center; gap: 8px;"><i class="fab fa-pix"></i> Checkout PIX Transparente Gratuito</h3>
                                         <p style="color: var(--text-muted); font-size: 14px; margin-top: 4px;">
-                                            Configure as suas informações bancárias para ativar o Checkout Seguro e receber pagamentos diretamente na sua conta, <b>sem nenhuma taxa</b> de terceiros.
+                                            Configure as chaves bancárias por Loja para receber os repasses separadamente, <b>sem taxa</b>.
                                         </p>
                                     </div>
                                 </div>
-                                <div class="form-grid">
-                                    <div class="form-group" style="grid-column: span 2;">
-                                        <label>Chave PIX (E-mail, CPF, CNPJ ou Telefone c/ +55)</label>
-                                        <input type="text" id="pix-key" placeholder="ex: +5511999999999 ou empresa@email.com">
+                                <div style="display: flex; flex-direction: column; gap: 24px; margin-top: 16px;">
+                                    <!-- LOJA 1 -->
+                                    <div style="border: 1px solid var(--border); padding: 16px; border-radius: 8px;">
+                                        <h4 style="margin-bottom: 16px; color: var(--text-main);"><i class="fas fa-store"></i> Chave PIX - Loja 1</h4>
+                                        <div class="form-grid">
+                                            <div class="form-group" style="grid-column: span 2;">
+                                                <label>Chave PIX (E-mail, CPF, CNPJ ou Telefone)</label>
+                                                <input type="text" id="pix-key-loja_1" placeholder="ex: +5511999999999">
+                                            </div>
+                                            <div class="form-group">
+                                                <label>Nome do Beneficiário</label>
+                                                <input type="text" id="pix-merchant-loja_1" placeholder="Val. Cosmeticos L1">
+                                            </div>
+                                            <div class="form-group">
+                                                <label>Cidade (obrigatório)</label>
+                                                <input type="text" id="pix-city-loja_1" placeholder="SAO PAULO">
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="form-group">
-                                        <label>Nome Completo do Beneficiário</label>
-                                        <input type="text" id="pix-merchant" placeholder="ex: Valentina Cosmeticos LTDA">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Cidade do Beneficiário (obrigatório)</label>
-                                        <input type="text" id="pix-city" placeholder="ex: SAO PAULO">
+
+                                    <!-- LOJA 2 -->
+                                    <div style="border: 1px solid var(--border); padding: 16px; border-radius: 8px;">
+                                        <h4 style="margin-bottom: 16px; color: var(--text-main);"><i class="fas fa-store"></i> Chave PIX - Loja 2</h4>
+                                        <div class="form-grid">
+                                            <div class="form-group" style="grid-column: span 2;">
+                                                <label>Chave PIX (E-mail, CPF, CNPJ ou Telefone)</label>
+                                                <input type="text" id="pix-key-loja_2" placeholder="ex: +5511999999999">
+                                            </div>
+                                            <div class="form-group">
+                                                <label>Nome do Beneficiário</label>
+                                                <input type="text" id="pix-merchant-loja_2" placeholder="Val. Cosmeticos L2">
+                                            </div>
+                                            <div class="form-group">
+                                                <label>Cidade (obrigatório)</label>
+                                                <input type="text" id="pix-city-loja_2" placeholder="CARUARU">
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                                 <div style="margin-top: 16px; background: #ECFDF5; border: 1px solid #10B981; color: #065F46; padding: 12px; border-radius: 8px; font-size: 13px;">
@@ -1298,6 +1344,10 @@
                             placeholder="Buscar conversa por nome ou telefone..."
                             style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; flex: 1; min-width: 250px; outline: none; font-size: 14px; transition: border-color 0.2s;"
                             oninput="app.renderFunnelBoard()">
+                        
+                        <button class="btn-primary" style="background: #10B981; margin-left: auto;" onclick="app.openAgendaModal('funnel')">
+                            <i class="fas fa-plus"></i> Nova Conversa (Agenda)
+                        </button>
                     </div>
 
                     <div class="kanban-board">
@@ -1554,9 +1604,10 @@
                             style="font-size: 24px;">&times;</button>
                     </div>
                 </div>
-                <div style="font-size: 13px; color: var(--text-muted); display: flex; gap: 12px; margin-top: 8px;">
+                <div style="font-size: 13px; color: var(--text-muted); display: flex; gap: 12px; margin-top: 8px; align-items: center;">
                     <span id="lead-sb-phone"><i class="fab fa-whatsapp" style="color:#25D366;"></i> </span>
                     <span id="lead-sb-value" style="color: #10B981; font-weight: bold;"></span>
+                    <button id="btn-save-lead-client" onclick="app.saveLeadAsClient()" style="margin-left: auto; background: #E2E8F0; color: #475569; border: none; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; transition: 0.2s;"><i class="fas fa-save" style="margin-right: 4px;"></i> Salvar na Base</button>
                 </div>
             </div>
 
@@ -1610,6 +1661,54 @@
         </div>
     </div>
 
+    <!-- Agenda Modal -->
+    <div id="agenda-modal-overlay" class="login-overlay">
+        <div class="login-card" style="max-width: 500px; width: 90%; max-height: 85vh; display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="margin: 0; font-size: 18px; color: var(--text-main);"><i class="fab fa-whatsapp" style="color: #25D366; margin-right: 8px;"></i> Contatos do Aparelho</h3>
+                <button class="btn-icon" onclick="app.closeAgendaModal()" style="font-size: 20px;"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div style="margin-bottom: 16px;">
+                <label style="font-size: 13px; font-weight: 500; color: var(--text-muted); display: block; margin-bottom: 6px;">Extrair clientes de qual perfil/aparelho?</label>
+                <select id="agenda-instance-select" onchange="app.loadDeviceContacts()" style="width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; outline: none; background: #F8FAFC; cursor: pointer;">
+                    <option value="loja_1">Loja 1</option>
+                    <option value="loja_2">Loja 2</option>
+                </select>
+            </div>
+            <input type="text" id="agenda-search-input" placeholder="Buscar na agenda por nome ou número..." 
+                   style="width: 100%; padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 16px; font-size: 14px; outline: none;"
+                   oninput="app.filterAgendaList()">
+
+            <div id="agenda-loading" style="text-align: center; padding: 32px; color: var(--text-muted);">
+                <i class="fas fa-spinner fa-spin" style="font-size: 24px; margin-bottom: 12px;"></i>
+                <p>Sincronizando com a API do WhatsApp...</p>
+            </div>
+
+            <div style="flex: 1; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; display: none;" id="agenda-list-container">
+                <table class="data-table" style="margin: 0;">
+                    <thead style="position: sticky; top: 0; background: #F8FAFC; z-index: 1;">
+                        <tr>
+                            <th style="width: 40px; text-align: center;"><input type="checkbox" id="agenda-select-all" onclick="app.toggleSelectAllAgenda(this)"></th>
+                            <th>Nome</th>
+                            <th>Telefone</th>
+                        </tr>
+                    </thead>
+                    <tbody id="agenda-list-body">
+                        <!-- Populated via JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Botões flutuantes para a aba Clientes -->
+            <div id="agenda-batch-actions" style="margin-top: 16px; display: none; justify-content: flex-end;">
+                <button class="btn-primary" onclick="app.importSelectedAgendaToClients()" style="background: #10B981; width: 100%; justify-content: center;">
+                    <i class="fas fa-download"></i> Salvar Selecionados no CRM
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
@@ -1618,7 +1717,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-functions.js"></script>
     <script type="module" src="https://unpkg.com/emoji-picker-element@1"></script>
 
-    <script type="module" src="js/app.js"></script>
+    <script type="module" src="js/app.js?v=2"></script>
 </body>
 
 </html>

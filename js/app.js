@@ -936,10 +936,24 @@ const app = {
                     const opt = assignedSellerSel.options[assignedSellerSel.selectedIndex];
                     if (opt && opt.dataset.name) newClient.sellerName = opt.dataset.name;
                     else if (sellerId === this.user.uid) newClient.sellerName = this.currentUserProfile.name;
-                    
-                    if (opt && opt.dataset.store) newClient.storeId = opt.dataset.store;
-                    else if (sellerId === this.user.uid) newClient.storeId = this.currentUserProfile.storeId;
                 }
+
+                let storeId = 'loja_1';
+                const storeSelector = document.getElementById('c-store-assigned');
+                if (storeSelector && this.currentUserProfile && this.currentUserProfile.role === 'admin') {
+                    storeId = storeSelector.value;
+                } else if (this.currentUserProfile) {
+                    const assignedSellerSel = document.getElementById('c-seller-assigned');
+                    if (assignedSellerSel && !assignedSellerSel.disabled) {
+                        const opt = assignedSellerSel.options[assignedSellerSel.selectedIndex];
+                        if (opt && opt.dataset.store) storeId = opt.dataset.store;
+                        else storeId = this.currentUserProfile.storeId || 'loja_1';
+                    } else {
+                        storeId = this.currentUserProfile.storeId || 'loja_1';
+                    }
+                }
+                newClient.storeId = storeId;
+
                 if (this.editingClientId) {
                     const oldClient = this.clients.find(c => c.id === this.editingClientId) || {};
                     await this.updateClient(this.editingClientId, newClient);
@@ -1079,10 +1093,19 @@ const app = {
                 try {
                     await db.collection("settings").doc("msg_templates").set(this.msgTemplates);
                     
+                    const val = (id) => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
+
                     const pixConfig = {
-                        pixKey: document.getElementById('pix-key') ? document.getElementById('pix-key').value.trim() : '',
-                        merchant: document.getElementById('pix-merchant') ? document.getElementById('pix-merchant').value.trim() : '',
-                        city: document.getElementById('pix-city') ? document.getElementById('pix-city').value.trim() : ''
+                        loja_1: {
+                            pixKey: val('pix-key-loja_1'),
+                            merchant: val('pix-merchant-loja_1'),
+                            city: val('pix-city-loja_1')
+                        },
+                        loja_2: {
+                            pixKey: val('pix-key-loja_2'),
+                            merchant: val('pix-merchant-loja_2'),
+                            city: val('pix-city-loja_2')
+                        }
                     };
                     await db.collection("settings").doc("pix_config").set(pixConfig);
                     this.pixConfig = pixConfig;
@@ -1102,7 +1125,43 @@ const app = {
         const promoProductInput = document.getElementById('promo-product');
         const promoLinkInput = document.getElementById('promo-link');
         if (promoProductInput) promoProductInput.addEventListener('input', () => this.updatePromoPreview());
-        if (promoLinkInput) promoLinkInput.addEventListener('input', () => this.updatePromoPreview());
+        if (promoLinkInput) {
+            promoLinkInput.addEventListener('input', (e) => {
+                try {
+                    const linkVal = e.target.value;
+                    const url = new URL(linkVal);
+                    if (url.searchParams.has('cart')) {
+                        const cartB64 = url.searchParams.get('cart');
+                        const binaryStr = atob(cartB64);
+                        const bytes = new Uint8Array(binaryStr.length);
+                        for (let i = 0; i < binaryStr.length; i++) { bytes[i] = binaryStr.charCodeAt(i); }
+                        const jsonStr = new TextDecoder().decode(bytes);
+                        const products = JSON.parse(jsonStr);
+                        
+                        if (products && products.length > 0) {
+                            let combinedNames = products.map(p => p.n).join(', ');
+                            const lastComma = combinedNames.lastIndexOf(', ');
+                            if (lastComma !== -1) {
+                                combinedNames = combinedNames.substring(0, lastComma) + ' e ' + combinedNames.substring(lastComma + 2);
+                            }
+                            const prodInput = document.getElementById('promo-product');
+                            if (prodInput) {
+                                prodInput.value = combinedNames;
+                            }
+                        }
+                    } else if (url.searchParams.has('product')) {
+                        const prodName = url.searchParams.get('product');
+                        const prodInput = document.getElementById('promo-product');
+                        if (prodInput && prodName) {
+                            prodInput.value = prodName;
+                        }
+                    }
+                } catch(err) {
+                    // Ignore invalid url parse
+                }
+                this.updatePromoPreview();
+            });
+        }
 
         const formPromo = document.getElementById('form-promo');
         if (formPromo) {
@@ -1135,10 +1194,44 @@ const app = {
                 for (let i = 0; i < targetList.length; i++) {
                     const client = targetList[i];
                     if (client.phone && activeTplText) {
-                        const msg = activeTplText.replace(/{nome}/g, client.name.split(' ')[0]).replace(/{produto}/g, product || 'produto').replace(/{link}/g, link);
+                        
+                        let finalLink = link;
+                        try {
+                            if (finalLink && finalLink.includes('checkout.html')) {
+                                const url = new URL(finalLink);
+                                const targetStore = client.storeId || 'loja_1';
+                                let pKey = '', pMerchant = '', pCity = '';
+                                
+                                if (targetStore === 'loja_2' && this.pixConfig?.loja_2?.pixKey) {
+                                    pKey = this.pixConfig.loja_2.pixKey;
+                                    pMerchant = this.pixConfig.loja_2.merchant;
+                                    pCity = this.pixConfig.loja_2.city;
+                                } else if (this.pixConfig?.loja_1?.pixKey) {
+                                    pKey = this.pixConfig.loja_1.pixKey;
+                                    pMerchant = this.pixConfig.loja_1.merchant;
+                                    pCity = this.pixConfig.loja_1.city;
+                                } else {
+                                    pKey = this.pixConfig?.pixKey || '';
+                                    pMerchant = this.pixConfig?.merchant || '';
+                                    pCity = this.pixConfig?.city || '';
+                                }
+
+                                if (pKey) {
+                                    url.searchParams.set('key', pKey);
+                                    url.searchParams.set('merchant', pMerchant);
+                                    url.searchParams.set('city', pCity);
+                                    finalLink = url.toString();
+                                }
+                            }
+                        } catch(err) {
+                            // ignore invalid url replacement
+                        }
+
+                        const msg = activeTplText.replace(/{nome}/g, client.name.split(' ')[0]).replace(/{produto}/g, product || 'produto').replace(/{link}/g, finalLink);
                         if (hasApi) {
-                            // Envia via API (Z-API / Evolution)
-                            const success = await this.sendWhatsAppMessage(client.phone, msg, activeTplImg);
+                            // Envia via API (Z-API / Evolution) roteando automaticamente para a loja do cliente
+                            const targetStore = client.storeId || 'loja_1';
+                            const success = await this.sendWhatsAppMessage(client.phone, msg, activeTplImg, targetStore);
                             if (success) {
                                 successCount++;
                                 db.collection("promos").add({
@@ -1180,9 +1273,237 @@ const app = {
         }
     },
 
+    agendaOrigin: null,
+    agendaData: [],
 
+    openAgendaModal(origin) {
+        this.agendaOrigin = origin;
+        const modal = document.getElementById('agenda-modal-overlay');
+        const listBody = document.getElementById('agenda-list-body');
+        const container = document.getElementById('agenda-list-container');
+        const loader = document.getElementById('agenda-loading');
+        const actions = document.getElementById('agenda-batch-actions');
+        const selectStore = document.getElementById('agenda-instance-select');
+        
+        if (selectStore) {
+             const adminOptions = ['matriz', 'admin', ''];
+             const sid = this.currentUserProfile?.storeId;
+             if (!sid || adminOptions.includes(sid.toLowerCase())) {
+                 selectStore.value = 'loja_1';
+             } else if (selectStore.querySelector(`option[value="${sid}"]`)) {
+                 selectStore.value = sid;
+             } else {
+                 selectStore.value = 'loja_1';
+             }
+        }
 
+        if (modal) modal.classList.add('active');
+        if (listBody) listBody.innerHTML = '';
+        if (container) container.style.display = 'none';
+        if (actions) {
+             actions.style.display = origin === 'clients' ? 'flex' : 'none';
+        }
+        if (loader) loader.style.display = 'block';
 
+        this.loadDeviceContacts();
+    },
+
+    closeAgendaModal() {
+        const modal = document.getElementById('agenda-modal-overlay');
+        if (modal) modal.classList.remove('active');
+    },
+
+    async loadDeviceContacts() {
+        const selectStore = document.getElementById('agenda-instance-select');
+        const targetStoreId = selectStore ? selectStore.value : (this.currentUserProfile?.storeId || 'loja_1');
+        
+        const loader = document.getElementById('agenda-loading');
+        const container = document.getElementById('agenda-list-container');
+        if (loader) loader.style.display = 'block';
+        if (container) container.style.display = 'none';
+
+        const contacts = await this.fetchDeviceContacts(targetStoreId);
+        this.agendaData = contacts;
+        
+        this.renderAgendaList(this.agendaData);
+
+        if (loader) loader.style.display = 'none';
+        if (container) container.style.display = 'block';
+    },
+
+    renderAgendaList(data) {
+        const listBody = document.getElementById('agenda-list-body');
+        if (!listBody) return;
+        
+        listBody.innerHTML = '';
+        
+        if (!data || data.length === 0) {
+            listBody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 20px;">Nenhum contato encontrado no aparelho da Loja.</td></tr>';
+            return;
+        }
+
+        data.forEach(c => {
+            const tr = document.createElement('tr');
+            // Try to resolve the best name
+            let rawName = c.name || c.pushName || c.shortName || '';
+            let rawTel = String(c.id || c.phone || c.number || '').replace(/\D/g, '');
+            if (!rawTel) return;
+            if (!rawName) rawName = rawTel;
+            
+            const existingClient = this.clients.find(dbClient => dbClient.phone && String(dbClient.phone).replace(/\D/g, '') === rawTel);
+
+            if (this.agendaOrigin === 'clients') {
+                if (existingClient) {
+                    tr.style.opacity = '0.6';
+                    tr.style.background = '#F8FAFC';
+                    tr.innerHTML = `
+                        <td style="text-align: center;"><i class="fas fa-check" style="color: #64748B;"></i></td>
+                        <td style="font-size: 14px;">${rawName} <span style="background: #E2E8F0; color: #475569; font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-left: 6px; font-weight: 500;">Já no CRM</span></td>
+                        <td style="font-size: 14px; font-variant-numeric: tabular-nums;">${rawTel}</td>
+                    `;
+                } else {
+                    tr.innerHTML = `
+                        <td style="text-align: center;"><input type="checkbox" class="agenda-checkbox" data-name="${rawName}" data-phone="${rawTel}"></td>
+                        <td style="font-size: 14px;">${rawName}</td>
+                        <td style="font-size: 14px; font-variant-numeric: tabular-nums;">${rawTel}</td>
+                    `;
+                }
+            } else {
+                tr.innerHTML = `
+                    <td style="text-align: center;">
+                        <button class="btn-icon" style="color: #25D366; background: #DCFCE7; border-radius: 50%; padding: 6px; width: 32px; height: 32px;" onclick="app.startFunnelChatFromAgenda('${rawName}', '${rawTel}', event)" title="Iniciar Conversa">
+                            <i class="fas fa-comment"></i>
+                        </button>
+                    </td>
+                    <td style="font-size: 14px;">${rawName}</td>
+                    <td style="font-size: 14px; font-variant-numeric: tabular-nums;">${rawTel}</td>
+                `;
+            }
+            listBody.appendChild(tr);
+        });
+    },
+
+    filterAgendaList() {
+        const val = (document.getElementById('agenda-search-input')?.value || '').toLowerCase().trim();
+        if (!val) {
+             this.renderAgendaList(this.agendaData);
+             return;
+        }
+        
+        const filtered = this.agendaData.filter(c => {
+             const nome = (c.name || c.id || c.pushName || '').toLowerCase();
+             const tel = String(c.id || c.phone || '').toLowerCase();
+             return nome.includes(val) || tel.includes(val);
+        });
+        
+        this.renderAgendaList(filtered);
+    },
+
+    toggleSelectAllAgenda(checkbox) {
+        document.querySelectorAll('.agenda-checkbox').forEach(cb => cb.checked = checkbox.checked);
+    },
+
+    async importSelectedAgendaToClients() {
+        if (!db) return;
+        const checkboxes = document.querySelectorAll('.agenda-checkbox:checked');
+        if (checkboxes.length === 0) {
+            this.showToast("Nenhum contato selecionado!");
+            return;
+        }
+
+        const btn = document.querySelector('#agenda-batch-actions .btn-primary');
+        const origHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando em Lote...';
+        btn.disabled = true;
+
+        try {
+            let batch = db.batch();
+            let count = 0;
+            const selectStore = document.getElementById('agenda-instance-select');
+            const explicitStoreId = selectStore ? selectStore.value : 'loja_1';
+
+            checkboxes.forEach(cb => {
+                const docRef = db.collection('clients').doc();
+                const clientData = {
+                    name: cb.getAttribute('data-name'),
+                    phone: cb.getAttribute('data-phone'),
+                    email: '',
+                    storeId: explicitStoreId,
+                    createdAt: new Date().toISOString()
+                };
+                
+                if (this.user && this.currentUserProfile) {
+                    clientData.sellerId = this.user.uid;
+                    clientData.sellerName = this.currentUserProfile.name || 'Sistema';
+                }
+                
+                batch.set(docRef, clientData);
+                count++;
+            });
+
+            await batch.commit();
+            
+            this.showToast(`${count} contatos salvos no CRM com sucesso!`);
+            this.closeAgendaModal();
+            this.navigateTo('clients'); 
+        } catch (e) {
+            console.error(e);
+            this.showToast('Erro ao importar contatos.');
+        }
+
+        btn.innerHTML = origHtml;
+        btn.disabled = false;
+    },
+
+    async startFunnelChatFromAgenda(name, phone, event) {
+        if (!db) return;
+        
+        if(event && event.currentTarget) {
+            event.currentTarget.disabled = true;
+            event.currentTarget.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        }
+
+        try {
+            const cleanPhone = String(phone).replace(/\D/g, '');
+            const leadData = {
+                name: name,
+                phone: cleanPhone,
+                status: 'inbox',
+                value: 0,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            
+            if (this.user && this.currentUserProfile) {
+                leadData.sellerId = this.user.uid;
+                leadData.sellerName = this.currentUserProfile.name || 'Sistema';
+                leadData.storeId = this.currentUserProfile.storeId || 'loja_1';
+            }
+
+            const snap = await db.collection("leads").where("phone", "==", cleanPhone).get();
+            let leadId = null;
+            if (!snap.empty) {
+                leadId = snap.docs[0].id;
+                await db.collection("leads").doc(leadId).update({ status: 'inbox', updatedAt: new Date().toISOString() });
+            } else {
+                const docRef = await db.collection('leads').add(leadData);
+                leadId = docRef.id;
+            }
+
+            this.closeAgendaModal();
+            this.navigateTo('funnel');
+            
+            setTimeout(() => {
+                const searchBox = document.getElementById('filter-funnel-search');
+                if (searchBox) { searchBox.value = cleanPhone; this.renderFunnelBoard(); }
+            }, 600);
+            
+            this.showToast('Conversa iniciada centralizada no Funil!');
+        } catch (e) {
+            console.error(e);
+            this.showToast('Erro ao iniciar chat.');
+        }
+    },
 
     ...apiModule,
     ...dashboardModule,

@@ -355,6 +355,59 @@ export const funnelModule = {
         }
     },
 
+    async saveLeadAsClient() {
+        if (!db) return;
+        if (!this.activeLeadId || !this.activeLeadPhone) return;
+
+        const cleanPhone = String(this.activeLeadPhone).replace(/\D/g, '');
+        const existingClient = (this.clients || []).find(c => c.phone && String(c.phone).replace(/\D/g, '') === cleanPhone);
+
+        if (existingClient) {
+            if (typeof this.showToast === 'function') this.showToast(`Ops! Esse telefone já está registrado para ${existingClient.name} na sua base!`, 'warning');
+            const btn = document.getElementById('btn-save-lead-client');
+            if(btn) {
+                 btn.innerHTML = '<i class="fas fa-check"></i> Já na Base';
+                 btn.style.opacity = '0.5';
+                 btn.style.pointerEvents = 'none';
+            }
+            return;
+        }
+
+        try {
+            const leadDoc = await db.collection('leads').doc(this.activeLeadId).get();
+            if (!leadDoc.exists) return;
+            const leadData = leadDoc.data();
+
+            const docRef = db.collection('clients').doc();
+            const clientData = {
+                name: leadData.name || 'Desconhecido',
+                phone: cleanPhone,
+                email: '',
+                storeId: leadData.storeId || (this.currentUserProfile?.storeId || 'loja_1'),
+                createdAt: new Date().toISOString()
+            };
+            
+            if (this.user && this.currentUserProfile) {
+                clientData.sellerId = this.user.uid;
+                clientData.sellerName = this.currentUserProfile.name || 'Sistema';
+            }
+            
+            await docRef.set(clientData);
+            if (typeof this.showToast === 'function') this.showToast('Cliente Salvo na Base com Sucesso!', 'success');
+            
+            const btn = document.getElementById('btn-save-lead-client');
+            if(btn) {
+                 btn.innerHTML = '<i class="fas fa-check"></i> Salvo';
+                 btn.style.opacity = '0.5';
+                 btn.style.pointerEvents = 'none';
+            }
+
+        } catch(e) {
+            console.error(e);
+            if (typeof this.showToast === 'function') this.showToast('Erro ao salvar!', 'error');
+        }
+    },
+
     openLeadSidebar(lead) {
         this.activeLeadId = lead.id;
         this.activeLeadPhone = lead.phone;
@@ -372,6 +425,21 @@ export const funnelModule = {
         document.getElementById('lead-sb-name').textContent = lead.name || 'Desconhecido';
         document.getElementById('lead-sb-phone').innerHTML = `<i class="fab fa-whatsapp" style="color:#25D366;"></i> ${lead.phone || 'Sem número'}`;
         document.getElementById('lead-sb-value').textContent = lead.value ? Number(lead.value).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'}) : 'R$ 0,00';
+        
+        const btnSave = document.getElementById('btn-save-lead-client');
+        if (btnSave) {
+             const cleanPhone = String(lead.phone || '').replace(/\D/g, '');
+             const exists = (this.clients || []).find(c => c.phone && String(c.phone).replace(/\D/g, '') === cleanPhone);
+             if (exists) {
+                 btnSave.innerHTML = '<i class="fas fa-check"></i> Já na Base';
+                 btnSave.style.opacity = '0.5';
+                 btnSave.style.pointerEvents = 'none';
+             } else {
+                 btnSave.innerHTML = '<i class="fas fa-save"></i> Salvar na Base';
+                 btnSave.style.opacity = '1';
+                 btnSave.style.pointerEvents = 'auto';
+             }
+        }
         
         const statusMap = {
             'inbox': 'Caixa de Entrada',

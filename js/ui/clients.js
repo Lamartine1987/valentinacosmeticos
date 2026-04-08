@@ -11,6 +11,9 @@ export const clientsModule = {
         document.getElementById('c-birthdate').value = client.birthdate || '';
         document.getElementById('c-city').value = client.city || '';
         
+        const storeAssigned = document.getElementById('c-store-assigned');
+        if (storeAssigned) storeAssigned.value = (client.storeId === 'loja_2') ? 'loja_2' : 'loja_1';
+
         const sellerAssigned = document.getElementById('c-seller-assigned');
         if (sellerAssigned) {
             if (client.sellerId) {
@@ -51,6 +54,9 @@ export const clientsModule = {
         const form = document.getElementById('form-client');
         if(form) {
             form.reset();
+            const storeAssigned = document.getElementById('c-store-assigned');
+            if (storeAssigned) storeAssigned.value = 'loja_1';
+            
             const sellerAssigned = document.getElementById('c-seller-assigned');
             // reset logic so it defaults back to 'me' and isn't disabled if they are creating a new one
             if (sellerAssigned) {
@@ -100,33 +106,53 @@ export const clientsModule = {
             return;
         }
 
-        const checkboxes = document.querySelectorAll('.page.active .client-checkbox:checked');
-        if (checkboxes.length === 0) {
+        this.selectedClientIds = this.selectedClientIds || new Set();
+        const selectedArr = Array.from(this.selectedClientIds);
+        
+        if (selectedArr.length === 0) {
             if (typeof this.showToast === 'function') this.showToast('Selecione pelo menos um cliente para excluir.', 'warning');
             return;
         }
 
         this.confirmAction(
             "Excluir Clientes em Massa",
-            `Tem certeza que deseja excluir ${checkboxes.length} cliente(s)? Esta ação não pode ser desfeita.`,
+            `Tem certeza que deseja excluir ${selectedArr.length} cliente(s)? Esta ação não pode ser desfeita.`,
             async () => {
                 try {
                     const batch = db.batch();
-                    checkboxes.forEach(cb => {
-                        const docRef = db.collection('clients').doc(cb.value);
+                    selectedArr.forEach(clientId => {
+                        const docRef = db.collection('clients').doc(clientId);
                         batch.delete(docRef);
                     });
                     await batch.commit();
-                    if (typeof this.showToast === 'function') this.showToast(`${checkboxes.length} cliente(s) excluído(s)!`, 'info');
+                    if (typeof this.showToast === 'function') this.showToast(`${selectedArr.length} cliente(s) excluído(s)!`, 'info');
                     
                     const selectAllCb = document.getElementById('selectAllClients');
                     if (selectAllCb) selectAllCb.checked = false;
+                    this.selectedClientIds.clear();
+                    this.updateDeleteClientsButtonState();
                 } catch(e) {
                     console.error("Erro exclusão em massa:", e);
                     if (typeof this.showToast === 'function') this.showToast('Erro ao excluir clientes.', 'error');
                 }
             }
         );
+    },
+
+    updateDeleteClientsButtonState() {
+        const btn = document.getElementById('btn-delete-clients');
+        if (!btn) return;
+        this.selectedClientIds = this.selectedClientIds || new Set();
+        const checkedCount = this.selectedClientIds.size;
+        if (checkedCount > 0) {
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.style.pointerEvents = 'auto';
+        } else {
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+            btn.style.pointerEvents = 'none';
+        }
     },
 
     renderClientsTable() {
@@ -329,9 +355,12 @@ export const clientsModule = {
                 if (!isNaN(filterMax) && c.totalGasto > filterMax) return false;
                 if (!isNaN(filterQtyMin) && c.compras.length < filterQtyMin) return false;
                 if (!isNaN(filterQtyMax) && c.compras.length > filterQtyMax) return false;
-                if (filterClientStore !== 'all' && c.sellerId !== filterClientStore && c.storeId !== filterClientStore) return false;
                 return true;
             });
+        }
+
+        if (filterClientStore !== 'all') {
+            displayClients = displayClients.filter(c => c.sellerId === filterClientStore || c.storeId === filterClientStore);
         }
         
         // Aplicar Ordenação
@@ -351,10 +380,18 @@ export const clientsModule = {
         }
 
         displayClients.forEach(client => {
+            let storeBadge = '';
+            if (client.storeId === 'loja_2') {
+                storeBadge = '<span style="background: #FCE7F3; color: #DB2777; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 8px; font-weight: bold; vertical-align: middle;">LOJA 2</span>';
+            } else if (client.storeId === 'loja_1') {
+                storeBadge = '<span style="background: #DBEAFE; color: #2563EB; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 8px; font-weight: bold; vertical-align: middle;">LOJA 1</span>';
+            }
+
+            const isChecked = this.selectedClientIds && this.selectedClientIds.has(client.id) ? 'checked' : '';
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td style="text-align: center;"><input type="checkbox" class="client-checkbox" value="${client.id}" style="cursor: pointer; width: 16px; height: 16px;"></td>
-                <td><strong>${client.name}</strong></td>
+                <td style="text-align: center;"><input type="checkbox" class="client-checkbox" value="${client.id}" ${isChecked} onchange="app.toggleClientSelection('${client.id}', this.checked)" style="cursor: pointer; width: 16px; height: 16px;"></td>
+                <td><div style="display: flex; align-items: center;"><strong>${client.name}</strong> ${storeBadge}</div></td>
                 <td>${client.phone}</td>
                 <td>${client.compras.length} compra(s)</td>
                 <td style="color:var(--primary); font-weight:600;">R$ ${client.totalGasto.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
@@ -373,30 +410,59 @@ export const clientsModule = {
             `;
             tbody.appendChild(row);
         });
+        this.updateDeleteClientsButtonState();
     },
 
     toggleSelectAllClients(source) {
+        this.selectedClientIds = this.selectedClientIds || new Set();
         const checkboxes = document.querySelectorAll('.page.active .client-checkbox');
-        checkboxes.forEach(cb => cb.checked = source.checked);
+        checkboxes.forEach(cb => {
+            cb.checked = source.checked;
+            if (source.checked) {
+                this.selectedClientIds.add(cb.value);
+            } else {
+                this.selectedClientIds.delete(cb.value);
+            }
+        });
+        this.updateDeleteClientsButtonState();
+    },
+
+    toggleClientSelection(id, isChecked) {
+        this.selectedClientIds = this.selectedClientIds || new Set();
+        if (isChecked) {
+            this.selectedClientIds.add(id);
+        } else {
+            this.selectedClientIds.delete(id);
+        }
+        this.updateDeleteClientsButtonState();
     },
 
     openPromoModal() {
-        const checkboxes = document.querySelectorAll('.page.active .client-checkbox:checked, .page.active .sale-checkbox:checked');
+        this.selectedClientIds = this.selectedClientIds || new Set();
+        const salesCheckboxes = document.querySelectorAll('.page.active .sale-checkbox:checked');
         this.selectedClientsForPromo = [];
-        if (checkboxes.length > 0) {
-            checkboxes.forEach(cb => {
+        
+        // Add persisted clients from the Clients tab
+        this.selectedClientIds.forEach(clientId => {
+             const client = this.clients.find(c => c.id === clientId);
+             if (client && !this.selectedClientsForPromo.find(x => (x.id === client.id) || (x.phone === client.phone))) {
+                 this.selectedClientsForPromo.push(client);
+             }
+        });
+        
+        // Add specific clients from checking Sales checkboxes (if on Sales tab)
+        if (salesCheckboxes.length > 0) {
+            salesCheckboxes.forEach(cb => {
                 let client = null;
-                if (cb.classList.contains('client-checkbox')) {
-                    client = this.clients.find(c => c.id === cb.value || (c.phone && c.phone.replace(/\D/g, '') === cb.value.replace(/\D/g, '')));
-                } else if (cb.classList.contains('sale-checkbox')) {
-                    const sale = this.sales.find(s => s.id === cb.value);
-                    if (sale) {
-                        client = this.clients.find(c => c.phone && sale.phone && c.phone.replace(/\D/g, '') === sale.phone.replace(/\D/g, ''));
-                        if (!client && sale.name && sale.phone) {
-                            client = { id: sale.phone, name: sale.name, phone: sale.phone };
-                        }
+                const sale = this.sales.find(s => s.id === cb.value);
+                if (sale) {
+                    client = this.clients.find(c => c.phone && sale.phone && c.phone.replace(/\D/g, '') === sale.phone.replace(/\D/g, ''));
+                    // Se o cliente não existir, recria uma interface temporária p/ disparador
+                    if (!client && sale.name && sale.phone) {
+                        client = { id: sale.phone, name: sale.name, phone: sale.phone };
                     }
                 }
+
 
                 if (client && !this.selectedClientsForPromo.find(x => (x.id === client.id) || (x.phone === client.phone))) {
                     this.selectedClientsForPromo.push(client);
@@ -411,7 +477,12 @@ export const clientsModule = {
         
         const modal = document.getElementById('promo-overlay');
         document.getElementById('promo-target-count').innerText = this.selectedClientsForPromo.length;
-        document.getElementById('promo-product').value = '';
+        if (this.pendingPromoProducts) {
+            document.getElementById('promo-product').value = this.pendingPromoProducts;
+            this.pendingPromoProducts = null;
+        } else {
+            document.getElementById('promo-product').value = '';
+        }
         document.getElementById('promo-link').value = '';
         
         const selectEl = document.getElementById('promo-template-select');

@@ -4,12 +4,30 @@ document.addEventListener('DOMContentLoaded', () => {
     const pixKey = params.get('key') || '';
     const merchant = decodeURIComponent(params.get('merchant') || '');
     const city = decodeURIComponent(params.get('city') || '');
-    const product = decodeURIComponent(params.get('product') || 'Pagamento PIX');
-    let priceStr = params.get('price') || '0';
     
-    const price = parseFloat(priceStr);
+    let products = [];
+    let price = 0;
+    
+    const cartB64 = params.get('cart');
+    if (cartB64) {
+        try {
+            const binaryStr = atob(cartB64);
+            const bytes = new Uint8Array(binaryStr.length);
+            for (let i = 0; i < binaryStr.length; i++) { bytes[i] = binaryStr.charCodeAt(i); }
+            const jsonStr = new TextDecoder().decode(bytes);
+            products = JSON.parse(jsonStr);
+            price = products.reduce((acc, p) => acc + (p.p || 0), 0);
+        } catch(e) {
+            console.error("Invalid cart format", e);
+        }
+    } else {
+        const product = decodeURIComponent(params.get('product') || 'Pagamento PIX');
+        let priceStr = params.get('price') || '0';
+        price = parseFloat(priceStr);
+        if(!isNaN(price)) products = [{ n: product, p: price }];
+    }
 
-    if (!pixKey || isNaN(price)) {
+    if (!pixKey || isNaN(price) || products.length === 0) {
         alert("Link de pagamento inválido ou incompleto.");
         return;
     }
@@ -20,12 +38,36 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('ui-merchant-name').innerText = merchant || 'Vendedor Padrão';
     document.getElementById('ui-merchant-initials').innerText = merchant ? merchant.substring(0, 2).toUpperCase() : 'PIX';
     
-    document.getElementById('ui-subtitle').innerText = `Comprar ${product}`;
-    document.getElementById('ui-product-name').innerText = product;
+    const uiSubtitle = document.getElementById('ui-subtitle');
+    if (uiSubtitle) {
+        if (products.length > 1) {
+            uiSubtitle.innerText = `Combo Promocional (${products.length} itens)`;
+        } else {
+            uiSubtitle.innerText = `Comprar ${products[0].n}`;
+        }
+    }
     
     document.getElementById('ui-price').innerText = priceFormatted;
-    document.getElementById('ui-summary-price').innerText = `R$ ${priceFormatted}`;
     document.getElementById('ui-total-price').innerText = `R$ ${priceFormatted}`;
+
+    const summaryItems = document.getElementById('ui-summary-items');
+    if (summaryItems) {
+        summaryItems.innerHTML = '';
+        products.forEach(prod => {
+            const row = document.createElement('div');
+            row.className = 'summary-row';
+            row.style.marginBottom = '12px';
+            const pf = (prod.p).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            row.innerHTML = `
+                <div class="summary-product-name">
+                    <div class="placeholder-img"><i class="fas ${products.length > 1 ? 'fa-gift' : 'fa-box'}"></i></div>
+                    <span style="font-size: 13px;">${prod.n}</span>
+                </div>
+                <div style="font-size: 13px;">R$ ${pf}</div>
+            `;
+            summaryItems.appendChild(row);
+        });
+    }
 
     // 3. Generate PIX String
     const pixPayload = generatePixPayload(pixKey, price, merchant, city);
