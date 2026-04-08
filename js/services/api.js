@@ -1,7 +1,7 @@
 import { db } from '../config/firebase.js';
 
 export const apiModule = {
-    async sendWhatsAppMessage(phone, message, imageUrl = '', targetStoreId = 'loja_1') {
+    async sendWhatsAppMessage(phone, message, imageUrl = '', mediaType = 'image', targetStoreId = 'loja_1') {
         const settings = this.apiSettings;
         if (!settings) return false;
         
@@ -57,7 +57,7 @@ export const apiModule = {
                     body = { 
                         number: destPhone, 
                         mediaMessage: { 
-                            mediatype: "image", 
+                            mediatype: mediaType === 'video' ? "video" : "image", 
                             caption: message, 
                             media: finalMediaPayload 
                         } 
@@ -65,20 +65,12 @@ export const apiModule = {
                 } else {
                     body = { number: destPhone, textMessage: { text: message } };
                 }
-            } else if (provider === 'zapi') {
+            } else if (provider === 'zapi' || provider === 'meumotor') {
                 if (finalMediaPayload !== '') {
-                    finalUrl = finalUrl.replace('/send-text', '').replace(/\/$/, '') + '/send-image';
-                    body = { phone: destPhone, image: finalMediaPayload, caption: message, message: message }; 
-                } else {
-                    body = { phone: destPhone, message: message };
-                    if (!finalUrl.endsWith('/send-text')) {
-                        finalUrl = finalUrl.replace(/\/$/, '') + '/send-text';
-                    }
-                }
-            } else if (provider === 'meumotor') {
-                if (finalMediaPayload !== '') {
-                    finalUrl = finalUrl.replace('/send-text', '').replace(/\/$/, '') + '/send-image';
-                    body = { phone: destPhone, image: finalMediaPayload, caption: message, message: message }; 
+                    const endpoint = mediaType === 'video' ? '/send-video' : '/send-image';
+                    const key = mediaType === 'video' ? 'video' : 'image';
+                    finalUrl = finalUrl.replace('/send-text', '').replace(/\/$/, '') + endpoint;
+                    body = { phone: destPhone, [key]: finalMediaPayload, caption: message, message: message }; 
                 } else {
                     body = { phone: destPhone, message: message };
                     if (!finalUrl.endsWith('/send-text')) {

@@ -253,14 +253,20 @@ export const dashboardModule = {
     async resendActionMsg(saleId, type, phone, fallbackMsg) {
         let msg = fallbackMsg;
         let imgUrl = "";
+        let storeId = 'loja_1';
         if (!msg) {
             const action = this.currentDashboardActions && this.currentDashboardActions.find(a => a.id === saleId && a.type === type);
             if (action && action.msg) {
                 msg = action.msg;
+                if (action.storeId) storeId = action.storeId;
             } else {
                 this.showToast("Não foi possível carregar a mensagem original.");
                 return;
             }
+        } else {
+            // Se foi passado via dispararTodos
+            const action = this.currentDashboardActions && this.currentDashboardActions.find(a => a.id === saleId && a.type === type);
+            if (action && action.storeId) storeId = action.storeId;
         }
         
         if (this.msgTemplates && this.msgTemplates[`${type}Img`]) {
@@ -280,7 +286,7 @@ export const dashboardModule = {
             btn.disabled = true; 
         }
         
-        const success = await this.sendWhatsAppMessage(phone, msg, imgUrl);
+        const success = await this.sendWhatsAppMessage(phone, msg, imgUrl, 'image', storeId);
         const statusField = `msg_${type}_status`;
         
         try {

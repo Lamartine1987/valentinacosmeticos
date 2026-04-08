@@ -485,11 +485,17 @@ export const funnelModule = {
                 }
                 
                 let displayImageUrl = msg.imageUrl;
+                let displayVideoUrl = msg.videoUrl;
                 if (displayImageUrl && displayImageUrl.startsWith('http://') && window.location.protocol === 'https:') {
                     displayImageUrl = 'https://us-central1-valentinacosmeticos-5f239.cloudfunctions.net/apiProxy?targetUrl=' + encodeURIComponent(displayImageUrl);
                 }
+                if (displayVideoUrl && displayVideoUrl.startsWith('http://') && window.location.protocol === 'https:') {
+                    displayVideoUrl = 'https://us-central1-valentinacosmeticos-5f239.cloudfunctions.net/apiProxy?targetUrl=' + encodeURIComponent(displayVideoUrl);
+                }
                 
-                if (msg.imageUrl) {
+                if (msg.videoUrl) {
+                    displayHtml = `<video src="${displayVideoUrl}" controls style="max-width:100%; border-radius:6px; margin-bottom:6px; max-height: 250px; display:block; background: #000;"></video>` + displayHtml;
+                } else if (msg.imageUrl) {
                     const fallbackHtml = `this.style.display='none'; this.insertAdjacentHTML('afterend', '<div style=\\'background:rgba(239, 68, 68, 0.1); color:#ef4444; font-size:11px; padding:6px 10px; border-radius:6px; margin-bottom:6px; display:flex; align-items:center; gap:6px;\\'><i class=\\'fas fa-image-slash\\'></i> Mídia expirada ou formato indisponível</div>');`;
                     displayHtml = `<a href="${displayImageUrl}" target="_blank"><img src="${displayImageUrl}" onerror="${fallbackHtml}" style="max-width:100%; border-radius:6px; margin-bottom:6px; max-height: 200px; object-fit: cover; display:block;"></a>` + displayHtml;
                 }
@@ -640,13 +646,15 @@ ${groupSenderHtml}${displayHtml}
         input.value = '';
         this.cancelReply();
 
-        let imageUrl = '';
+        let fileUrl = '';
+        let isVideo = false;
         if (this.pendingChatFile) {
             if(this.showToast) this.showToast('Enviando anexo...', 'info');
             try {
+                if (this.pendingChatFile.type.startsWith('video/')) isVideo = true;
                 const fileRef = firebase.storage().ref(`chat_attachments/${this.activeLeadId}/${Date.now()}_${this.pendingChatFile.name}`);
                 const snapshot = await fileRef.put(this.pendingChatFile);
-                imageUrl = await snapshot.ref.getDownloadURL();
+                fileUrl = await snapshot.ref.getDownloadURL();
             } catch (e) {
                 console.error("Erro no upload do anexo:", e);
                 if(this.showToast) this.showToast('Erro ao fazer upload do arquivo.', 'error');
@@ -666,7 +674,10 @@ ${groupSenderHtml}${displayHtml}
                 sender: 'agent',
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             };
-            if (imageUrl) msgObj.imageUrl = imageUrl;
+            if (fileUrl) {
+                if (isVideo) msgObj.videoUrl = fileUrl;
+                else msgObj.imageUrl = fileUrl;
+            }
             
             await db.collection('leads').doc(this.activeLeadId).collection('messages').add(msgObj);
 
@@ -684,7 +695,7 @@ ${groupSenderHtml}${displayHtml}
 
         // Despacha a mensagem usando a API conectada paralelamente
         if (typeof this.sendWhatsAppMessage === 'function') {
-            const success = await this.sendWhatsAppMessage(this.activeLeadPhone, sentText, imageUrl, sourceStore);
+            const success = await this.sendWhatsAppMessage(this.activeLeadPhone, sentText, fileUrl, isVideo ? 'video' : 'image', sourceStore);
             if (!success) {
                 if(this.showToast) this.showToast('Erro ao enviar mensagem pelo WhatsApp.', 'error');
                 // Could update message state if we tracked ID, but for now we just show a toast.

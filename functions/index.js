@@ -27,6 +27,7 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
 
     let audioUrl = "";
     let imageUrl = "";
+    let videoUrl = "";
 
     let isGroup = false;
     let groupName = "Grupo WhatsApp";
@@ -57,6 +58,9 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
         if (payload.image && payload.image.imageUrl) imageUrl = payload.image.imageUrl;
         else if (payload.imageUrl) imageUrl = payload.imageUrl;
         else if (payload.photo) imageUrl = payload.photo; // Z-API legacy/alternative structure
+        
+        if (payload.video && payload.video.videoUrl) videoUrl = payload.video.videoUrl;
+        else if (payload.videoUrl) videoUrl = payload.videoUrl;
     }
     // 2. Tentar ler no formato Evolution API (message.upsert)
     else if (payload.data && payload.data.message) {
@@ -82,10 +86,13 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
                     audioUrl = base64Str.startsWith('data:') ? base64Str : 'data:audio/ogg;base64,' + base64Str;
                 } else if (msgData.message.imageMessage || msgData.message.documentMessage) {
                     imageUrl = base64Str.startsWith('data:') ? base64Str : 'data:image/jpeg;base64,' + base64Str;
+                } else if (msgData.message.videoMessage) {
+                    videoUrl = base64Str.startsWith('data:') ? base64Str : 'data:video/mp4;base64,' + base64Str;
                 }
             } else {
                 if (msgData.message.audioMessage) audioUrl = msgData.message.audioMessage.url || "evolution-audio";
                 if (msgData.message.imageMessage) imageUrl = msgData.message.imageMessage.url || "evolution-image";
+                if (msgData.message.videoMessage) videoUrl = msgData.message.videoMessage.url || "evolution-video";
             }
         }
     }
@@ -99,6 +106,7 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
     if (!textBody) {
         if (audioUrl) textBody = "🎵 *Mensagem de Áudio*";
         else if (imageUrl) textBody = "📸 *Imagem/Arquivo*";
+        else if (videoUrl) textBody = "📹 *Vídeo*";
     }
 
     // Se não houver texto E não houver media, aborta.
@@ -165,8 +173,16 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
                     const now = Date.now();
                     for (let msgDoc of recentMsgs.docs) {
                         const msg = msgDoc.data();
-                        // Remover espaços em branco no final para comparação segura
-                        if (msg.sender === 'agent' && msg.text.trim() === textBody.trim()) {
+                        
+                        // Determinar se já inserimos via envio otimista do painel CRM (mesmo que com legendas dummy)
+                        const isTextMatch = msg.text.trim() === textBody.trim();
+                        // Se enviamos do CRM sem texto mas era uma imagem, o msg.text seria vazio lá 
+                        // e o webhook transforma em "📸 *Imagem/Arquivo*". Verificamos se ambos tem imagem e foram nos últimos 30s.
+                        const isImageMatch = (imageUrl && msg.imageUrl);
+                        const isVideoMatch = (videoUrl && msg.videoUrl);
+                        const isAudioMatch = (audioUrl && msg.audioUrl);
+                        
+                        if (msg.sender === 'agent' && (isTextMatch || (!msg.text.trim() && (isImageMatch || isVideoMatch || isAudioMatch)))) {
                             const msgTime = msg.timestamp ? msg.timestamp.toDate().getTime() : 0;
                             if (now - msgTime < 30000) { // 30 segundos
                                 isDuplicate = true;
@@ -185,6 +201,7 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
                     };
                     if(audioUrl) msgObj.audioUrl = audioUrl;
                     if(imageUrl) msgObj.imageUrl = imageUrl;
+                    if(videoUrl) msgObj.videoUrl = videoUrl;
                     
                     await leadsRef.doc(leadId).collection('messages').add(msgObj);
                     await leadsRef.doc(leadId).update({
@@ -215,6 +232,7 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
                 };
                 if(audioUrl) msgObj.audioUrl = audioUrl;
                 if(imageUrl) msgObj.imageUrl = imageUrl;
+                if(videoUrl) msgObj.videoUrl = videoUrl;
                 
                 await newLeadRef.collection('messages').add(msgObj);
             }
@@ -281,6 +299,7 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
         };
         if(audioUrl) msgObj.audioUrl = audioUrl;
         if(imageUrl) msgObj.imageUrl = imageUrl;
+        if(videoUrl) msgObj.videoUrl = videoUrl;
 
         await leadsRef.doc(leadId).collection('messages').add(msgObj);
 

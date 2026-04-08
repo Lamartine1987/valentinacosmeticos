@@ -939,7 +939,7 @@ const app = {
             if (isApiActive && saleId) {
                 const actionMsg = this.parseTemplate('thanks', newSale.name, associatedClientShortName, newSale.product);
                 const targetStore = newSale.overrideStoreId || (this.currentUserProfile ? this.currentUserProfile.storeId : 'loja_1');
-                this.sendWhatsAppMessage(newSale.phone, actionMsg, this.msgTemplates.thanksImg, targetStore).then(async (success) => {
+                this.sendWhatsAppMessage(newSale.phone, actionMsg, this.msgTemplates.thanksImg, 'image', targetStore).then(async (success) => {
                     const status = success ? 'sent' : 'failed';
                     await db.collection('sales').doc(saleId).update({ msg_thanks_status: status });
                     if(success) this.showToast('Mensagem enviada via API WhatsApp!');
@@ -1278,7 +1278,7 @@ const app = {
                         if (hasApi) {
                             // Envia via API (Z-API / Evolution) roteando automaticamente para a loja do cliente
                             const targetStore = client.storeId || 'loja_1';
-                            const success = await this.sendWhatsAppMessage(client.phone, msg, activeTplImg, targetStore);
+                            const success = await this.sendWhatsAppMessage(client.phone, msg, activeTplImg, 'image', targetStore);
                             if (success) {
                                 successCount++;
                                 db.collection("promos").add({
