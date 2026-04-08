@@ -110,6 +110,7 @@ export const reportsModule = {
         const monthlyRevenue = Array(12).fill(0);
         const productCounts = {};
         const clientGlobalAgg = {};
+        const storeRevenue = {};
 
         filteredSales.forEach(sale => {
             const val = Number(sale.value) || 0;
@@ -118,6 +119,10 @@ export const reportsModule = {
             const clientName = (sale.name && sale.name.trim() !== '') ? sale.name.trim() : 'Desconhecido';
             if (!clientGlobalAgg[clientName]) clientGlobalAgg[clientName] = 0;
             clientGlobalAgg[clientName] += val;
+            
+            const sId = sale.storeId || 'loja_1';
+            if (!storeRevenue[sId]) storeRevenue[sId] = 0;
+            storeRevenue[sId] += val;
 
             if (sale.date) {
                 const [y, m] = sale.date.split('-');
@@ -188,7 +193,7 @@ export const reportsModule = {
                         borderRadius: 4
                     }]
                 },
-                options: { responsive: true, scales: { y: { beginAtZero: true } } }
+                options: { animation: { duration: 0 }, responsive: true, scales: { y: { beginAtZero: true } } }
             });
         }
 
@@ -210,6 +215,7 @@ export const reportsModule = {
                     }]
                 },
                 options: { 
+                    animation: { duration: 0 },
                     responsive: true, 
                     maintainAspectRatio: false, 
                     plugins: { 
@@ -256,6 +262,7 @@ export const reportsModule = {
                     }]
                 },
                 options: { 
+                    animation: { duration: 0 },
                     responsive: true,
                     indexAxis: 'y',
                     scales: { 
@@ -278,6 +285,44 @@ export const reportsModule = {
                             }
                         }
                     }
+                }
+            });
+        }
+
+        const storeCanvas = document.getElementById('chart-stores');
+        if (typeof Chart !== 'undefined' && storeCanvas) {
+            const ctxStore = storeCanvas.getContext('2d');
+            if (this.charts.stores) this.charts.stores.destroy();
+            
+            const storeLabels = Object.keys(storeRevenue).map(k => k === 'loja_1' ? 'Loja 1' : (k === 'loja_2' ? 'Loja 2' : k));
+            const storeData = Object.keys(storeRevenue).map(k => storeRevenue[k]);
+            const hasStoreData = storeData.some(v => v > 0);
+
+            this.charts.stores = new Chart(ctxStore, {
+                type: 'doughnut',
+                data: {
+                    labels: hasStoreData ? storeLabels : ['Nenhuma venda'],
+                    datasets: [{
+                        data: hasStoreData ? storeData : [1],
+                        backgroundColor: hasStoreData ? ['#3B82F6', '#10B981', '#F59E0B'] : ['#E2E8F0'],
+                        borderWidth: 0
+                    }]
+                },
+                options: { 
+                    animation: { duration: 0 },
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { 
+                         legend: { position: 'bottom' },
+                         tooltip: {
+                             callbacks: {
+                                 label: function(context) {
+                                     if (!hasStoreData) return ' R$ 0,00';
+                                     return ' R$ ' + context.parsed.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+                                 }
+                             }
+                         }
+                    } 
                 }
             });
         }
