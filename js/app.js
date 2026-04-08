@@ -9,6 +9,7 @@ import { settingsModule } from './ui/settings.js';
 import { reportsModule } from './ui/reports.js';
 import { utilsModule } from './ui/utils.js';
 import { funnelModule } from './ui/funnel.js';
+import { financeModule } from './ui/finance.js';
 
 // App State
 const app = {
@@ -16,6 +17,8 @@ const app = {
     promos: [],
     clients: [],
     products: [],
+    expenses: [],
+    financeCategories: [],
     user: null,
     charts: { revenue: null, products: null },
 
@@ -36,6 +39,7 @@ const app = {
     unsubPromos: null,
     unsubClients: null,
     unsubProducts: null,
+    unsubExpenses: null,
     
     init() {
         this.setupNavigation();
@@ -46,6 +50,7 @@ const app = {
         this.setupFunnel();
         this.setupTeamListeners();
         this.setupTemplateFormatters();
+        if (this.setupFinance) this.setupFinance();
         
         // Setup date defaulting to today
         document.getElementById('r-date').valueAsDate = new Date();
@@ -438,6 +443,16 @@ const app = {
             this.updateActiveViews();
         }, (error) => console.log(error));
         
+        if (this.currentUserProfile.role === 'admin') {
+            this.unsubExpenses = db.collection("expenses").orderBy("createdAt", "asc").onSnapshot((snapshot) => {
+                this.expenses = [];
+                snapshot.forEach((doc) => {
+                    this.expenses.push({ id: doc.id, ...doc.data() });
+                });
+                this.updateActiveViews();
+            }, (error) => console.log(error));
+        }
+
         this.listenToLeads();
     },
 
@@ -448,6 +463,7 @@ const app = {
         if (document.getElementById('page-sales').classList.contains('active')) this.renderClientsTable();
         if (document.getElementById('page-clients').classList.contains('active')) this.renderClientsList();
         if (document.getElementById('page-products') && document.getElementById('page-products').classList.contains('active')) this.renderProductsList();
+        if (document.getElementById('page-finance') && document.getElementById('page-finance').classList.contains('active') && this.renderFinanceDashboard) this.renderFinanceDashboard();
         if (document.getElementById('page-funnel') && document.getElementById('page-funnel').classList.contains('active')) this.renderFunnelBoard();
         const historyModal = document.getElementById('history-overlay');
         if (historyModal && historyModal.classList.contains('active')) this.renderClientHistory();
@@ -1302,6 +1318,7 @@ const app = {
                 this.showToast(`Campanha finalizada! ${successCount} envios processados.`);
             });
         }
+
     },
 
     agendaOrigin: null,
@@ -1545,7 +1562,8 @@ const app = {
     ...settingsModule,
     ...reportsModule,
     ...utilsModule,
-    ...funnelModule
+    ...funnelModule,
+    ...financeModule
 };
 
 window.app = app; // Manda pro window pro HTML (onclick) conseguir achar

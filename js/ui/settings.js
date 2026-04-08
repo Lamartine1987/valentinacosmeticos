@@ -85,6 +85,14 @@ export const settingsModule = {
                 setVal('pix-merchant-loja_2', this.pixConfig?.loja_2?.merchant);
                 setVal('pix-city-loja_2', this.pixConfig?.loja_2?.city);
             }
+
+            // Finance settings
+            const docFin = await db.collection("settings").doc("finance").get();
+            if (docFin.exists && docFin.data().categories) {
+                this.financeCategories = docFin.data().categories;
+                if(this.populateCategoryDropdown) this.populateCategoryDropdown();
+            }
+            
         } catch(e) { console.error(e); }
     },
 
