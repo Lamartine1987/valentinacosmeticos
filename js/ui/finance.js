@@ -32,6 +32,7 @@ export const financeModule = {
             date: document.getElementById('e-date').value,
             category: document.getElementById('e-category').value,
             storeId: document.getElementById('e-store').value,
+            expenseType: document.getElementById('e-type').value,
             createdAt: new Date().toISOString()
         };
 
@@ -266,7 +267,10 @@ export const financeModule = {
                     tr.innerHTML = `
                         <td>${dateFmt}</td>
                         <td style="font-weight: 500;">${exp.description}</td>
-                        <td><span class="c-tag" style="background:#F1F5F9; color:#475569;">${exp.category || 'Geral'}</span></td>
+                        <td>
+                            <span class="c-tag" style="background:#F1F5F9; color:#475569;">${exp.category || 'Geral'}</span>
+                            <span class="c-tag" style="background:${exp.expenseType === 'Fixa' ? '#DBEAFE' : '#FFEDD5'}; color:${exp.expenseType === 'Fixa' ? '#1D4ED8' : '#C2410C'}; margin-left:4px;">${exp.expenseType || 'Variável'}</span>
+                        </td>
                         <td>${exp.storeId === 'loja_2' ? 'Loja 2' : 'Loja 1'}</td>
                         <td style="color: #EF4444; font-weight: bold;">R$ ${(exp.amount||0).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                         <td>

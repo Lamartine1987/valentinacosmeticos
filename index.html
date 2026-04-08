@@ -17,8 +17,7 @@
     <div id="login-overlay" class="login-overlay active">
         <div class="login-card">
             <div class="brand" style="justify-content: center; margin-bottom: 24px; border:none; padding:0;">
-                <i class="fas fa-gem" style="font-size: 32px;"></i>
-                <span style="font-size: 24px;">Valentina Cosméticos</span>
+                <img src="assets/img/logo.jpg" alt="Valentina Cosméticos" style="height: 80px; width: 100%; object-fit: cover; border-radius: 8px;">
             </div>
             <h2>Bem-vindo de volta!</h2>
             <p>Faça login para acessar o sistema.</p>
@@ -47,9 +46,8 @@
         <div class="sidebar-overlay" onclick="document.body.classList.remove('sidebar-open')"></div>
         <!-- Sidebar Navigation -->
         <aside class="sidebar">
-            <div class="brand">
-                <i class="fas fa-gem"></i>
-                <span>Valentina Cosméticos</span>
+            <div class="brand" style="padding: 16px 24px;">
+                <img src="assets/img/logo.jpg" alt="Valentina Cosméticos" style="height: 50px; width: 100%; object-fit: cover; border-radius: 8px;">
             </div>
             <nav class="nav-menu">
                 <a href="#" class="nav-item active" data-page="dashboard">
@@ -1515,12 +1513,21 @@
                                     <!-- Populated by JS -->
                                 </select>
                             </div>
-                            <div class="form-group">
-                                <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--text-main);">Loja (Centro de Custo)</label>
-                                <select id="e-store" required style="width: 100%; height: 46px; box-sizing: border-box; padding: 0 14px; border: 1px solid var(--border); border-radius: 8px; outline: none; font-size: 14px; background: white; color: var(--text-main); cursor: pointer;">
-                                    <option value="loja_1">Loja 1</option>
-                                    <option value="loja_2">Loja 2</option>
-                                </select>
+                            <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                                <div class="form-group">
+                                    <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--text-main);">Loja (Centro de Custo)</label>
+                                    <select id="e-store" required style="width: 100%; height: 46px; box-sizing: border-box; padding: 0 14px; border: 1px solid var(--border); border-radius: 8px; outline: none; font-size: 14px; background: white; color: var(--text-main); cursor: pointer;">
+                                        <option value="loja_1">Loja 1</option>
+                                        <option value="loja_2">Loja 2</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--text-main);">Classificação</label>
+                                    <select id="e-type" required style="width: 100%; height: 46px; box-sizing: border-box; padding: 0 14px; border: 1px solid var(--border); border-radius: 8px; outline: none; font-size: 14px; background: white; color: var(--text-main); cursor: pointer;">
+                                        <option value="Fixa">Despesa Fixa</option>
+                                        <option value="Variável">Despesa Variável</option>
+                                    </select>
+                                </div>
                             </div>
                             <div class="form-actions" style="margin-top: 8px;">
                                 <button type="submit" class="btn-primary" style="width: 100%; height: 46px; font-size: 15px;"><i class="fas fa-save"></i> Registrar Despesa</button>
