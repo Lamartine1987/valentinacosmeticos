@@ -46,21 +46,7 @@ export const apiModule = {
             let finalMessage = message;
 
             if (imageUrl && imageUrl.trim() !== '') {
-                finalMessage += `\n\n${imageUrl.trim()}`; // Fallback suffix
-                
-                try {
-                    const response = await fetch(imageUrl.trim());
-                    const blob = await response.blob();
-                    finalMediaPayload = await new Promise((resolve, reject) => {
-                        const reader = new FileReader();
-                        reader.onloadend = () => resolve(reader.result);
-                        reader.onerror = reject;
-                        reader.readAsDataURL(blob);
-                    });
-                } catch (e) {
-                    console.warn("Falha ao converter imagem para base64.", e);
-                    finalMediaPayload = imageUrl.trim();
-                }
+                finalMediaPayload = imageUrl.trim();
             }
             
             if(provider === 'evolution') {
