@@ -54,6 +54,10 @@ export const financeModule = {
             e.target.reset();
             // Refilter to today automatically if date is cleared
             document.getElementById('e-date').value = new Date().toISOString().split('T')[0];
+            
+            // Close the modal
+            const modal = document.getElementById('finance-expense-modal');
+            if (modal) modal.classList.remove('active');
         } catch (err) {
             console.error(err);
             this.showToast('Erro ao salvar despesa.');
@@ -282,6 +286,23 @@ export const financeModule = {
                     tbody.appendChild(tr);
                 });
             }
+        }
+
+        // Update Print Labels
+        const printMonthEl = document.getElementById('print-f-month');
+        const printStoreEl = document.getElementById('print-f-store');
+        if (printMonthEl) {
+            if (fMonth) {
+                const parts = fMonth.split('-');
+                printMonthEl.textContent = `${parts[1]}/${parts[0]}`;
+            } else {
+                printMonthEl.textContent = 'Todo Histórico';
+            }
+        }
+        if (printStoreEl) {
+            if (fStore === 'loja_1') printStoreEl.textContent = 'Loja 1';
+            else if (fStore === 'loja_2') printStoreEl.textContent = 'Loja 2';
+            else printStoreEl.textContent = 'Todas as Lojas';
         }
 
         // Render Chart

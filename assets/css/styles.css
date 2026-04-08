@@ -514,3 +514,25 @@ body { background: var(--bg-color); color: var(--text-main); font-size: 15px; }
     }
     .chat-sidebar.open { right: 0; }
 }
+
+
+.print-only { display: none !important; }
+
+@media print {
+    .print-only { display: block !important; }
+    .toast { display: none !important; }
+    .sidebar, .filters-bar, .btn-primary, .btn-icon, .actions, .sidebar-overlay, .topbar { display: none !important; }
+    .app-container { display: block !important; height: auto !important; overflow: visible !important; background: white !important; }
+    .main-content { margin-left: 0 !important; width: 100% !important; padding: 0 !important; height: auto !important; overflow: visible !important; display: block !important; }
+    .page-container { max-width: none !important; padding: 0 !important; height: auto !important; }
+    .page:not(.active) { display: none !important; }
+    .page.active { display: block !important; padding: 0 !important; height: auto !important; overflow: visible !important; }
+    body, html { background: white !important; height: auto !important; overflow: visible !important; margin: 0; padding: 0; }
+    .dashboard-content, .table-container, .form-card { height: auto !important; max-height: none !important; overflow: visible !important; }
+    .stat-card, .form-card { box-shadow: none !important; border: 1px solid #e2e8f0 !important; page-break-inside: avoid; margin-bottom: 16px; }
+    .data-table { page-break-inside: auto; }
+    .data-table tr { page-break-inside: avoid; page-break-after: auto; }
+    .data-table th, .data-table td { border-bottom: 1px solid #cbd5e1 !important; color: black !important; padding: 12px 8px !important; }
+    canvas { max-width: 100% !important; height: auto !important; page-break-inside: avoid; }
+}
+

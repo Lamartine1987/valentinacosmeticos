@@ -1430,6 +1430,9 @@
                     <div>
                         <h2>Gestão Financeira (Balanço)</h2>
                         <p>Acompanhe suas receitas, lance despesas e monitore o lucro do mês.</p>
+                        <div id="finance-print-filters" class="print-only" style="margin-top: 12px; font-weight: 600; color: #64748B;">
+                            Período: <span id="print-f-month">Todos</span> | Loja: <span id="print-f-store">Todas as Lojas</span>
+                        </div>
                     </div>
                     <div class="filters-bar" style="width: 100%; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; border-top: 1px solid var(--border); padding-top: 16px;">
                         <div style="display:flex; align-items:center; gap:8px;">
@@ -1446,7 +1449,9 @@
                                 <option value="loja_2">Loja 2</option>
                             </select>
                         </div>
-                        <button type="button" class="btn-primary" onclick="if(window.app && app.renderFinanceCategoriesModal) app.renderFinanceCategoriesModal()" style="margin-left: auto; background: #8B5CF6;"><i class="fas fa-tags"></i> Gerenciar Categorias</button>
+                        <button type="button" class="btn-primary" onclick="window.print()" style="margin-left: auto; background: #64748B;"><i class="fas fa-print"></i> Imprimir</button>
+                        <button type="button" class="btn-primary" onclick="if(window.app && app.renderFinanceCategoriesModal) app.renderFinanceCategoriesModal()" style="background: #8B5CF6;"><i class="fas fa-tags"></i> Gerenciar Categorias</button>
+                        <button type="button" class="btn-primary" onclick="document.getElementById('finance-expense-modal').classList.add('active')" style="background: #10B981;"><i class="fas fa-plus"></i> Lançar Despesa</button>
                     </div>
                 </div>
                 <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
@@ -1488,52 +1493,7 @@
                     </div>
                 </div>
 
-                <div class="dashboard-content" style="display: grid; grid-template-columns: 1fr 2fr; gap: 24px; margin-top: 24px;">
-                    <!-- Lançamento de Despesa -->
-                    <div class="form-card" style="height: fit-content;">
-                        <h3 style="margin-bottom: 16px;"><i class="fas fa-plus-circle" style="color: var(--primary);"></i> Lançar Despesa</h3>
-                        <form id="form-expense" style="display: flex; flex-direction: column; gap: 16px;">
-                            <div class="form-group">
-                                <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--text-main);">Descrição</label>
-                                <input type="text" id="e-desc" required placeholder="Ex: Conta de Luz, Refil Caixa" style="width: 100%; height: 46px; box-sizing: border-box; padding: 0 14px; border: 1px solid var(--border); border-radius: 8px; outline: none; font-size: 14px; background: white;">
-                            </div>
-                            <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                                <div class="form-group">
-                                    <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--text-main);">Valor (R$)</label>
-                                    <input type="number" id="e-amount" required placeholder="150.00" step="0.01" style="width: 100%; height: 46px; box-sizing: border-box; padding: 0 14px; border: 1px solid var(--border); border-radius: 8px; outline: none; font-size: 14px; background: white;">
-                                </div>
-                                <div class="form-group">
-                                    <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--text-main);">Data de Pagamento</label>
-                                    <input type="date" id="e-date" required style="width: 100%; height: 46px; box-sizing: border-box; padding: 0 14px; border: 1px solid var(--border); border-radius: 8px; outline: none; font-size: 14px; color: var(--text-main); background: white;">
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--text-main);">Categoria</label>
-                                <select id="e-category" required style="width: 100%; height: 46px; box-sizing: border-box; padding: 0 14px; border: 1px solid var(--border); border-radius: 8px; outline: none; font-size: 14px; background: white; color: var(--text-main); cursor: pointer;">
-                                    <!-- Populated by JS -->
-                                </select>
-                            </div>
-                            <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                                <div class="form-group">
-                                    <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--text-main);">Loja (Centro de Custo)</label>
-                                    <select id="e-store" required style="width: 100%; height: 46px; box-sizing: border-box; padding: 0 14px; border: 1px solid var(--border); border-radius: 8px; outline: none; font-size: 14px; background: white; color: var(--text-main); cursor: pointer;">
-                                        <option value="loja_1">Loja 1</option>
-                                        <option value="loja_2">Loja 2</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--text-main);">Classificação</label>
-                                    <select id="e-type" required style="width: 100%; height: 46px; box-sizing: border-box; padding: 0 14px; border: 1px solid var(--border); border-radius: 8px; outline: none; font-size: 14px; background: white; color: var(--text-main); cursor: pointer;">
-                                        <option value="Fixa">Despesa Fixa</option>
-                                        <option value="Variável">Despesa Variável</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="form-actions" style="margin-top: 8px;">
-                                <button type="submit" class="btn-primary" style="width: 100%; height: 46px; font-size: 15px;"><i class="fas fa-save"></i> Registrar Despesa</button>
-                            </div>
-                        </form>
-                    </div>
+                <div class="dashboard-content" style="display: flex; flex-direction: column; gap: 24px; margin-top: 24px;">
 
                     <!-- Lista de Despesas e Gráfico -->
                     <div style="display: flex; flex-direction: column; gap: 24px; height: 100%;">
@@ -1592,6 +1552,59 @@
                 <div id="fin-categories-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 400px; overflow-y: auto; padding-right: 4px;">
                     <!-- Populated by JS -->
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Lançar Despesa -->
+    <div class="login-overlay" id="finance-expense-modal" style="align-items: center; justify-content: center;">
+        <div class="login-card" style="max-width: 500px; width: 100%;">
+            <div class="modal-header" style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="margin: 0; font-size: 20px;"><i class="fas fa-plus-circle" style="color: var(--primary); margin-right: 8px;"></i> Lançar Despesa</h2>
+                <button class="btn-icon" onclick="document.getElementById('finance-expense-modal').classList.remove('active')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="form-expense" style="display: flex; flex-direction: column; gap: 16px;">
+                    <div class="form-group">
+                        <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--text-main);">Descrição</label>
+                        <input type="text" id="e-desc" required placeholder="Ex: Conta de Luz, Refil Caixa" style="width: 100%; height: 46px; box-sizing: border-box; padding: 0 14px; border: 1px solid var(--border); border-radius: 8px; outline: none; font-size: 14px; background: white;">
+                    </div>
+                    <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div class="form-group">
+                            <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--text-main);">Valor (R$)</label>
+                            <input type="number" id="e-amount" required placeholder="150.00" step="0.01" style="width: 100%; height: 46px; box-sizing: border-box; padding: 0 14px; border: 1px solid var(--border); border-radius: 8px; outline: none; font-size: 14px; background: white;">
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--text-main);">Data de Pagamento</label>
+                            <input type="date" id="e-date" required style="width: 100%; height: 46px; box-sizing: border-box; padding: 0 14px; border: 1px solid var(--border); border-radius: 8px; outline: none; font-size: 14px; color: var(--text-main); background: white;">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--text-main);">Categoria</label>
+                        <select id="e-category" required style="width: 100%; height: 46px; box-sizing: border-box; padding: 0 14px; border: 1px solid var(--border); border-radius: 8px; outline: none; font-size: 14px; background: white; color: var(--text-main); cursor: pointer;">
+                            <!-- Populated by JS -->
+                        </select>
+                    </div>
+                    <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div class="form-group">
+                            <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--text-main);">Loja (Centro de Custo)</label>
+                            <select id="e-store" required style="width: 100%; height: 46px; box-sizing: border-box; padding: 0 14px; border: 1px solid var(--border); border-radius: 8px; outline: none; font-size: 14px; background: white; color: var(--text-main); cursor: pointer;">
+                                <option value="loja_1">Loja 1</option>
+                                <option value="loja_2">Loja 2</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--text-main);">Classificação</label>
+                            <select id="e-type" required style="width: 100%; height: 46px; box-sizing: border-box; padding: 0 14px; border: 1px solid var(--border); border-radius: 8px; outline: none; font-size: 14px; background: white; color: var(--text-main); cursor: pointer;">
+                                <option value="Fixa">Despesa Fixa</option>
+                                <option value="Variável">Despesa Variável</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-actions" style="margin-top: 8px;">
+                        <button type="submit" class="btn-primary" style="width: 100%; height: 46px; font-size: 15px;"><i class="fas fa-save"></i> Registrar Despesa</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
