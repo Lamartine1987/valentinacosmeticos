@@ -14,29 +14,32 @@ export const dashboardModule = {
             const diffTime = today - saleDate;
             const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)); 
             
+            const client = this.clients.find(c => c.phone && c.phone.replace(/\D/g, '') === sale.phone.replace(/\D/g, ''));
+            const sName = client ? client.shortName : '';
+
             if (diffDays <= 2) {
                 actions.push({ ...sale, type: 'thanks', days: diffDays, label: 'Agradecimento', colorClass: 'tag-thanks',
-                    msg: this.parseTemplate('thanks', sale.name, sale.product),
+                    msg: this.parseTemplate('thanks', sale.name, sName, sale.product),
                     status: sale.msg_thanks_status || 'pending'
                 });
             } else if (diffDays >= 15 && diffDays < 30) {
                 actions.push({ ...sale, type: 'd15', days: diffDays, label: 'Acompanhamento', colorClass: 'tag-promo',
-                    msg: this.parseTemplate('d15', sale.name, sale.product),
+                    msg: this.parseTemplate('d15', sale.name, sName, sale.product),
                     status: sale.msg_d15_status || 'pending'
                 });
             } else if (diffDays >= 30 && diffDays <= 45) {
                 actions.push({ ...sale, type: 'restock', days: diffDays, label: 'Reposição', colorClass: 'tag-restock',
-                    msg: this.parseTemplate('restock', sale.name, sale.product),
+                    msg: this.parseTemplate('restock', sale.name, sName, sale.product),
                     status: sale.msg_restock_status || 'pending'
                 });
             } else if (diffDays >= 46 && diffDays <= 120) {
                  actions.push({ ...sale, type: 'dormant', days: diffDays, label: 'Saudades', colorClass: 'tag-dormant',
-                    msg: this.parseTemplate('dormant', sale.name, sale.product),
+                    msg: this.parseTemplate('dormant', sale.name, sName, sale.product),
                     status: sale.msg_dormant_status || 'pending'
                 });
             } else if (diffDays >= 121) {
                  actions.push({ ...sale, type: 'lost', days: diffDays, label: 'Ex-cliente', colorClass: 'tag-lost',
-                    msg: this.parseTemplate('lost', sale.name, sale.product),
+                    msg: this.parseTemplate('lost', sale.name, sName, sale.product),
                     status: sale.msg_lost_status || 'pending'
                 });
             }

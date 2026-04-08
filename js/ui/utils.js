@@ -57,9 +57,10 @@ export const utilsModule = {
         setTimeout(() => toast.classList.remove('show'), 3500);
     },
 
-    parseTemplate(type, name, product, link = "") {
+    parseTemplate(type, fullName, shortName, product, link = "") {
         let text = this.msgTemplates[type] || "";
-        text = text.replace(/{nome}/g, name).replace(/{produto}/g, product || 'produto').replace(/{link}/g, link);
+        const nameToUse = shortName || (fullName && fullName.split(' ')[0]) || '';
+        text = text.replace(/{nome}/g, nameToUse).replace(/{produto}/g, product || 'produto').replace(/{link}/g, link);
         return text;
     }
 };

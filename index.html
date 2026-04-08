@@ -353,8 +353,12 @@
                                 <div class="form-group" style="position: relative;">
                                     <label>Nome da Cliente</label>
                                     <input type="text" id="r-name" required placeholder="Ex: Ana Clara"
-                                        autocomplete="off">
+                                        autocomplete="off" oninput="if(window.app && app.autoFillShortName) app.autoFillShortName(this.value)">
                                     <div id="client-suggestions" class="autocomplete-suggestions"></div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Tratamento <small style="color:var(--text-muted); font-weight: normal;">(Opcional)</small></label>
+                                    <input type="text" id="r-shortName" placeholder="Ex: Ana">
                                 </div>
                                 <div class="form-group">
                                     <label>Número de WhatsApp</label>
@@ -548,6 +552,10 @@
                                 <div class="form-group" style="grid-column: span 2;">
                                     <label>Nome Completo</label>
                                     <input type="text" id="c-name" required placeholder="Ex: Maria Joana da Silva">
+                                </div>
+                                <div class="form-group" style="grid-column: span 2;">
+                                    <label>Nome de Tratamento <small style="color:var(--text-muted); font-weight: normal;">(Para disparos)</small></label>
+                                    <input type="text" id="c-shortName" placeholder="Ex: Maria">
                                 </div>
                                 <div class="form-group">
                                     <label>Número de WhatsApp</label>

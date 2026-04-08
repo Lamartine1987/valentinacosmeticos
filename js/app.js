@@ -209,6 +209,24 @@ const app = {
         });
     },
 
+    autoFillShortName(val) {
+        const inputShort = document.getElementById('r-shortName');
+        if(!inputShort) return;
+        const currentVal = inputShort.value;
+        const words = val.trim().split(' ');
+        if(words.length > 0 && words[0].length > 0) {
+           let word = words[0];
+           if (word === word.toLowerCase() && word.length > 2) {
+               word = word.charAt(0).toUpperCase() + word.slice(1);
+           }
+           if (currentVal === '' || val.indexOf(currentVal) !== -1 || currentVal.toLowerCase() === word.toLowerCase().substring(0, currentVal.length)) {
+               inputShort.value = word;
+           }
+        } else {
+           inputShort.value = '';
+        }
+    },
+
     toggleSidebar() {
         if (window.innerWidth <= 900) {
             document.body.classList.toggle('sidebar-open');
@@ -461,6 +479,7 @@ const app = {
         if(!client) return;
         this.editingClientId = id;
         document.getElementById('c-name').value = client.name || '';
+        document.getElementById('c-shortName').value = client.shortName || '';
         document.getElementById('c-phone').value = client.phone || '';
         document.getElementById('c-email').value = client.email || '';
         document.getElementById('c-birthdate').value = client.birthdate || '';
@@ -747,6 +766,7 @@ const app = {
 
         if (inputName && suggestionsBox) {
             inputName.addEventListener('input', () => {
+                this.autoFillShortName(inputName.value);
                 const val = inputName.value.toLowerCase();
                 suggestionsBox.innerHTML = '';
                 
@@ -770,6 +790,11 @@ const app = {
                         div.addEventListener('click', () => {
                             inputName.value = client.name;
                             if (inputPhone && client.phone) inputPhone.value = client.phone;
+                            
+                            const inputShort = document.getElementById('r-shortName');
+                            if (inputShort) {
+                                inputShort.value = client.shortName || client.name.split(' ')[0];
+                            }
                             
                             const rSeller = document.getElementById('r-seller-assigned');
                             if (rSeller && client.sellerId) {
@@ -851,6 +876,7 @@ const app = {
             const productNames = items.map(i => i.product).join(', ');
             const newSale = {
                 name: document.getElementById('r-name').value,
+                overrideShortName: document.getElementById('r-shortName') ? document.getElementById('r-shortName').value.trim() : '',
                 phone: document.getElementById('r-phone').value,
                 product: productNames,
                 quantity: totalQty,
@@ -877,8 +903,12 @@ const app = {
 
             // Auto-register client if not exists
             const phoneStr = newSale.phone.replace(/\D/g, '');
+            let associatedClientShortName = newSale.overrideShortName;
             if(!this.clients.find(c => c.phone.replace(/\D/g, '') === phoneStr)) {
-                await this.saveClient({name: newSale.name, phone: newSale.phone, email: ''});
+                await this.saveClient({name: newSale.name, shortName: newSale.overrideShortName, phone: newSale.phone, email: ''});
+            } else {
+                const existingClient = this.clients.find(c => c.phone.replace(/\D/g, '') === phoneStr);
+                if (existingClient && !associatedClientShortName) associatedClientShortName = existingClient.shortName;
             }
 
             const saleId = await this.saveSale(newSale);
@@ -891,7 +921,7 @@ const app = {
             }
 
             if (isApiActive && saleId) {
-                const actionMsg = this.parseTemplate('thanks', newSale.name, newSale.product);
+                const actionMsg = this.parseTemplate('thanks', newSale.name, associatedClientShortName, newSale.product);
                 const targetStore = newSale.overrideStoreId || (this.currentUserProfile ? this.currentUserProfile.storeId : 'loja_1');
                 this.sendWhatsAppMessage(newSale.phone, actionMsg, this.msgTemplates.thanksImg, targetStore).then(async (success) => {
                     const status = success ? 'sent' : 'failed';
@@ -920,6 +950,7 @@ const app = {
 
                 const newClient = {
                     name: document.getElementById('c-name').value,
+                    shortName: document.getElementById('c-shortName') ? document.getElementById('c-shortName').value.trim() : '',
                     phone: document.getElementById('c-phone').value,
                     email: document.getElementById('c-email').value || '',
                     birthdate: document.getElementById('c-birthdate').value || '',

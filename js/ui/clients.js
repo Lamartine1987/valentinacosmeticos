@@ -6,6 +6,7 @@ export const clientsModule = {
         if(!client) return;
         this.editingClientId = id;
         document.getElementById('c-name').value = client.name || '';
+        document.getElementById('c-shortName').value = client.shortName || '';
         document.getElementById('c-phone').value = client.phone || '';
         document.getElementById('c-email').value = client.email || '';
         document.getElementById('c-birthdate').value = client.birthdate || '';
