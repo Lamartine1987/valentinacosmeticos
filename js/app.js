@@ -330,31 +330,21 @@ const app = {
                 }
             });
             
-            const uniqueStores = [...new Set(sellers.map(s => s.storeId))];
-
             const selects = ['filter-client-store', 'filter-sale-store', 'dash-filter-store', 'report-filter-store'];
             selects.forEach(selectId => {
                 const selectEl = document.getElementById(selectId);
                 if (selectEl) {
                     let html = '<option value="all">Rede Completa</option>';
+                    html += '<option value="loja_1">🏢 Somente Loja 1 (Consolidado)</option>';
+                    html += '<option value="loja_2">🏢 Somente Loja 2 (Consolidado)</option>';
                     
-                    uniqueStores.forEach(store => {
-                        let sId = store;
-                        if (sId === 'matriz') sId = 'loja_1';
-                        if (sId === 'filial_1') sId = 'loja_2';
-                        const storeName = sId === 'loja_1' ? 'Loja 1' : (sId === 'loja_2' ? 'Loja 2' : 'Global');
-                        html += `<option value="${store}">🏢 Somente Loja ${storeName} (Consolidado)</option>`;
-                    });
-                    
-                    html += '<optgroup label="Desempenho por Vendedor">';
-                    sellers.forEach(s => {
-                        let sId = s.storeId;
-                        if (sId === 'matriz') sId = 'loja_1';
-                        if (sId === 'filial_1') sId = 'loja_2';
-                        const storeName = sId === 'loja_1' ? 'Loja 1' : (sId === 'loja_2' ? 'Loja 2' : 'Global');
-                        html += `<option value="${s.id}">${storeName} - ${s.name}</option>`;
-                    });
-                    html += '</optgroup>';
+                    if (sellers.length > 0) {
+                        html += '<optgroup label="Desempenho por Vendedor">';
+                        sellers.forEach(s => {
+                            html += `<option value="${s.id}">${s.name}</option>`;
+                        });
+                        html += '</optgroup>';
+                    }
                     
                     selectEl.innerHTML = html;
                 }
