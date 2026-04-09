@@ -1652,7 +1652,22 @@
                                 style="background: #10B981;"><i class="fas fa-plus"></i> Lançar Despesa</button>
                         </div>
                     </div>
-                    <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+
+                    <!-- Infra Cost Full Width Toolbar -->
+                    <div class="stat-card admin-only" style="display: none; margin-top: 24px; flex-direction: row; align-items: center; justify-content: space-between; padding: 16px 24px; background: linear-gradient(135deg, rgba(245,158,11,0.05) 0%, rgba(245,158,11,0.15) 100%); border-left: 4px solid #F59E0B;" id="fin-infra-card">
+                        <div style="display: flex; align-items: center; gap: 16px;">
+                            <div class="stat-icon" style="background: white; color: #F59E0B; width: 48px; height: 48px; min-width: 48px; box-shadow: 0 4px 6px -1px rgba(245,158,11,0.1);">
+                                <i class="fas fa-server"></i>
+                            </div>
+                            <div class="stat-info" style="display: flex; flex-direction: column;">
+                                <h3 style="display: flex; align-items: center; gap: 4px; margin: 0; font-size: 14px;">Custos Operacionais de Servidor (Firebase) <i class="fas fa-sync fa-spin" style="font-size:10px; color:#F59E0B; display:none;" id="fin-infra-loader"></i></h3>
+                                <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">Atualizado automaticamente via Google Cloud BigQuery</div>
+                            </div>
+                        </div>
+                        <div class="stat-value" id="fin-stat-infra" style="color:#D97706; font-size: 28px; font-weight: 800; text-align: right;">R$ --,--</div>
+                    </div>
+
+                    <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-top: 24px;">
                         <div class="stat-card">
                             <div class="stat-icon" style="background: rgba(30, 215, 96, 0.1); color: #1ed760;">
                                 <i class="fas fa-arrow-trend-up"></i>

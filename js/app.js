@@ -594,6 +594,10 @@ const app = {
         document.body.classList.remove('sidebar-open');
         this.updateActiveViews();
 
+        if (pageId === 'finance' && typeof this.fetchInfraCost === 'function') {
+            this.fetchInfraCost();
+        }
+
         // Ocultar botão "Cancelar Ganho" se sair da tela de Registro para evitar confusões de estado
         if (pageId !== 'register') {
             const btnCancel = document.getElementById('btn-cancel-sale');

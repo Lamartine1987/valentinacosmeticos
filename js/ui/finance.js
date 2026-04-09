@@ -23,6 +23,62 @@ export const financeModule = {
         }
     },
 
+    async fetchInfraCost() {
+        if (!this.currentUserProfile || this.currentUserProfile.role !== 'admin') return;
+        
+        const card = document.getElementById('fin-infra-card');
+        const loader = document.getElementById('fin-infra-loader');
+        const statLabel = document.getElementById('fin-stat-infra');
+        
+        if (!card || !loader || !statLabel) return;
+
+        // If already fetched and cached this session, don't refetch
+        if (this._infraCostFetched) return;
+        
+        card.style.display = 'flex';
+        loader.style.display = 'inline-block';
+        statLabel.textContent = 'R$ --,--';
+
+        try {
+            const user = firebase.auth().currentUser;
+            if (!user) throw new Error("Usuário não autenticado");
+            const token = await user.getIdToken();
+
+            const response = await fetch('https://us-central1-valentinacosmeticos-5f239.cloudfunctions.net/getInfrastructureCosts', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ data: {} })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error ${response.status}`);
+            }
+
+            const jsonResponse = await response.json();
+            const resultData = jsonResponse.result || {};
+            
+            if (resultData.status === 'success') {
+                statLabel.textContent = `R$ ${resultData.finalCost.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+                this._infraCostFetched = true;
+            } else if (resultData.status === 'pending') {
+                statLabel.textContent = 'R$ 0,00';
+                statLabel.parentElement.innerHTML += '<div style="font-size:10px; color:var(--text-muted);">Sincronizando BigQuery... (Pode levar até 24h)</div>';
+                this._infraCostFetched = true;
+            } else {
+                statLabel.textContent = 'Erro de Sinc.';
+                console.error('Infra error:', resultData.error);
+            }
+        } catch (e) {
+            console.error('Failed to fetch infra costs:', e);
+            statLabel.textContent = 'Falha API';
+        } finally {
+            loader.style.display = 'none';
+        }
+    },
+
     async submitExpense(e) {
         const btn = e.target.querySelector('button[type="submit"]');
         const originalText = btn.innerHTML;

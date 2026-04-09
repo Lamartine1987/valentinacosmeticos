@@ -808,3 +808,79 @@ exports.apiProxy = functions.https.onRequest(async (req, res) => {
         return res.status(500).send(error.message);
     }
 });
+
+const { BigQuery } = require('@google-cloud/bigquery');
+const bigquery = new BigQuery();
+
+exports.getInfrastructureCosts = functions.https.onCall(async (data, context) => {
+    // 1. Authorization checks
+    if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Precisa estar logado.');
+    const userDoc = await db.collection("users").doc(context.auth.uid).get();
+    if (!userDoc.exists || userDoc.data().role !== "admin") {
+         throw new functions.https.HttpsError('permission-denied', 'Apenas administradores podem ver custos da nuvem.');
+    }
+
+    try {
+        const datasetId = 'faturamento_crm';
+        const dataset = bigquery.dataset(datasetId);
+        const [tables] = await dataset.getTables();
+        
+        let billingTableId = null;
+        for (let table of tables) {
+            if (table.id.startsWith('gcp_billing_export_v1_')) {
+                billingTableId = table.id;
+                break;
+            }
+        }
+
+        if (!billingTableId) {
+             return { rawCost: 0, finalCost: 0, currency: 'BRL', status: 'pending' };
+        }
+
+        const projectId = process.env.GCP_PROJECT || process.env.GCLOUD_PROJECT || 'valentinacosmeticos-5f239';
+
+        // Query sum of cost for the current month
+        const sqlQuery = `
+            SELECT
+                SUM(cost) as total_cost,
+                currency
+            FROM
+                \`${projectId}.${datasetId}.${billingTableId}\`
+            WHERE
+                EXTRACT(MONTH FROM usage_start_time) = EXTRACT(MONTH FROM CURRENT_TIMESTAMP())
+                AND EXTRACT(YEAR FROM usage_start_time) = EXTRACT(YEAR FROM CURRENT_TIMESTAMP())
+            GROUP BY
+                currency
+        `;
+
+        const options = {
+            query: sqlQuery,
+            location: 'US',
+        };
+
+        const [job] = await bigquery.createQueryJob(options);
+        const [rows] = await job.getQueryResults();
+
+        let rawCost = 0;
+        let currency = 'BRL';
+
+        if (rows && rows.length > 0) {
+            rawCost = rows[0].total_cost || 0;
+            currency = rows[0].currency || 'BRL';
+        }
+
+        // Adiciona acréscimo (Markup) de 30% solicitado, no backend, pro Admin ver
+        const finalCost = rawCost * 1.30;
+
+        return {
+            rawCost: parseFloat(rawCost.toFixed(2)),
+            finalCost: parseFloat(finalCost.toFixed(2)),
+            currency: currency,
+            status: 'success'
+        };
+
+    } catch (e) {
+        console.error("BigQuery Cost Error:", e);
+        return { rawCost: 0, finalCost: 0, currency: 'BRL', status: 'error', error: e.message };
+    }
+});
