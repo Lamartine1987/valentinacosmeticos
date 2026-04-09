@@ -10,13 +10,16 @@ export const financeModule = {
             });
         }
         
-        // Setup initial month filter to current month YYYY-MM
-        const monthFilter = document.getElementById('finance-filter-month');
-        if (monthFilter) {
+        // Setup initial date filter to current month range YYYY-MM-DD
+        const financeStart = document.getElementById('finance-filter-start');
+        const financeEnd = document.getElementById('finance-filter-end');
+        if (financeStart && financeEnd) {
             const now = new Date();
             const y = now.getFullYear();
             const m = String(now.getMonth() + 1).padStart(2, '0');
-            monthFilter.value = `${y}-${m}`;
+            const lastDay = new Date(y, now.getMonth() + 1, 0).getDate();
+            financeStart.value = `${y}-${m}-01`;
+            financeEnd.value = `${y}-${m}-${String(lastDay).padStart(2, '0')}`;
         }
     },
 
@@ -168,7 +171,8 @@ export const financeModule = {
     },
 
     renderFinanceDashboard() {
-        const fMonth = (document.getElementById('finance-filter-month') || {value:''}).value; // format YYYY-MM
+        const fStart = (document.getElementById('finance-filter-start') || {value:''}).value;
+        const fEnd = (document.getElementById('finance-filter-end') || {value:''}).value;
         const fStore = (document.getElementById('finance-filter-store') || {value:'all'}).value;
 
         let totalRevenue = 0;
@@ -176,43 +180,49 @@ export const financeModule = {
         let expensesList = [];
         let expensesByCategory = {};
 
-        // Parse target month
-        let targetYear = null;
-        let targetMonth = null;
-        if (fMonth) {
-            const parts = fMonth.split('-');
-            targetYear = parseInt(parts[0], 10);
-            targetMonth = parseInt(parts[1], 10);
+        // Parse target dates
+        let startFull = null, endFull = null;
+        if (fStart) {
+            const [y, m, d] = fStart.split('-');
+            startFull = new Date(y, m-1, d);
+            startFull.setHours(0,0,0,0);
+        }
+        if (fEnd) {
+            const [y, m, d] = fEnd.split('-');
+            endFull = new Date(y, m-1, d);
+            endFull.setHours(23,59,59,999);
         }
 
-        // Loop Sales for Revenue matching the month/store
+        // Loop Sales for Revenue matching the date range/store
         if (this.sales) {
             this.sales.forEach(sale => {
                 if (!sale.date) return;
                 const sparts = sale.date.split('-'); // YYYY-MM-DD
                 const sYear = parseInt(sparts[0], 10);
                 const sMonth = parseInt(sparts[1], 10);
+                const sDay = parseInt(sparts[2] || 1, 10);
+                const localSaleDate = new Date(sYear, sMonth-1, sDay);
 
-                if (targetYear !== null && targetMonth !== null) {
-                    if (sYear !== targetYear || sMonth !== targetMonth) return;
-                }
+                if (startFull && localSaleDate < startFull) return;
+                if (endFull && localSaleDate > endFull) return;
                 if (fStore !== 'all' && sale.storeId !== fStore) return;
 
                 totalRevenue += (sale.value || 0);
             });
         }
 
-        // Loop Expenses matching the month/store
+        // Loop Expenses matching the date range/store
         if (this.expenses) {
             this.expenses.forEach(exp => {
                 if (!exp.date) return;
                 const eparts = exp.date.split('-');
                 const eYear = parseInt(eparts[0], 10);
                 const eMonth = parseInt(eparts[1], 10);
+                const eDay = parseInt(eparts[2] || 1, 10);
+                const localExpDate = new Date(eYear, eMonth-1, eDay);
 
-                if (targetYear !== null && targetMonth !== null) {
-                    if (eYear !== targetYear || eMonth !== targetMonth) return;
-                }
+                if (startFull && localExpDate < startFull) return;
+                if (endFull && localExpDate > endFull) return;
                 if (fStore !== 'all' && exp.storeId !== fStore) return;
 
                 totalExpenses += (exp.amount || 0);
@@ -292,9 +302,14 @@ export const financeModule = {
         const printMonthEl = document.getElementById('print-f-month');
         const printStoreEl = document.getElementById('print-f-store');
         if (printMonthEl) {
-            if (fMonth) {
-                const parts = fMonth.split('-');
-                printMonthEl.textContent = `${parts[1]}/${parts[0]}`;
+            if (fStart || fEnd) {
+                let startText = fStart ? fStart.split('-').reverse().join('/') : 'Início';
+                let endText = fEnd ? fEnd.split('-').reverse().join('/') : 'Atual';
+                if (startText === endText) {
+                     printMonthEl.textContent = startText;
+                } else {
+                     printMonthEl.textContent = `${startText} até ${endText}`;
+                }
             } else {
                 printMonthEl.textContent = 'Todo Histórico';
             }

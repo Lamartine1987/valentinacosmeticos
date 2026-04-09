@@ -1617,9 +1617,13 @@
                             <div style="display:flex; align-items:center; gap:8px;">
                                 <i class="fas fa-calendar-alt"
                                     style="color: var(--primary); font-size: 16px; background: rgba(139, 92, 246, 0.1); padding: 8px; border-radius: 8px;"></i>
-                                <input type="month" id="finance-filter-month"
+                                <input type="date" id="finance-filter-start"
                                     onchange="if(window.app && app.renderFinanceDashboard) app.renderFinanceDashboard()"
-                                    style="padding: 10px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); font-weight: 500; min-width: 160px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); cursor: pointer; transition: all 0.2s;">
+                                    style="padding: 10px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); font-weight: 500; box-shadow: 0 2px 4px rgba(0,0,0,0.02); cursor: pointer; transition: all 0.2s;">
+                                <span style="font-weight: 500; color: var(--text-muted); font-size: 14px; margin: 0 4px;">até</span>
+                                <input type="date" id="finance-filter-end"
+                                    onchange="if(window.app && app.renderFinanceDashboard) app.renderFinanceDashboard()"
+                                    style="padding: 10px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); font-weight: 500; box-shadow: 0 2px 4px rgba(0,0,0,0.02); cursor: pointer; transition: all 0.2s;">
                             </div>
                             <div style="display:flex; align-items:center; gap:8px;">
                                 <i class="fas fa-store"
