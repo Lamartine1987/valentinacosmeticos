@@ -269,6 +269,10 @@ export const clientsModule = {
             const discountVal = parseFloat(sale.discount || 0);
             const subtotalGeral = parseFloat(sale.value || 0) + discountVal;
 
+            let commValue = parseFloat(sale.commissionValue || 0);
+            let commPerc = parseFloat(sale.commissionPerc || 0);
+            let commHtml = `<div style="text-align: center;"><strong style="color:#10B981;">R$ ${commValue.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</strong><br><small style="color:var(--text-muted);">${commPerc}%</small></div>`;
+
             let storeBadge = '';
             if (sale.storeId) {
                 let sId = sale.storeId;
@@ -278,9 +282,10 @@ export const clientsModule = {
                 storeBadge = `<br><span style="font-size: 11px; color: #64748B;" title="Loja do Fechamento"><i class="fas fa-store" style="font-size:10px; margin-right:2px;"></i> ${sName}</span>`;
             }
 
+            const isChecked = this.selectedSaleIds && this.selectedSaleIds.has(sale.id) ? 'checked' : '';
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td style="text-align: center;"><input type="checkbox" class="sale-checkbox" value="${sale.id}" style="cursor: pointer; width: 16px; height: 16px;"></td>
+                <td style="text-align: center;"><input type="checkbox" class="sale-checkbox" value="${sale.id}" ${isChecked} onchange="app.toggleSaleSelection('${sale.id}', this.checked)" style="cursor: pointer; width: 16px; height: 16px;"></td>
                 <td><strong>${sale.name}</strong><br><small style="color:#64748B">${sale.phone}</small></td>
                 <td><div style="display: flex; flex-direction: column; gap:4px;">${productsHtml}</div></td>
                 <td><div style="display: flex; flex-direction: column; gap:4px;">${qtyHtml}</div></td>
@@ -290,6 +295,7 @@ export const clientsModule = {
                 <td><span style="color:#EF4444; font-weight:500;">${discountVal > 0 ? '-R$ '+discountVal.toLocaleString('pt-BR', {minimumFractionDigits: 2}) : '-'}</span></td>
                 <td><strong style="color:var(--text-main);">R$ ${parseFloat(sale.value || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong></td>
                 <td>${timeStatus}</td>
+                <td>${commHtml}</td>
                 <td class="admin-only" style="${this.currentUserProfile && this.currentUserProfile.role === 'admin' ? '' : 'display:none;'} color:var(--text-muted); font-size:12px; text-transform:capitalize;">${sale.sellerName || 'Sistema'}</td>
                 <td style="text-align: center;">
                     <div style="display: flex; justify-content: center; gap: 8px;">

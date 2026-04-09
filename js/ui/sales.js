@@ -198,9 +198,26 @@ export const salesModule = {
         );
     },
 
+    toggleSaleSelection(id, isChecked) {
+        this.selectedSaleIds = this.selectedSaleIds || new Set();
+        if (isChecked) {
+            this.selectedSaleIds.add(id);
+        } else {
+            this.selectedSaleIds.delete(id);
+        }
+    },
+
     toggleSelectAllSales(checkbox) {
+        this.selectedSaleIds = this.selectedSaleIds || new Set();
         const checkboxes = document.querySelectorAll('.sale-checkbox');
-        checkboxes.forEach(cb => cb.checked = checkbox.checked);
+        checkboxes.forEach(cb => {
+            cb.checked = checkbox.checked;
+            if (checkbox.checked) {
+                this.selectedSaleIds.add(cb.value);
+            } else {
+                this.selectedSaleIds.delete(cb.value);
+            }
+        });
     },
 
     deleteSelectedSales() {
@@ -232,6 +249,7 @@ export const salesModule = {
                     this.showToast(`${idsToDelete.length} venda(s) excluída(s) com sucesso!`);
                     const selectAll = document.getElementById('selectAllSales');
                     if(selectAll) selectAll.checked = false;
+                    if(this.selectedSaleIds) this.selectedSaleIds.clear();
                 } catch(e) {
                     console.error(e);
                     this.showToast('Erro na exclusão em massa.', 'error');

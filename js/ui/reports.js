@@ -88,6 +88,7 @@ export const reportsModule = {
         let totalYear = 0;
         let totalMonth = 0;
         let allTimeTotal = 0;
+        let totalCommissions = 0;
         
         const currentYear = new Date().getFullYear();
         const currentMonth = new Date().getMonth() + 1;
@@ -111,10 +112,21 @@ export const reportsModule = {
         const productCounts = {};
         const clientGlobalAgg = {};
         const storeRevenue = {};
+        const sellerCommissions = {};
 
         filteredSales.forEach(sale => {
             const val = Number(sale.value) || 0;
             allTimeTotal += val;
+            
+            const sName = (sale.sellerName && sale.sellerName.trim() !== '') ? sale.sellerName : 'Sistema/Desconhecido';
+            if (!sellerCommissions[sName]) sellerCommissions[sName] = { count: 0, total: 0 };
+            sellerCommissions[sName].count += 1;
+            
+            if (sale.commissionValue) {
+                const cv = parseFloat(sale.commissionValue);
+                totalCommissions += cv;
+                sellerCommissions[sName].total += cv;
+            }
 
             const clientName = (sale.name && sale.name.trim() !== '') ? sale.name.trim() : 'Desconhecido';
             if (!clientGlobalAgg[clientName]) clientGlobalAgg[clientName] = 0;
@@ -174,6 +186,10 @@ export const reportsModule = {
             document.getElementById('report-total-month').innerText = totalMonth.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
             const realTicketAvg = filteredSales.length > 0 ? (allTimeTotal / filteredSales.length) : 0;
             document.getElementById('report-ticket-avg').innerText = realTicketAvg.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
+        }
+        
+        if (document.getElementById('stat-total-commissions')) {
+            document.getElementById('stat-total-commissions').innerText = `R$ ${totalCommissions.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
         }
 
         const revCanvas = document.getElementById('chart-revenue');
@@ -381,6 +397,34 @@ export const reportsModule = {
             }
         } else if (filteredClientsContainer) {
             filteredClientsContainer.style.display = 'none';
+        }
+        
+        const commissionListBody = document.getElementById('report-commission-list');
+        const commissionTableContainer = document.getElementById('report-commission-table');
+        if (commissionListBody && commissionTableContainer) {
+            commissionListBody.innerHTML = '';
+            const sellers = Object.keys(sellerCommissions).sort((a,b) => sellerCommissions[b].total - sellerCommissions[a].total);
+            
+            if (sellers.length === 0) {
+                commissionListBody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--text-muted); padding: 24px;">Nenhuma venda contendo comissão no período.</td></tr>';
+            } else {
+                sellers.forEach(seller => {
+                    const info = sellerCommissions[seller];
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td style="text-transform: capitalize;"><strong>${seller}</strong></td>
+                        <td style="text-align: center; font-weight: 500; color: var(--text-muted);">${info.count}</td>
+                        <td style="text-align: right; color: #10B981; font-weight: bold; font-size: 15px;">R$ ${info.total.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                    `;
+                    commissionListBody.appendChild(row);
+                });
+            }
+            
+            if (window.app && window.app.currentUserProfile && window.app.currentUserProfile.role === 'admin') {
+                commissionTableContainer.style.display = 'block';
+            } else {
+                commissionTableContainer.style.display = 'none';
+            }
         }
     }
 };

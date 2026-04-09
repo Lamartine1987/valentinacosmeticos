@@ -93,6 +93,19 @@ export const settingsModule = {
                 if(this.populateCategoryDropdown) this.populateCategoryDropdown();
             }
             
+            // Commission settings
+            const docComm = await db.collection("settings").doc("commission_config").get();
+            if(!window.app) window.app = window.app || {};
+            if (docComm.exists) {
+                window.app.commissionConfig = docComm.data();
+                const globalRate = window.app.commissionConfig.globalRate;
+                if (globalRate !== undefined && document.getElementById('setting-commission-global')) {
+                    document.getElementById('setting-commission-global').value = globalRate;
+                }
+            } else {
+                window.app.commissionConfig = { globalRate: 0 };
+            }
+            
         } catch(e) { console.error(e); }
     },
 
@@ -263,7 +276,8 @@ export const settingsModule = {
             'promo': 'tab-content-promo',
             'api': 'tab-content-api',
             'team': 'tab-content-team',
-            'pix': 'tab-content-pix'
+            'pix': 'tab-content-pix',
+            'commission': 'tab-content-commission'
         };
         const contentId = tabContents[tabId];
         const contentEl = document.getElementById(contentId);
@@ -280,6 +294,27 @@ export const settingsModule = {
             activeBtn.classList.add('active');
             activeBtn.style.color = 'var(--primary)';
             activeBtn.style.borderBottomColor = 'var(--primary)';
+        }
+    },
+
+    async saveCommissionSettings() {
+        const btn = document.querySelector('#tab-content-commission .btn-primary');
+        const originalHtml = btn ? btn.innerHTML : '';
+        if (btn) { btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...'; btn.disabled = true; }
+        
+        try {
+            const globalRate = parseFloat(document.getElementById('setting-commission-global').value) || 0;
+            if (!window.app.commissionConfig) window.app.commissionConfig = {};
+            window.app.commissionConfig.globalRate = globalRate;
+
+            await db.collection("settings").doc("commission_config").set({ globalRate });
+            if (typeof this.showToast === 'function') this.showToast('Configurações de comissão salvas!');
+            else if (window.app && typeof window.app.showToast === 'function') window.app.showToast('Configurações de comissão salvas!');
+        } catch (e) {
+            console.error("Erro ao salvar comissões:", e);
+            alert("Erro ao salvar: " + e.message);
+        } finally {
+            if (btn) { btn.innerHTML = originalHtml; btn.disabled = false; }
         }
     },
 
@@ -370,6 +405,7 @@ export const settingsModule = {
             document.getElementById('t-id').value = editUser.id;
             document.getElementById('t-name').value = editUser.name || '';
             document.getElementById('t-email').value = editUser.email || '';
+            if (document.getElementById('t-commission')) document.getElementById('t-commission').value = editUser.commissionRate !== undefined && editUser.commissionRate !== null ? editUser.commissionRate : '';
             document.getElementById('t-role').value = editUser.role || 'seller';
             if(document.getElementById('t-store')) document.getElementById('t-store').value = editUser.storeId || 'loja_1';
             document.getElementById('t-password').required = false;
@@ -379,6 +415,7 @@ export const settingsModule = {
             if(hintEl) hintEl.style.display = 'inline';
         } else {
             document.getElementById('t-id').value = '';
+            if (document.getElementById('t-commission')) document.getElementById('t-commission').value = '';
             document.getElementById('t-password').required = true;
             
             if(titleEl) titleEl.innerHTML = '<i class="fas fa-user-tie" style="color: var(--primary); margin-right: 8px;"></i> Novo Colaborador';
@@ -442,12 +479,14 @@ export const settingsModule = {
 
                 try {
                     const editId = document.getElementById('t-id').value;
+                    const commVal = document.getElementById('t-commission') ? document.getElementById('t-commission').value : '';
                     const payload = {
                         name: document.getElementById('t-name').value.trim(),
                         email: document.getElementById('t-email').value.trim(),
                         password: document.getElementById('t-password').value,
                         role: document.getElementById('t-role').value,
-                        storeId: document.getElementById('t-store').value
+                        storeId: document.getElementById('t-store').value,
+                        commissionRate: commVal !== '' ? parseFloat(commVal) : null
                     };
 
                     const functions = firebase.app().functions('us-central1');

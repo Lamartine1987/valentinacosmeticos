@@ -307,7 +307,7 @@
                         </div>
                     </div>
 
-                    <div class="stats-grid">
+                    <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
                         <div class="stat-card">
                             <div class="stat-icon" style="background: #E0E7FF; color: #4F46E5;"><i
                                     class="fas fa-calendar-alt"></i></div>
@@ -330,6 +330,15 @@
                             <div class="stat-info">
                                 <h3>Ticket Médio Geral</h3>
                                 <div class="stat-value" id="report-ticket-avg">R$ 0,00</div>
+                            </div>
+                        </div>
+                        <div class="stat-card" id="card-commissions">
+                            <div class="stat-icon" style="background: rgba(16, 185, 129, 0.1); color: #10B981;">
+                                <i class="fas fa-hand-holding-dollar"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3>Minhas Comissões</h3>
+                                <div class="stat-value" id="stat-total-commissions" style="color: #10B981;">R$ 0,00</div>
                             </div>
                         </div>
                     </div>
@@ -365,6 +374,27 @@
                         </h3>
                         <div id="report-clients-list" style="display: flex; flex-direction: column; gap: 8px;">
                             <!-- Preenchido via JS -->
+                        </div>
+                    </div>
+                    
+                    <!-- Painel Adicional: Comissões por Consultor (Apenas Admin) -->
+                    <div id="report-commission-table" class="admin-only" style="display: none; margin-bottom: 32px; animation: fadeIn 0.3s ease-in-out;">
+                        <h3 style="margin-bottom: 16px; margin-top: 16px; font-size: 16px; color: var(--text-main); border-bottom: 2px solid #D1FAE5; padding-bottom: 8px; display: inline-flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-hand-holding-dollar" style="color: #10B981;"></i> Acerto de Comissões por Consultor
+                        </h3>
+                        <div class="table-card" style="box-shadow: none; border: 1px solid var(--border);">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Consultor Responsável</th>
+                                        <th style="text-align: center;">Vendas Fechadas no Período</th>
+                                        <th style="text-align: right;">Total de Comissões Devidas (R$)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="report-commission-list">
+                                    <!-- Preenchido via JS -->
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </section>
@@ -701,6 +731,7 @@
                                     <th>Desconto</th>
                                     <th>Valor Final</th>
                                     <th>Status (Tempo)</th>
+                                    <th style="text-align: center;">Comissão</th>
                                     <th class="admin-only" style="display: none;">Consultor Resp.</th>
                                     <th style="text-align: center;">Ações</th>
                                 </tr>
@@ -871,9 +902,40 @@
                             style="background: none; border: none; padding: 12px 4px; font-size: 15px; font-weight: 500; color: var(--text-muted); border-bottom: 2px solid transparent; cursor: pointer; margin-bottom: -2px;">
                             <i class="fab fa-pix"></i> Gateway de Pagamento
                         </button>
+                        <button type="button" class="tab-btn admin-only" id="tab-btn-commission" onclick="app.switchSettingsTab('commission')"
+                            style="background: none; border: none; padding: 12px 4px; font-size: 15px; font-weight: 500; color: var(--text-muted); border-bottom: 2px solid transparent; cursor: pointer; margin-bottom: -2px;">
+                            <i class="fas fa-percent"></i> Comissionamento
+                        </button>
                     </div>
 
                     <form id="form-templates">
+                        <!-- TAB 6: COMMISSION -->
+                        <div id="tab-content-commission" class="settings-tab-content" style="display: none; width: 100%;">
+                            <div class="form-card" style="margin-bottom: 24px;">
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px;">
+                                    <div>
+                                        <h3 style="color: var(--text-main); display: flex; align-items: center; gap: 8px;"><i class="fas fa-percent" style="color: #10B981;"></i> Regras de Comissionamento</h3>
+                                        <p style="color: var(--text-muted); font-size: 14px; margin-top: 4px;">
+                                            Defina a taxa padrão de comissão para a equipe. Essa taxa é calculada sobre o valor final da venda.
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label>Comissão Padrão Global (%)</label>
+                                        <input type="number" id="setting-commission-global" placeholder="Ex: 5" step="0.1" min="0" max="100">
+                                    </div>
+                                </div>
+                                <div style="margin-top: 16px; background: #FFFBEB; border: 1px solid #F59E0B; color: #B45309; padding: 12px; border-radius: 8px; font-size: 13px;">
+                                    <i class="fas fa-info-circle"></i> Você pode substituir essa taxa global definindo uma taxa específica no perfil de cada vendedor na aba "Gestão de Equipe".
+                                </div>
+                            </div>
+                            
+                            <div class="form-actions" style="display: flex; justify-content: flex-end;">
+                                <button type="button" class="btn-primary" onclick="app.saveCommissionSettings()" style="padding: 12px 32px;"><i class="fas fa-save"></i> Salvar Comissionamento</button>
+                            </div>
+                        </div>
+
                         <!-- TAB 5: PIX GATEWAY -->
                         <div id="tab-content-pix" class="settings-tab-content" style="display: none; width: 100%;">
                             <div class="form-card" style="margin-bottom: 24px;">
@@ -1678,6 +1740,11 @@
                             style="font-weight:normal; font-size:11px; color:var(--text-muted); display:none;">(Deixe em
                             branco para não alterar)</span></label>
                     <input type="password" id="t-password" placeholder="Crie uma senha de acesso">
+                </div>
+                <div class="form-group">
+                    <label>Comissão Específica (%) <span
+                            style="font-weight:normal; font-size:11px; color:var(--text-muted);">(Substitui a Taxa Global. Deixe em branco para usar a Global)</span></label>
+                    <input type="number" id="t-commission" placeholder="Ex: 10" step="0.1" min="0" max="100">
                 </div>
                 <div class="form-group" style="display:flex; gap:16px;">
                     <div style="flex:1;">

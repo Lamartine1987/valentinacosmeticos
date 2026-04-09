@@ -917,6 +917,20 @@ const app = {
                 }
             }
 
+            // --- COMMISSION CALCULATION ---
+            let commPerc = window.app && window.app.commissionConfig ? parseFloat(window.app.commissionConfig.globalRate) || 0 : 0;
+            let targetSellerId = newSale.overrideSellerId || (window.app && window.app.user ? window.app.user.uid : null);
+            
+            if (window.app && window.app.teamUsersList && targetSellerId) {
+                const targetUser = window.app.teamUsersList.find(u => u.id === targetSellerId);
+                if (targetUser && targetUser.commissionRate !== undefined && targetUser.commissionRate !== null && targetUser.commissionRate !== '') {
+                    commPerc = parseFloat(targetUser.commissionRate) || 0;
+                }
+            }
+            newSale.commissionPerc = commPerc;
+            newSale.commissionValue = newSale.value * (commPerc / 100);
+            // ------------------------------
+
             // Auto-register client if not exists
             const phoneStr = newSale.phone.replace(/\D/g, '');
             let associatedClientShortName = newSale.overrideShortName;
