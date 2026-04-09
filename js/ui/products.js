@@ -180,10 +180,14 @@ export const productsModule = {
 
             let displayProducts = this.products;
             if (filterVal) {
-                displayProducts = this.products.filter(p => 
-                    (p.name && p.name.toLowerCase().includes(filterVal)) || 
-                    (p.barcode && p.barcode.includes(filterVal))
-                );
+                const filterTerms = filterVal.split(' ').filter(t => t.trim() !== '');
+                displayProducts = this.products.filter(p => {
+                    const nameStr = (p.name || '').toLowerCase();
+                    const barcodeStr = p.barcode || '';
+                    const matchesBarcode = barcodeStr.includes(filterVal);
+                    const matchesName = filterTerms.every(term => nameStr.includes(term));
+                    return matchesName || matchesBarcode;
+                });
             }
             this.currentProductPage = Math.ceil(displayProducts.length / this.productsPerPage) || 1;
         } else {
@@ -202,10 +206,14 @@ export const productsModule = {
 
         let displayProducts = this.products;
         if (filterVal) {
-            displayProducts = this.products.filter(p => 
-                (p.name && p.name.toLowerCase().includes(filterVal)) || 
-                (p.barcode && p.barcode.includes(filterVal))
-            );
+            const filterTerms = filterVal.split(' ').filter(t => t.trim() !== '');
+            displayProducts = this.products.filter(p => {
+                const nameStr = (p.name || '').toLowerCase();
+                const barcodeStr = p.barcode || '';
+                const matchesBarcode = barcodeStr.includes(filterVal);
+                const matchesName = filterTerms.every(term => nameStr.includes(term));
+                return matchesName || matchesBarcode;
+            });
             if (this._lastProductFilter !== filterVal) {
                 this.currentProductPage = 1;
                 this._lastProductFilter = filterVal;

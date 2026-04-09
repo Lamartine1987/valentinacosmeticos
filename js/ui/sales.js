@@ -47,10 +47,18 @@ export const salesModule = {
                 return;
             }
             
-            const matches = this.products ? this.products.filter(p => 
-                ((p.name && p.name.toLowerCase().includes(val)) ||
-                (p.barcode && p.barcode.includes(val))) && p.active !== false
-            ).slice(0, 15) : [];
+            let matches = [];
+            if (this.products) {
+                const searchTerms = val.split(' ').filter(t => t.trim() !== '');
+                matches = this.products.filter(p => {
+                    if (p.active === false) return false;
+                    const nameStr = (p.name || '').toLowerCase();
+                    const barcodeStr = p.barcode || '';
+                    const matchesName = searchTerms.every(term => nameStr.includes(term));
+                    const matchesBarcode = barcodeStr.includes(val);
+                    return matchesName || matchesBarcode;
+                }).slice(0, 15);
+            }
 
             if (matches.length > 0) {
                 matches.forEach(m => {
