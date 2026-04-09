@@ -463,6 +463,7 @@ const app = {
         if (document.getElementById('page-sales').classList.contains('active')) this.renderClientsTable();
         if (document.getElementById('page-clients').classList.contains('active')) this.renderClientsList();
         if (document.getElementById('page-products') && document.getElementById('page-products').classList.contains('active')) this.renderProductsList();
+        if (document.getElementById('page-birthdays') && document.getElementById('page-birthdays').classList.contains('active')) this.renderBirthdays();
         if (document.getElementById('page-finance') && document.getElementById('page-finance').classList.contains('active') && this.renderFinanceDashboard) this.renderFinanceDashboard();
         if (document.getElementById('page-funnel') && document.getElementById('page-funnel').classList.contains('active')) this.renderFunnelBoard();
         const historyModal = document.getElementById('history-overlay');

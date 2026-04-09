@@ -218,8 +218,6 @@ export const dashboardModule = {
             item.innerHTML = actionHtml;
             listContainer.appendChild(item);
         });
-
-        this.renderBirthdays();
     },
 
     renderBirthdays() {

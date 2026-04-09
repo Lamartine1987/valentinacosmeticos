@@ -75,6 +75,10 @@
                     <i class="fas fa-address-book"></i>
                     <span>Base de Clientes</span>
                 </a>
+                <a href="#" class="nav-item" data-page="birthdays">
+                    <i class="fas fa-birthday-cake"></i>
+                    <span>Aniversários</span>
+                </a>
                 <a href="#" class="nav-item" data-page="products">
                     <i class="fas fa-box"></i>
                     <span>Catálogo de Produtos</span>
@@ -232,24 +236,35 @@
                             </div>
                         </div>
 
+                    </div>
+                </section>
+
+                <!-- Birthdays Page -->
+                <section class="page" id="page-birthdays">
+                    <div class="page-header">
+                        <h2>Aniversariantes do Mês</h2>
+                        <p>Acompanhe e parabenize os clientes que fazem aniversário no ciclo atual.</p>
+                    </div>
+
+                    <div style="max-width: 1000px;">
                         <!-- Aniversariantes do Mês -->
                         <div class="action-list-card">
                             <div class="card-header"
                                 style="background: rgba(236, 72, 153, 0.05); border-bottom: 1px solid rgba(236, 72, 153, 0.2);">
                                 <h3 style="color: #db2777;"><i class="fas fa-birthday-cake"
-                                        style="margin-right: 8px;"></i> Aniversariantes do Mês</h3>
+                                        style="margin-right: 8px;"></i> Lista de Aniversários</h3>
                                 <div style="display: flex; gap: 8px; align-items: center;">
                                     <button class="btn-primary" id="btn-disparar-aniversarios"
                                         onclick="app.dispararAniversarios()"
                                         style="padding: 6px 12px; font-size: 13px; background: #db2777; align-items: center; display: none;">
-                                        <i class="fas fa-bullhorn" style="margin-right: 6px;"></i> <span>Campanha</span>
+                                        <i class="fas fa-bullhorn" style="margin-right: 6px;"></i> <span>Campanha Promocional</span>
                                     </button>
                                     <span class="pill active"
                                         style="background:#db2777; color:white; font-size: 11px; padding: 4px 8px;"
                                         id="bday-month-label">Este Mês</span>
                                 </div>
                             </div>
-                            <div class="action-list" id="birthdays-list-container">
+                            <div class="action-list" id="birthdays-list-container" style="max-height: calc(100vh - 280px);">
                                 <!-- JS will populate this -->
                                 <div class="empty-state">
                                     <i class="fas fa-calendar-check" style="color: #fbcfe8;"></i>
