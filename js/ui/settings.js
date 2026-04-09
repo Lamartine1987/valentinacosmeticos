@@ -361,13 +361,19 @@ export const settingsModule = {
             snapshot.forEach(doc => {
                 const user = doc.data();
                 user.id = doc.id;
+                
+                // Manager only sees users from their own store
+                if (window.app && window.app.currentUserProfile && window.app.currentUserProfile.role === 'manager') {
+                    if (user.storeId !== window.app.currentUserProfile.storeId) return;
+                }
+
                 window.app.teamUsersList.push(user);
 
                 const tr = document.createElement('tr');
                 
                 let roleBadge = user.role === 'admin' 
                     ? `<span style="background: #FEF3C7; color: #D97706; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;"><i class="fas fa-crown"></i> Admin</span>` 
-                    : `<span style="background: #E0E7FF; color: #4338CA; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;"><i class="fas fa-user-tag"></i> Consultor de Vendas</span>`;
+                    : user.role === 'manager' ? `<span style="background: #e0f2fe; color: #0284c7; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;"><i class="fas fa-user-tie"></i> Gerente</span>` : `<span style="background: #E0E7FF; color: #4338CA; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;"><i class="fas fa-user-tag"></i> Consultor de Vendas</span>`;
                 
                 let storeLabel = 'Acesso Global';
                 if (user.storeId && user.storeId !== 'all') {
@@ -424,9 +430,21 @@ export const settingsModule = {
         }
 
         const isAdm = (editUser && editUser.role === 'admin');
+        const loggedUserIsManager = (window.app && window.app.currentUserProfile && window.app.currentUserProfile.role === 'manager');
+
         document.getElementById('t-store-container').style.display = isAdm ? 'none' : 'block';
         const st = document.getElementById('t-store');
+        const roleSel = document.getElementById('t-role');
         if (st) st.required = !isAdm;
+
+        if (loggedUserIsManager) {
+            if(roleSel) { roleSel.value = 'seller'; roleSel.disabled = true; } // Managers only create sellers
+            if(st) { st.value = window.app.currentUserProfile.storeId; st.disabled = true; } // Locked to manager's store
+        } else {
+            if(roleSel) roleSel.disabled = false;
+            if(st) st.disabled = false;
+        }
+
         if(overlay) overlay.classList.add('active');
     },
 

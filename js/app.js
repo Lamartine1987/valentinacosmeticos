@@ -264,6 +264,25 @@ const app = {
         } else {
             if (settingsMenuBtn) settingsMenuBtn.style.display = 'flex';
         }
+
+        // 1.5. Restringir abas de configurações para o Gerente (apenas Equipe visível)
+        if (role === 'manager') {
+            const tabsToHide = ['funnel', 'promo', 'api', 'pix', 'commission'];
+            tabsToHide.forEach(t => {
+                const btn = document.getElementById('tab-btn-' + t);
+                if (btn) btn.style.display = 'none';
+            });
+            // Auto open team tab for manager
+            if (window.app && typeof window.app.switchSettingsTab === 'function') {
+                setTimeout(() => window.app.switchSettingsTab('team'), 100);
+            }
+        } else {
+            const tabsToShow = ['funnel', 'promo', 'api'];
+            tabsToShow.forEach(t => {
+                const btn = document.getElementById('tab-btn-' + t);
+                if (btn) btn.style.display = 'inline-block';
+            });
+        }
         
         // 2. Atualizar Avatar e Identidade no Rodapé do Menu Lateral
         const userInfoContainer = document.querySelector('.user-info');
@@ -290,20 +309,33 @@ const app = {
                 }
             }
         }
-        // Auto-selecionar no form de venda
+        // Auto-selecionar no form de venda e despesa
         const storeAssigned = document.getElementById('r-store-assigned');
-        if (storeAssigned && role !== 'admin') {
+        const expenseStoreAssigned = document.getElementById('e-store');
+        if (role !== 'admin') {
             let sId = storeId;
             if (sId === 'matriz') sId = 'loja_1';
             if (sId === 'filial_1') sId = 'loja_2';
             if (sId === 'loja_1' || sId === 'loja_2') {
-                storeAssigned.value = sId;
+                if (storeAssigned) storeAssigned.value = sId;
+                if (expenseStoreAssigned) {
+                    expenseStoreAssigned.value = sId;
+                    if (role === 'manager') expenseStoreAssigned.disabled = true;
+                }
             }
         }
 
         if (role === 'admin') {
             document.querySelectorAll('.admin-only').forEach(el => el.style.display = '');
             this.loadAdminFilters();
+        } else if (role === 'manager') {
+            document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
+            const financeNav = document.querySelector('a[data-page="finance"]');
+            if (financeNav) financeNav.style.display = 'flex';
+            const btnAddExpense = document.getElementById('btn-add-expense');
+            if (btnAddExpense) btnAddExpense.style.display = 'inline-flex';
+            // Gestores também usam visões agregadas (filtros de dashboard limitados à sua loja via query)
+            this.loadSellerStoreFilters();
         } else {
             document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
             this.loadSellerStoreFilters();
@@ -399,8 +431,10 @@ const app = {
         
         let salesQuery = db.collection("sales");
         
-        // Multi-Tenant: Vendedores veem APENAS suas próprias vendas (em toda a rede/todas as lojas)
-        if (this.currentUserProfile.role !== 'admin') {
+        // Multi-Tenant: Gerentes veem a loja, Vendedores veem APENAS suas próprias vendas
+        if (this.currentUserProfile.role === 'manager') {
+            salesQuery = salesQuery.where('storeId', '==', this.currentUserProfile.storeId);
+        } else if (this.currentUserProfile.role === 'seller') {
             salesQuery = salesQuery.where('sellerId', '==', this.user.uid);
         }
 
@@ -421,7 +455,12 @@ const app = {
         this.unsubClients = db.collection("clients").orderBy("createdAt", "asc").onSnapshot((snapshot) => {
             this.clients = [];
             snapshot.forEach((doc) => {
-                this.clients.push({ id: doc.id, ...doc.data() });
+                const data = doc.data();
+                // Client-side filtering to avoid requiring new Firebase Composite Indexes
+                if (this.currentUserProfile.role === 'manager' && data.storeId !== this.currentUserProfile.storeId) return;
+                if (this.currentUserProfile.role === 'seller' && data.sellerId !== this.user.uid) return;
+                
+                this.clients.push({ id: doc.id, ...data });
             });
             this.updateActiveViews();
         }, (error) => console.log(error));
@@ -443,11 +482,13 @@ const app = {
             this.updateActiveViews();
         }, (error) => console.log(error));
         
-        if (this.currentUserProfile.role === 'admin') {
+        if (this.currentUserProfile.role === 'admin' || this.currentUserProfile.role === 'manager') {
             this.unsubExpenses = db.collection("expenses").orderBy("createdAt", "asc").onSnapshot((snapshot) => {
                 this.expenses = [];
                 snapshot.forEach((doc) => {
-                    this.expenses.push({ id: doc.id, ...doc.data() });
+                    const data = doc.data();
+                    if (this.currentUserProfile.role === 'manager' && data.storeId !== this.currentUserProfile.storeId) return;
+                    this.expenses.push({ id: doc.id, ...data });
                 });
                 this.updateActiveViews();
             }, (error) => console.log(error));

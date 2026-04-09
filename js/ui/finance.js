@@ -39,8 +39,8 @@ export const financeModule = {
             createdAt: new Date().toISOString()
         };
 
-        if (this.currentUserProfile && this.currentUserProfile.role !== 'admin') {
-            this.showToast('Erro: Apenas administradores podem lançar despesas.');
+        if (this.currentUserProfile && (this.currentUserProfile.role !== 'admin' && this.currentUserProfile.role !== 'manager')) {
+            this.showToast('Erro: Apenas administradores ou gestores da loja podem lançar despesas.');
             btn.innerHTML = originalText;
             btn.disabled = false;
             return;
@@ -49,6 +49,13 @@ export const financeModule = {
         if (this.user && this.currentUserProfile) {
             newExpense.sellerId = this.user.uid;
             newExpense.sellerName = this.currentUserProfile.name || 'Sistema';
+            
+            if (this.currentUserProfile.role === 'manager') {
+                let sId = this.currentUserProfile.storeId || 'loja_1';
+                if (sId === 'matriz') sId = 'loja_1';
+                if (sId === 'filial_1') sId = 'loja_2';
+                newExpense.storeId = sId;
+            }
         }
 
         try {
@@ -71,7 +78,7 @@ export const financeModule = {
     },
 
     async deleteExpense(id) {
-        if (!this.currentUserProfile || this.currentUserProfile.role !== 'admin') return;
+        if (!this.currentUserProfile || (this.currentUserProfile.role !== 'admin' && this.currentUserProfile.role !== 'manager')) return;
         this.confirmAction(
             "Excluir Despesa",
             "Tem certeza que deseja apagar este registro do histórico?",

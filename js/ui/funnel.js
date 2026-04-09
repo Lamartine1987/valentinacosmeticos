@@ -57,9 +57,11 @@ export const funnelModule = {
         
         let query = db.collection('leads');
         
-        if (this.currentUserProfile.role !== 'admin') {
+        if (this.currentUserProfile.role === 'manager') {
             const storeId = this.currentUserProfile.storeId || 'loja_1';
             query = query.where('storeId', '==', storeId);
+        } else if (this.currentUserProfile.role === 'seller') {
+            query = query.where('sellerId', '==', this.user.uid);
         }
 
         this.unsubLeads = query.onSnapshot((snapshot) => {
@@ -206,7 +208,7 @@ export const funnelModule = {
                             </span>
                         </span>
                     </span>
-                    ${(app && app.currentUserProfile && app.currentUserProfile.role === 'admin') ? `
+                    ${(app && app.currentUserProfile && (app.currentUserProfile.role === 'admin' || app.currentUserProfile.role === 'manager')) ? `
                     <button class="btn-icon" style="color: #EF4444; padding: 2px;" onclick="event.stopPropagation(); app.deleteLeadCard('${lead.id}')" title="Excluir Conversa">
                         <i class="fas fa-trash" style="font-size: 13px;"></i>
                     </button>
@@ -231,7 +233,7 @@ export const funnelModule = {
         });
         
         // Aplica exibição de administrador aos checkboxes do funil sem disparar loop de recarga
-        if (app && app.currentUserProfile && app.currentUserProfile.role === 'admin') {
+        if (app && app.currentUserProfile && (app.currentUserProfile.role === 'admin' || app.currentUserProfile.role === 'manager')) {
             document.querySelectorAll('#page-funnel .admin-only').forEach(el => el.style.display = '');
         }
         
@@ -302,8 +304,8 @@ export const funnelModule = {
     },
 
     deleteSelectedFunnelCards() {
-        if (this.currentUserProfile && this.currentUserProfile.role !== 'admin') {
-            if (typeof this.showToast === 'function') this.showToast('Sem permissão para excluir conversas. Aterrompa um Admin.', 'error');
+        if (this.currentUserProfile && (this.currentUserProfile.role !== 'admin' && this.currentUserProfile.role !== 'manager')) {
+            if (typeof this.showToast === 'function') this.showToast('Sem permissão para excluir conversas. Aterrompa um Gestor.', 'error');
             const checked = document.querySelectorAll('.funnel-checkbox:checked');
             if (typeof this.saveAuditLog === 'function') this.saveAuditLog('funnel', 'attempt_delete', 'Lote', `Tentativa de exclusão em massa bloqueada.<br><strong>Quantidade Selecionada:</strong> ${checked.length} conversa(s) de funil.`);
             return;
@@ -563,8 +565,8 @@ ${groupSenderHtml}${displayHtml}
     async deleteLeadCard(id) {
         if (!id) return;
         
-        if (this.currentUserProfile && this.currentUserProfile.role !== 'admin') {
-            if (typeof this.showToast === 'function') this.showToast('Sem permissão para excluir histórico. Contate um Admin.', 'error');
+        if (this.currentUserProfile && (this.currentUserProfile.role !== 'admin' && this.currentUserProfile.role !== 'manager')) {
+            if (typeof this.showToast === 'function') this.showToast('Sem permissão para excluir histórico. Contate um Gestor.', 'error');
             if (typeof this.saveAuditLog === 'function') this.saveAuditLog('funnel', 'attempt_delete', id, `Tentativa de exclusão individual bloqueada.<br><strong>Conversa:</strong> ${id}`);
             return;
         }

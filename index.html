@@ -1893,6 +1893,7 @@
                             style="width:100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer;"
                             onchange="const st = document.getElementById('t-store'); document.getElementById('t-store-container').style.display = this.value === 'admin' ? 'none' : 'block'; st.required = this.value !== 'admin'; if(this.value === 'admin') st.value = 'all'; else if(st.value === 'all' || !st.value) st.value = 'loja_1';">
                             <option value="seller">Consultor de Vendas (Acesso Restrito)</option>
+                            <option value="manager">Gerente de Loja</option>
                             <option value="admin">Administrador (Mestre)</option>
                         </select>
                     </div>

@@ -598,14 +598,23 @@ exports.createUser = onCall({ invoker: "public" }, async (request) => {
     }
     
     const callerDoc = await db.collection('users').doc(authInfo.uid).get();
-    if (!callerDoc.exists || callerDoc.data().role !== 'admin') {
-        throw new functions.https.HttpsError('permission-denied', 'Apenas administradores podem registrar novos membros na equipe.');
-    }
+    const callerData = callerDoc.data();
+    const isGlobalAdmin = callerData.role === 'admin';
+    const isManager = callerData.role === 'manager';
 
     const { email, password, name, role, storeId } = payload;
     
     if (!email || !password || !name || !role || !storeId) {
         throw new functions.https.HttpsError('invalid-argument', 'Faltam parâmetros obrigatórios para a criação do usuário.');
+    }
+
+    if (!isGlobalAdmin) {
+        if (!isManager) {
+            throw new functions.https.HttpsError('permission-denied', 'Apenas administradores ou gerentes podem registrar novos membros.');
+        }
+        if (role !== 'seller' || storeId !== callerData.storeId) {
+            throw new functions.https.HttpsError('permission-denied', 'Gerentes só podem criar contas de Vendedor para a sua própria loja.');
+        }
     }
 
     try {
@@ -641,13 +650,30 @@ exports.updateUser = onCall({ invoker: "public" }, async (request) => {
     const payload = request.data;
     if (!authInfo) throw new functions.https.HttpsError('unauthenticated', 'Usuário não autenticado no sistema.');
     
-    const callerDoc = await db.collection('users').doc(authInfo.uid).get();
-    if (!callerDoc.exists || callerDoc.data().role !== 'admin') {
-        throw new functions.https.HttpsError('permission-denied', 'Apenas administradores podem gerenciar a equipe.');
-    }
+    const callerData = callerDoc.data();
+    const isGlobalAdmin = callerData.role === 'admin';
+    const isManager = callerData.role === 'manager';
 
     const { uid, email, password, name, role, storeId } = payload;
     if (!uid) throw new functions.https.HttpsError('invalid-argument', 'UID não informado.');
+
+    // If it is a manager, verify they have permission over the target user
+    if (!isGlobalAdmin) {
+        if (!isManager) throw new functions.https.HttpsError('permission-denied', 'Permissão negada.');
+        
+        const targetUserDoc = await db.collection('users').doc(uid).get();
+        if (!targetUserDoc.exists) throw new functions.https.HttpsError('not-found', 'Usuário não encontrado.');
+        
+        const targetData = targetUserDoc.data();
+        if (targetData.storeId !== callerData.storeId || targetData.role === 'admin' || targetData.role === 'manager') {
+            throw new functions.https.HttpsError('permission-denied', 'Gerentes só podem editar vendedores da sua própria loja.');
+        }
+        
+        // Prevent manager from elevating privileges or moving the user to another store
+        if ((role && role !== 'seller') || (storeId && storeId !== callerData.storeId)) {
+            throw new functions.https.HttpsError('permission-denied', 'Ação não permitida para o seu nível de acesso.');
+        }
+    }
 
     try {
         const updateData = {};
@@ -706,10 +732,29 @@ exports.deleteUser = onCall({ invoker: "public" }, async (request) => {
     
     if (!authInfo) throw new functions.https.HttpsError('unauthenticated', 'Usuário não autenticado.');
     const callerDoc = await db.collection('users').doc(authInfo.uid).get();
-    if (!callerDoc.exists || callerDoc.data().role !== 'admin') {
-        throw new functions.https.HttpsError('permission-denied', 'Apenas administradores podem excluir da equipe.');
+    if (!callerDoc.exists) {
+        throw new functions.https.HttpsError('permission-denied', 'Usuário invalido.');
     }
+
+    const callerData = callerDoc.data();
+    const isGlobalAdmin = callerData.role === 'admin';
+    const isManager = callerData.role === 'manager';
+
     if (!uid) throw new functions.https.HttpsError('invalid-argument', 'UID não informado.');
+
+    if (!isGlobalAdmin) {
+        if (!isManager) {
+            throw new functions.https.HttpsError('permission-denied', 'Apenas administradores ou gerentes podem excluir da equipe.');
+        }
+
+        const targetUserDoc = await db.collection('users').doc(uid).get();
+        if (targetUserDoc.exists) {
+            const targetData = targetUserDoc.data();
+            if (targetData.storeId !== callerData.storeId || targetData.role === 'admin' || targetData.role === 'manager') {
+                throw new functions.https.HttpsError('permission-denied', 'Gerentes só podem excluir vendedores da sua própria loja.');
+            }
+        }
+    }
 
     try {
         await admin.auth().deleteUser(uid);
