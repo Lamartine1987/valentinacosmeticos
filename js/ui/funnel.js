@@ -466,10 +466,40 @@ export const funnelModule = {
                 return;
             }
             
+            const formatChatDate = (date) => {
+                const today = new Date();
+                const yesterday = new Date(today);
+                yesterday.setDate(yesterday.getDate() - 1);
+                
+                const isToday = date.getDate() === today.getDate() && date.getMonth() === today.getMonth() && date.getFullYear() === today.getFullYear();
+                const isYesterday = date.getDate() === yesterday.getDate() && date.getMonth() === yesterday.getMonth() && date.getFullYear() === yesterday.getFullYear();
+                
+                if (isToday) return 'Hoje';
+                if (isYesterday) return 'Ontem';
+                
+                return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
+            };
+
             let htmlBuffer = '';
+            let lastDateString = null;
+            
             snapshot.forEach(doc => {
                 const msg = doc.data();
                 const d = msg.timestamp ? msg.timestamp.toDate() : new Date();
+                
+                const currentDateKey = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+                if (lastDateString !== currentDateKey) {
+                    lastDateString = currentDateKey;
+                    const displayDate = formatChatDate(d);
+                    htmlBuffer += `
+                        <div style="display: flex; justify-content: center; margin: 16px 0 8px 0; width: 100%;">
+                            <div style="background-color: #f0f2f5; color: #54656f; font-size: 11px; font-weight: 500; padding: 5px 12px; border-radius: 8px; box-shadow: 0 1px 1px rgba(11,20,26,.05); text-transform: uppercase;">
+                                ${displayDate}
+                            </div>
+                        </div>
+                    `;
+                }
+
                 const timeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
                 const senderName = msg.sender === 'agent' ? 'Você' : (lead.name || 'Cliente');
                 const safeText = (msg.text || '').replace(/"/g, '&quot;');
