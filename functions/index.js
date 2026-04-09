@@ -813,14 +813,23 @@ const { BigQuery } = require('@google-cloud/bigquery');
 const bigquery = new BigQuery();
 
 exports.getInfrastructureCosts = functions.https.onCall(async (data, context) => {
-    // 1. Authorization checks
-    if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Precisa estar logado.');
-    const userDoc = await db.collection("users").doc(context.auth.uid).get();
-    if (!userDoc.exists || userDoc.data().role !== "admin") {
-         throw new functions.https.HttpsError('permission-denied', 'Apenas administradores podem ver custos da nuvem.');
-    }
-
     try {
+        // 1. Authorization checks using explicit token verification
+        let token = data.token;
+        if (!token && data.data && data.data.token) token = data.data.token;
+        
+        if (!token) {
+            throw new Error(`Token não fornecido. Payload recebido: ${JSON.stringify(data).substring(0, 150)}`);
+        }
+        
+        const decodedToken = await admin.auth().verifyIdToken(token);
+        const uid = decodedToken.uid;
+        
+        const userDoc = await db.collection("users").doc(uid).get();
+        if (!userDoc.exists || userDoc.data().role !== "admin") {
+             throw new functions.https.HttpsError('permission-denied', 'Apenas administradores podem ver custos da nuvem.');
+        }
+
         const datasetId = 'faturamento_crm';
         const dataset = bigquery.dataset(datasetId);
         const [tables] = await dataset.getTables();

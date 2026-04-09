@@ -44,28 +44,17 @@ export const financeModule = {
             if (!user) throw new Error("Usuário não autenticado");
             const token = await user.getIdToken();
 
-            const response = await fetch('https://us-central1-valentinacosmeticos-5f239.cloudfunctions.net/getInfrastructureCosts', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ data: {} })
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error ${response.status}`);
-            }
-
-            const jsonResponse = await response.json();
-            const resultData = jsonResponse.result || {};
+            const getCosts = firebase.functions().httpsCallable('getInfrastructureCosts');
+            const result = await getCosts({ token: token });
+            
+            const resultData = result.data || {};
             
             if (resultData.status === 'success') {
                 statLabel.textContent = `R$ ${resultData.finalCost.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
                 this._infraCostFetched = true;
             } else if (resultData.status === 'pending') {
                 statLabel.textContent = 'R$ 0,00';
-                statLabel.parentElement.innerHTML += '<div style="font-size:10px; color:var(--text-muted);">Sincronizando BigQuery... (Pode levar até 24h)</div>';
+                statLabel.parentElement.innerHTML += '<div style="font-size:10px; color:var(--text-muted); margin-top:2px;">Sincronizando BigQuery... (Pode levar até 24h)</div>';
                 this._infraCostFetched = true;
             } else {
                 statLabel.textContent = 'Erro de Sinc.';
