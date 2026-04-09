@@ -218,6 +218,105 @@ export const dashboardModule = {
             item.innerHTML = actionHtml;
             listContainer.appendChild(item);
         });
+
+        this.renderBirthdays();
+    },
+
+    renderBirthdays() {
+        const listContainer = document.getElementById('birthdays-list-container');
+        if (!listContainer) return;
+        
+        const btnCampanha = document.getElementById('btn-disparar-aniversarios');
+        const bdayMonthLabel = document.getElementById('bday-month-label');
+        
+        listContainer.innerHTML = '';
+        
+        const today = new Date();
+        const currentMonth = today.getMonth() + 1; // 1-12
+        
+        const monthsPT = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+        if (bdayMonthLabel) bdayMonthLabel.textContent = monthsPT[currentMonth-1];
+
+        // Find birthdays
+        const birthdays = [];
+        this.clients.forEach(client => {
+            if (client.birthdate) {
+                // Support DD/MM/YYYY or DD/MM formats used by the system
+                const parts = client.birthdate.split('/');
+                if (parts.length >= 2) {
+                    const day = parseInt(parts[0], 10);
+                    const month = parseInt(parts[1], 10);
+                    const year = parts[2] ? parseInt(parts[2], 10) : null;
+                    if (month === currentMonth) {
+                        birthdays.push({ ...client, day, year });
+                    }
+                }
+            }
+        });
+
+        // Sort by day
+        birthdays.sort((a, b) => a.day - b.day);
+
+        if (birthdays.length === 0) {
+            listContainer.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-calendar-check" style="color: #fbcfe8; font-size: 32px; margin-bottom: 12px;"></i>
+                    <p style="color: var(--text-muted);">Nenhum aniversariante encontrado neste mês.</p>
+                </div>`;
+            if (btnCampanha) btnCampanha.style.display = 'none';
+            return;
+        }
+
+        if (btnCampanha) btnCampanha.style.display = 'flex';
+
+        birthdays.forEach(client => {
+            const item = document.createElement('div');
+            item.className = 'action-item';
+            
+            // If year exists and is somewhat valid, calculate age
+            let clientAge = '';
+            if (client.year && client.year > 1900) {
+                let age = today.getFullYear() - client.year;
+                clientAge = ` (${age} anos)`;
+            }
+            
+            item.innerHTML = `
+                <div class="client-info" style="flex-direction: row; align-items: center; justify-content: space-between; width: 100%;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <input type="checkbox" class="bday-cb" value="${client.id}" checked style="width: 16px; height: 16px; cursor: pointer; accent-color: #db2777;">
+                        <div>
+                            <div style="display: flex; align-items: center;">
+                                <span class="c-name">${client.name}</span>
+                            </div>
+                            <span class="c-meta"><i class="fas fa-gift" style="color: #db2777; margin-right: 4px;"></i> Dia ${client.day}${clientAge}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            listContainer.appendChild(item);
+        });
+    },
+
+    dispararAniversarios() {
+        // Collect checked client IDs
+        const checkboxes = document.querySelectorAll('.bday-cb:checked');
+        const selectedIds = Array.from(checkboxes).map(cb => cb.value);
+        
+        if (selectedIds.length === 0) {
+            this.showToast('Selecione pelo menos um aniversariante para disparar a campanha.', true);
+            return;
+        }
+        
+        // Define selected IDs for the global state so openPromoModal picks them up
+        if (window.app) {
+            window.app.selectedClientIds = new Set(selectedIds); // Overwrite existing selections
+            
+            if (typeof window.app.openPromoModal === 'function') {
+                window.app.openPromoModal();
+            } else if (typeof this.openPromoModal === 'function') {
+                this.openPromoModal();
+            }
+        }
     },
 
     async dispararTodos() {
