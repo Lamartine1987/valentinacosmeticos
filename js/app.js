@@ -457,8 +457,7 @@ const app = {
             snapshot.forEach((doc) => {
                 const data = doc.data();
                 // Client-side filtering to avoid requiring new Firebase Composite Indexes
-                if (this.currentUserProfile.role === 'manager' && data.storeId !== this.currentUserProfile.storeId) return;
-                if (this.currentUserProfile.role === 'seller' && data.sellerId !== this.user.uid) return;
+                if ((this.currentUserProfile.role === 'manager' || this.currentUserProfile.role === 'seller') && data.storeId !== this.currentUserProfile.storeId) return;
                 
                 this.clients.push({ id: doc.id, ...data });
             });

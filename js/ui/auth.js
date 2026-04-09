@@ -92,5 +92,72 @@ export const authModule = {
             this.sales = []; this.clients = []; this.products = [];
             this.updateActiveViews();
         });
+    },
+
+    requestPasswordChange() {
+        if (!this.user || !this.user.email) return;
+        const modal = document.getElementById('password-modal-overlay');
+        if (modal) {
+            document.getElementById('form-change-password').reset();
+            document.getElementById('cp-error').style.display = 'none';
+            modal.classList.add('active');
+        }
+    },
+
+    closePasswordModal() {
+        const modal = document.getElementById('password-modal-overlay');
+        if (modal) modal.classList.remove('active');
+    },
+
+    async submitPasswordChange(e) {
+        e.preventDefault();
+        const currentPass = document.getElementById('cp-current').value;
+        const newPass = document.getElementById('cp-new').value;
+        const confirmPass = document.getElementById('cp-confirm').value;
+        const errorDiv = document.getElementById('cp-error');
+        const btn = e.target.querySelector('button[type="submit"]');
+
+        errorDiv.style.display = 'none';
+
+        if (newPass !== confirmPass) {
+            errorDiv.innerText = 'A nova senha e a confirmação não conferem.';
+            errorDiv.style.display = 'block';
+            return;
+        }
+
+        if (newPass.length < 6) {
+            errorDiv.innerText = 'A nova senha deve ter pelo menos 6 caracteres.';
+            errorDiv.style.display = 'block';
+            return;
+        }
+
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Atualizando...';
+        btn.disabled = true;
+
+        try {
+            // 1. Re-authenticamos o usuário para obter token fresco
+            const credential = firebase.auth.EmailAuthProvider.credential(this.user.email, currentPass);
+            await this.user.reauthenticateWithCredential(credential);
+            
+            // 2. Atualizamos a senha
+            await this.user.updatePassword(newPass);
+            
+            if (typeof this.showToast === 'function') this.showToast('Senha atualizada com sucesso!', 'info');
+            this.closePasswordModal();
+        } catch (err) {
+            console.error(err);
+            if (err.code === 'auth/wrong-password') {
+                errorDiv.innerText = 'A senha atual está incorreta.';
+            } else if (err.code === 'auth/too-many-requests') {
+                errorDiv.innerText = 'Muitas tentativas. Tente novamente mais tarde.';
+            } else {
+                errorDiv.innerText = 'Erro ao atualizar a senha. Verifique os dados.';
+            }
+            errorDiv.style.display = 'block';
+        } finally {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
     }
 };
