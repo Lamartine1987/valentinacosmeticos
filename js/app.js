@@ -428,7 +428,6 @@ const app = {
 
     listenData() {
         if(!db || !this.user || !this.currentUserProfile) return;
-        
         let salesQuery = db.collection("sales");
         
         // Multi-Tenant: Gerentes veem a loja, Vendedores veem APENAS suas próprias vendas
@@ -438,31 +437,49 @@ const app = {
             salesQuery = salesQuery.where('sellerId', '==', this.user.uid);
         }
 
+        // Filtro Inteligente: Baixar apenas os últimos 4 meses de vendas para escuta em Tempo Real
+        // Isso evita baixar o histórico inteiro e ao mesmo tempo preserva as somatórias dos Dashboards recentes.
+        const dCutoff = new Date();
+        dCutoff.setMonth(dCutoff.getMonth() - 4);
+        const cutoffStr = `${dCutoff.getFullYear()}-${String(dCutoff.getMonth()+1).padStart(2,'0')}-01`;
+        salesQuery = salesQuery.where('date', '>=', cutoffStr);
+
         this.unsubSales = salesQuery.onSnapshot((snapshot) => {
-            this.sales = [];
-            snapshot.forEach((doc) => {
-                this.sales.push({ id: doc.id, ...doc.data() });
+            if (!this.sales) this.sales = [];
+            
+            // Faremos merge para manter vendas antigas caso a pessoa tenha buscado no relatório
+            snapshot.docChanges().forEach((change) => {
+                const data = { id: change.doc.id, ...change.doc.data() };
+                if (change.type === "added" || change.type === "modified") {
+                    const index = this.sales.findIndex(s => s.id === data.id);
+                    if(index > -1) this.sales[index] = data;
+                    else this.sales.push(data);
+                }
+                if (change.type === "removed") {
+                    this.sales = this.sales.filter(s => s.id !== data.id);
+                }
             });
             
-            // Ordenação local em memória para evitar erro "The query requires an index" no Firebase
             this.sales.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-            
             this.updateActiveViews();
         }, (error) => {
-            alert(`Atenção: O Firebase bloqueou a conexão de leitura!\n\nLembre-se de ir na Aba "Regras" do Firestore Database e alterar de "false" para "true".\n\nErro: ${error.message}`);
+            console.error("Erro Sales Snapshot:", error);
+            if (error.message.includes('requires an index')) {
+                alert(`AVISO IMPORTANTE: O novo filtro financeiro requer um Índice. Clique no link do console (F12) para validar.`);
+            }
         });
 
-        this.unsubClients = db.collection("clients").orderBy("createdAt", "asc").onSnapshot((snapshot) => {
+        let clientsQuery = db.collection("clients");
+
+        this.unsubClients = clientsQuery.orderBy("createdAt", "desc").limit(300).onSnapshot((snapshot) => {
             this.clients = [];
             snapshot.forEach((doc) => {
                 const data = doc.data();
-                // Client-side filtering to avoid requiring new Firebase Composite Indexes
                 if ((this.currentUserProfile.role === 'manager' || this.currentUserProfile.role === 'seller') && data.storeId !== this.currentUserProfile.storeId) return;
-                
                 this.clients.push({ id: doc.id, ...data });
             });
             this.updateActiveViews();
-        }, (error) => console.log(error));
+        }, (error) => console.error("Erro Clients:", error));
 
         this.unsubProducts = db.collection("products").orderBy("name", "asc").onSnapshot((snapshot) => {
             this.products = [];
@@ -482,12 +499,14 @@ const app = {
         }, (error) => console.log(error));
         
         if (this.currentUserProfile.role === 'admin' || this.currentUserProfile.role === 'manager') {
-            this.unsubExpenses = db.collection("expenses").orderBy("createdAt", "asc").onSnapshot((snapshot) => {
+            let expensesQuery = db.collection("expenses");
+            if (this.currentUserProfile.role === 'manager') {
+                 expensesQuery = expensesQuery.where('storeId', '==', this.currentUserProfile.storeId);
+            }
+            this.unsubExpenses = expensesQuery.orderBy("createdAt", "desc").limit(100).onSnapshot((snapshot) => {
                 this.expenses = [];
                 snapshot.forEach((doc) => {
-                    const data = doc.data();
-                    if (this.currentUserProfile.role === 'manager' && data.storeId !== this.currentUserProfile.storeId) return;
-                    this.expenses.push({ id: doc.id, ...data });
+                    this.expenses.push({ id: doc.id, ...doc.data() });
                 });
                 this.updateActiveViews();
             }, (error) => console.log(error));

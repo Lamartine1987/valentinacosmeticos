@@ -87,9 +87,18 @@ export const authModule = {
     },
 
     logout() {
+        // Desconecta os radares do banco ANTES de jogar a chave fora (evita erro vermelho fantasma)
+        if (this.unsubSales) this.unsubSales();
+        if (this.unsubPromos) this.unsubPromos();
+        if (this.unsubClients) this.unsubClients();
+        if (this.unsubProducts) this.unsubProducts();
+        if (this.unsubExpenses) this.unsubExpenses();
+        if (this.unsubLeads) this.unsubLeads();
+        if (this.unsubChat) this.unsubChat();
+        
         firebase.auth().signOut().then(() => {
             this.showToast('Você saiu do sistema.');
-            this.sales = []; this.clients = []; this.products = [];
+            this.sales = []; this.clients = []; this.products = []; this.leadsList = [];
             this.updateActiveViews();
         });
     },
