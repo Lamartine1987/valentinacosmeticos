@@ -219,7 +219,7 @@ export const settingsModule = {
                     </div>
                     <div class="form-group" style="grid-column: span 2;">
                         <label>Serviço da API</label>
-                        <select class="api-v-provider" required>
+                        <select class="api-v-provider" required onchange="const panel = this.parentElement.parentElement.querySelector('.w-motor-panel'); if(panel) panel.style.display = this.value === 'meumotor' ? 'block' : 'none';">
                             <option value="zapi" ${inst.provider === 'zapi' ? 'selected' : ''}>Z-API / ChatPro</option>
                             <option value="evolution" ${inst.provider === 'evolution' ? 'selected' : ''}>Evolution API / WhaConnect</option>
                             <option value="meumotor" ${inst.provider === 'meumotor' ? 'selected' : ''}>WhatsApp Motor (Próprio)</option>
@@ -238,13 +238,193 @@ export const settingsModule = {
                         <input type="checkbox" class="api-v-active" style="width: 20px; height: 20px;" ${inst.active ? 'checked' : ''}>
                         <label style="margin: 0; cursor: pointer; font-weight: 500;">Habilitar envios automáticos por esta instância</label>
                     </div>
+                    <div class="form-group w-motor-panel" style="grid-column: span 2; display: ${inst.provider === 'meumotor' ? 'block' : 'none'}; padding: 16px; background: #F8FAFC; border: 1px solid var(--border); border-radius: 8px; margin-top: 12px; margin-bottom: 8px;">
+                        <h4 style="margin-bottom: 8px; font-size: 14px; color: var(--text-main);"><i class="fas fa-qrcode" style="color: #10B981;"></i> Conectar WhatsApp (Ligar Aparelho)</h4>
+                        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">Leia o QRCode usando o aplicativo oficial do WhatsApp no modo "Aparelhos Conectados". Para o QR Code aparecer, é preciso primeiro Salvar as Configurações.</p>
+                        <div style="display: flex; gap: 16px; align-items: center;">
+                            <button type="button" class="btn-primary btn-generate-qr" style="background: #10B981; font-size: 13px; padding: 8px 16px; box-shadow: none;" onclick="app.generateQrCodeForInstance(${index})">
+                                <i class="fas fa-sync-alt"></i> Exibir / Atualizar QR Code
+                            </button>
+                            <span id="qr-status-text-${index}" style="font-size: 13px; color: var(--text-muted); font-weight: 500;"></span>
+                        </div>
+                        <div id="qr-code-container-${index}" style="margin-top: 16px; display: none; padding: 16px; background: white; border-radius: 8px; border: 1px dashed var(--border); width: fit-content; text-align: center;"></div>
+                    </div>
                 </div>
             `;
             container.appendChild(div);
         });
     },
 
+    async generateQrCodeForInstance(index) {
+        try {
+            const container = document.getElementById('api-instances-container');
+            const row = container.children[index];
+            if (!row) return;
+
+            const urlInput = row.querySelector('.api-v-url').value;
+            const tokenInput = row.querySelector('.api-v-token').value;
+            const statusText = document.getElementById(`qr-status-text-${index}`);
+            const qrContainer = document.getElementById(`qr-code-container-${index}`);
+
+            if (!urlInput) {
+                if (statusText) {
+                    statusText.textContent = "Preencha a URL da API primeiro e clique em Salvar!";
+                    statusText.style.color = "#EF4444";
+                }
+                return;
+            }
+
+            let baseUrl = '';
+            let instanceName = '';
+
+            try {
+                const url = new URL(urlInput);
+                baseUrl = url.origin;
+                // example: http://187.127.4.145:3000/loja1/send-text
+                const paths = url.pathname.split('/').filter(p => p);
+                if (paths.length >= 2) {
+                    instanceName = paths[0]; // 'loja1'
+                } else {
+                    instanceName = prompt("Não foi possível detectar o nome da instância pela URL. Digite o nome da instância manualmente:", "loja1");
+                }
+            } catch (e) {
+                if (statusText) statusText.textContent = "URL Inválida.";
+                return;
+            }
+
+            if (!instanceName) return;
+
+            if (statusText) {
+                statusText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Solicitando status da API...';
+                statusText.style.color = "var(--text-muted)";
+            }
+            if (qrContainer) {
+                qrContainer.style.display = 'none';
+                qrContainer.innerHTML = '';
+            }
+
+            const fetchStatus = async () => {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000);
+                const response = await fetch(`${baseUrl}/instance/status/${instanceName}`, {
+                    headers: { 'x-api-key': tokenInput },
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+                const result = await response.json();
+                if (!response.ok) {
+                    throw { status: response.status, message: result.error || 'Erro na API' };
+                }
+                return result;
+            };
+
+            const webhookUrl = "https://us-central1-valentinacosmeticos-5f239.cloudfunctions.net/whatsappWebhook";
+
+            let data;
+            try {
+                data = await fetchStatus();
+                // Sempre garantimos que o webhook esteja configurado se a instância já existir
+                try {
+                    await fetch(`${baseUrl}/instance/webhook`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'x-api-key': tokenInput },
+                        body: JSON.stringify({ instanceName, webhookUrl })
+                    });
+                } catch(wErr) { console.error("Erro ao atualizar webhook", wErr); }
+            } catch (err) {
+                console.error(err);
+                if (err.message && err.message.includes('NOT_FOUND') || err.status === 404) {
+                    if (statusText) statusText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Criando instância...';
+                    await fetch(`${baseUrl}/instance/create`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'x-api-key': tokenInput },
+                        body: JSON.stringify({ instanceName, webhookUrl })
+                    });
+                    await new Promise(r => setTimeout(r, 2000));
+                    data = await fetchStatus();
+                } else if (err.name === 'AbortError') {
+                    if (statusText) { statusText.textContent = 'Erro: Timeout na conexão.'; statusText.style.color = "#EF4444"; }
+                    return;
+                } else {
+                    try {
+                        const createRes = await fetch(`${baseUrl}/instance/create`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'x-api-key': tokenInput },
+                            body: JSON.stringify({ instanceName, webhookUrl })
+                        });
+                        if (createRes.ok) {
+                            await new Promise(r => setTimeout(r, 2000));
+                            data = await fetchStatus();
+                        } else {
+                            throw new Error('Falha ao criar instância de fallback');
+                        }
+                    } catch (e2) {
+                        if (statusText) { statusText.textContent = 'Erro ao contactar API. Verifique token/URL.'; statusText.style.color = "#EF4444"; }
+                        return;
+                    }
+                }
+            }
+
+            if (!data) return;
+
+            if (data.status === 'CONNECTED') {
+                if (statusText) {
+                    statusText.innerHTML = '<i class="fas fa-check-circle"></i> Instância já está Conectada e Online!';
+                    statusText.style.color = "#10B981";
+                }
+            } else if (data.qr) {
+                if (statusText) {
+                    statusText.textContent = 'Aguardando leitura do QR Code...';
+                    statusText.style.color = "var(--primary)";
+                }
+                if (qrContainer) {
+                    qrContainer.style.display = 'block';
+                    new QRCode(qrContainer, {
+                        text: data.qr,
+                        width: 256,
+                        height: 256,
+                        colorDark : "#000000",
+                        colorLight : "#ffffff",
+                        correctLevel : QRCode.CorrectLevel.H
+                    });
+                    
+                    // Simple polling mechanism
+                    let attempts = 0;
+                    const checkInterval = setInterval(async () => {
+                        attempts++;
+                        try {
+                            const pollData = await fetchStatus();
+                            if (pollData.status === 'CONNECTED') {
+                                clearInterval(checkInterval);
+                                qrContainer.innerHTML = '<div style="color:#10B981; font-weight: bold; font-size: 16px;"><i class="fas fa-check-circle" style="font-size: 40px; margin-bottom: 8px;"></i><br>Conectado com Sucesso!</div>';
+                                if (statusText) {
+                                    statusText.innerHTML = 'WhatsApp Conectado!';
+                                    statusText.style.color = "#10B981";
+                                }
+                            }
+                        } catch (e) {}
+                        if (attempts > 30) clearInterval(checkInterval); // Stop after 1 minute
+                    }, 2000);
+                }
+            } else {
+                if (statusText) {
+                    statusText.textContent = `Status: ${data.status || 'Desconhecido'}. Tente novamente em alguns segundos.`;
+                    statusText.style.color = "#F59E0B";
+                }
+            }
+
+        } catch (error) {
+            console.error("Erro na obtenção do QR Code:", error);
+            const statusText = document.getElementById(`qr-status-text-${index}`);
+            if (statusText) {
+                statusText.textContent = "Erro interno ao consultar API.";
+                statusText.style.color = "#EF4444";
+            }
+        }
+    },
+
     addApiInstance() {
+
         if (!this.apiSettings) this.apiSettings = {};
         if (!Array.isArray(this.apiSettings.instances)) this.apiSettings.instances = [];
         this.apiSettings.instances.push({
