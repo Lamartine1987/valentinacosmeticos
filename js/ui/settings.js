@@ -303,13 +303,36 @@ export const settingsModule = {
                 qrContainer.innerHTML = '';
             }
 
-            const fetchStatus = async () => {
+            const executeApiFetch = async (targetPath, method = 'GET', bodyObj = null) => {
+                let reqUrl = `${baseUrl}${targetPath}`;
+                const headers = { 'x-api-key': tokenInput };
+                if (bodyObj) headers['Content-Type'] = 'application/json';
+                
+                let fetchOptions = {
+                    method: method,
+                    headers: headers
+                };
+                if (bodyObj) fetchOptions.body = JSON.stringify(bodyObj);
+
+                if (window.location.protocol === 'https:' && reqUrl.startsWith('http://')) {
+                    fetchOptions = {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            targetUrl: reqUrl,
+                            targetHeaders: headers,
+                            targetMethod: method,
+                            targetBody: bodyObj
+                        })
+                    };
+                    reqUrl = 'https://us-central1-valentinacosmeticos-5f239.cloudfunctions.net/apiProxy';
+                }
+
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 10000);
-                const response = await fetch(`${baseUrl}/instance/status/${instanceName}`, {
-                    headers: { 'x-api-key': tokenInput },
-                    signal: controller.signal
-                });
+                fetchOptions.signal = controller.signal;
+
+                const response = await fetch(reqUrl, fetchOptions);
                 clearTimeout(timeoutId);
                 const result = await response.json();
                 if (!response.ok) {
@@ -318,6 +341,8 @@ export const settingsModule = {
                 return result;
             };
 
+            const fetchStatus = () => executeApiFetch(`/instance/status/${instanceName}`);
+
             const webhookUrl = "https://us-central1-valentinacosmeticos-5f239.cloudfunctions.net/whatsappWebhook";
 
             let data;
@@ -325,21 +350,13 @@ export const settingsModule = {
                 data = await fetchStatus();
                 // Sempre garantimos que o webhook esteja configurado se a instância já existir
                 try {
-                    await fetch(`${baseUrl}/instance/webhook`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'x-api-key': tokenInput },
-                        body: JSON.stringify({ instanceName, webhookUrl })
-                    });
+                    await executeApiFetch(`/instance/webhook`, 'POST', { instanceName, webhookUrl });
                 } catch(wErr) { console.error("Erro ao atualizar webhook", wErr); }
             } catch (err) {
                 console.error(err);
                 if (err.message && err.message.includes('NOT_FOUND') || err.status === 404) {
                     if (statusText) statusText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Criando instância...';
-                    await fetch(`${baseUrl}/instance/create`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'x-api-key': tokenInput },
-                        body: JSON.stringify({ instanceName, webhookUrl })
-                    });
+                    await executeApiFetch(`/instance/create`, 'POST', { instanceName, webhookUrl });
                     await new Promise(r => setTimeout(r, 2000));
                     data = await fetchStatus();
                 } else if (err.name === 'AbortError') {
@@ -347,17 +364,9 @@ export const settingsModule = {
                     return;
                 } else {
                     try {
-                        const createRes = await fetch(`${baseUrl}/instance/create`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'x-api-key': tokenInput },
-                            body: JSON.stringify({ instanceName, webhookUrl })
-                        });
-                        if (createRes.ok) {
-                            await new Promise(r => setTimeout(r, 2000));
-                            data = await fetchStatus();
-                        } else {
-                            throw new Error('Falha ao criar instância de fallback');
-                        }
+                        await executeApiFetch(`/instance/create`, 'POST', { instanceName, webhookUrl });
+                        await new Promise(r => setTimeout(r, 2000));
+                        data = await fetchStatus();
                     } catch (e2) {
                         if (statusText) { statusText.textContent = 'Erro ao contactar API. Verifique token/URL.'; statusText.style.color = "#EF4444"; }
                         return;
