@@ -650,6 +650,11 @@ exports.updateUser = onCall({ invoker: "public" }, async (request) => {
     const payload = request.data;
     if (!authInfo) throw new functions.https.HttpsError('unauthenticated', 'Usuário não autenticado no sistema.');
     
+    const callerDoc = await db.collection('users').doc(authInfo.uid).get();
+    if (!callerDoc.exists) {
+        throw new functions.https.HttpsError('permission-denied', 'Administrador/Gerente não encontrado.');
+    }
+    
     const callerData = callerDoc.data();
     const isGlobalAdmin = callerData.role === 'admin';
     const isManager = callerData.role === 'manager';
