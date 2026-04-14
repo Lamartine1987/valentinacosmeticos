@@ -15,6 +15,9 @@ export const clientsModule = {
         const storeAssigned = document.getElementById('c-store-assigned');
         if (storeAssigned) storeAssigned.value = (client.storeId === 'loja_2') ? 'loja_2' : 'loja_1';
 
+        const isGlobalCheck = document.getElementById('c-isGlobal');
+        if (isGlobalCheck) isGlobalCheck.checked = !!client.isGlobal;
+
         const sellerAssigned = document.getElementById('c-seller-assigned');
         if (sellerAssigned) {
             if (client.sellerId) {
@@ -57,6 +60,9 @@ export const clientsModule = {
             form.reset();
             const storeAssigned = document.getElementById('c-store-assigned');
             if (storeAssigned) storeAssigned.value = 'loja_1';
+            
+            const isGlobalCheck = document.getElementById('c-isGlobal');
+            if (isGlobalCheck) isGlobalCheck.checked = false;
             
             const sellerAssigned = document.getElementById('c-seller-assigned');
             // reset logic so it defaults back to 'me' and isn't disabled if they are creating a new one
@@ -367,7 +373,7 @@ export const clientsModule = {
         }
 
         if (filterClientStore !== 'all') {
-            displayClients = displayClients.filter(c => c.sellerId === filterClientStore || c.storeId === filterClientStore);
+            displayClients = displayClients.filter(c => c.sellerId === filterClientStore || c.storeId === filterClientStore || c.isGlobal);
         }
         
         // Aplicar Ordenação

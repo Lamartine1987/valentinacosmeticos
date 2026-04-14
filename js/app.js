@@ -475,7 +475,7 @@ const app = {
             this.clients = [];
             snapshot.forEach((doc) => {
                 const data = doc.data();
-                if ((this.currentUserProfile.role === 'manager' || this.currentUserProfile.role === 'seller') && data.storeId !== this.currentUserProfile.storeId) return;
+                if ((this.currentUserProfile.role === 'manager' || this.currentUserProfile.role === 'seller') && data.storeId !== this.currentUserProfile.storeId && !data.isGlobal) return;
                 this.clients.push({ id: doc.id, ...data });
             });
             this.updateActiveViews();
@@ -881,6 +881,11 @@ const app = {
                                 rSeller.value = client.sellerId;
                             }
                             
+                            const skipMsgCheck = document.getElementById('r-skip-thanks-msg');
+                            if (skipMsgCheck) {
+                                skipMsgCheck.checked = !!client.isGlobal;
+                            }
+                            
                             suggestionsBox.classList.remove('show');
                         });
                         suggestionsBox.appendChild(div);
@@ -1015,13 +1020,17 @@ const app = {
             }
 
             if (isApiActive && saleId) {
-                const actionMsg = this.parseTemplate('thanks', newSale.name, associatedClientShortName, newSale.product);
-                const targetStore = newSale.overrideStoreId || (this.currentUserProfile ? this.currentUserProfile.storeId : 'loja_1');
-                this.sendWhatsAppMessage(newSale.phone, actionMsg, this.msgTemplates.thanksImg, 'image', targetStore).then(async (success) => {
-                    const status = success ? 'sent' : 'failed';
-                    await db.collection('sales').doc(saleId).update({ msg_thanks_status: status });
-                    if(success) this.showToast('Mensagem enviada via API WhatsApp!');
-                });
+                const skipMsg = document.getElementById('r-skip-thanks-msg') && document.getElementById('r-skip-thanks-msg').checked;
+                
+                if (!skipMsg) {
+                    const actionMsg = this.parseTemplate('thanks', newSale.name, associatedClientShortName, newSale.product);
+                    const targetStore = newSale.overrideStoreId || (this.currentUserProfile ? this.currentUserProfile.storeId : 'loja_1');
+                    this.sendWhatsAppMessage(newSale.phone, actionMsg, this.msgTemplates.thanksImg, 'image', targetStore).then(async (success) => {
+                        const status = success ? 'sent' : 'failed';
+                        await db.collection('sales').doc(saleId).update({ msg_thanks_status: status });
+                        if(success) this.showToast('Mensagem enviada via API WhatsApp!');
+                    });
+                }
             }
             
             btn.innerHTML = originalText;
@@ -1050,6 +1059,11 @@ const app = {
                     birthdate: document.getElementById('c-birthdate').value || '',
                     city: document.getElementById('c-city').value || ''
                 };
+                
+                const isGlobalCheck = document.getElementById('c-isGlobal');
+                if (isGlobalCheck && this.currentUserProfile && this.currentUserProfile.role === 'admin') {
+                    newClient.isGlobal = isGlobalCheck.checked;
+                }
                 
                 const assignedSellerSel = document.getElementById('c-seller-assigned');
                 if (assignedSellerSel && !assignedSellerSel.disabled) {
