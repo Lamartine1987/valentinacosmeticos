@@ -342,7 +342,7 @@
                             <div class="stat-icon" style="background: #E0E7FF; color: #4F46E5;"><i
                                     class="fas fa-calendar-alt"></i></div>
                             <div class="stat-info">
-                                <h3>Faturamento Total</h3>
+                                <h3 id="lbl-report-total">Faturamento Total</h3>
                                 <div class="stat-value" id="report-total-year">R$ 0,00</div>
                             </div>
                         </div>
@@ -350,7 +350,7 @@
                             <div class="stat-icon" style="background: #DEF7EC; color: #059669;"><i
                                     class="fas fa-chart-bar"></i></div>
                             <div class="stat-info">
-                                <h3>Faturamento do Mês</h3>
+                                <h3 id="lbl-report-month">Faturamento do Mês</h3>
                                 <div class="stat-value" id="report-total-month">R$ 0,00</div>
                             </div>
                         </div>
@@ -358,7 +358,7 @@
                             <div class="stat-icon" style="background: #FEF3C7; color: #D97706;"><i
                                     class="fas fa-receipt"></i></div>
                             <div class="stat-info">
-                                <h3>Ticket Médio Geral</h3>
+                                <h3 id="lbl-report-ticket">Ticket Médio Geral</h3>
                                 <div class="stat-value" id="report-ticket-avg">R$ 0,00</div>
                             </div>
                         </div>
@@ -1553,6 +1553,17 @@
                             placeholder="Buscar conversa por nome ou telefone..."
                             style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; flex: 1; min-width: 250px; outline: none; font-size: 14px; transition: border-color 0.2s;"
                             oninput="app.renderFunnelBoard()">
+
+                        <div class="admin-only" style="display: flex; gap: 8px; align-items: center; display: none;">
+                            <span style="font-size: 13px; color: var(--text-muted); font-weight: 500;"><i class="fas fa-store" style="margin-right:4px;"></i> Filtro Gerencial</span>
+                            <select id="filter-funnel-store"
+                                style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer; transition: border-color 0.2s;"
+                                onchange="app.renderFunnelBoard()">
+                                <option value="all">Rede Completa (Todas as Lojas)</option>
+                                <option value="loja_1">Loja 1</option>
+                                <option value="loja_2">Loja 2</option>
+                            </select>
+                        </div>
 
                         <button class="btn-primary" style="background: #10B981; margin-left: auto;"
                             onclick="app.openAgendaModal('funnel')">

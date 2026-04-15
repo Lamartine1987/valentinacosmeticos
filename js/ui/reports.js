@@ -87,11 +87,13 @@ export const reportsModule = {
 
         let totalYear = 0;
         let totalMonth = 0;
+        let totalDay = 0;
         let allTimeTotal = 0;
         let totalCommissions = 0;
         
         const currentYear = new Date().getFullYear();
         const currentMonth = new Date().getMonth() + 1;
+        const currentDay = new Date().getDate();
         
         // Define o ano base para o gráfico
         let chartYear = currentYear;
@@ -137,15 +139,19 @@ export const reportsModule = {
             storeRevenue[sId] += val;
 
             if (sale.date) {
-                const [y, m] = sale.date.split('-');
+                const [y, m, dStr] = sale.date.split('-');
                 const year = parseInt(y);
                 const month = parseInt(m);
+                const day = parseInt(dStr || '1');
                 
                 if (year === chartYear) {
                     totalYear += val;
                     monthlyRevenue[month - 1] += val;
                     if (year === currentYear && month === currentMonth) {
                         totalMonth += val;
+                        if (day === currentDay) {
+                            totalDay += val;
+                        }
                     }
                 }
             }
@@ -182,9 +188,25 @@ export const reportsModule = {
         const prodData = sortedProducts.map(p => p.count);
 
         if (document.getElementById('report-total-year')) {
-            document.getElementById('report-total-year').innerText = allTimeTotal.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
-            document.getElementById('report-total-month').innerText = totalMonth.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
+            const role = (window.app && window.app.currentUserProfile) ? window.app.currentUserProfile.role : 'seller';
             const realTicketAvg = filteredSales.length > 0 ? (allTimeTotal / filteredSales.length) : 0;
+            
+            if (role === 'seller') {
+                if (document.getElementById('lbl-report-total')) document.getElementById('lbl-report-total').innerText = 'Faturamento Mensal';
+                if (document.getElementById('lbl-report-month')) document.getElementById('lbl-report-month').innerText = 'Faturamento Diário';
+                if (document.getElementById('lbl-report-ticket')) document.getElementById('lbl-report-ticket').innerText = 'Ticket Médio';
+                
+                document.getElementById('report-total-year').innerText = totalMonth.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
+                document.getElementById('report-total-month').innerText = totalDay.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
+            } else {
+                if (document.getElementById('lbl-report-total')) document.getElementById('lbl-report-total').innerText = 'Faturamento Total';
+                if (document.getElementById('lbl-report-month')) document.getElementById('lbl-report-month').innerText = 'Faturamento do Mês';
+                if (document.getElementById('lbl-report-ticket')) document.getElementById('lbl-report-ticket').innerText = 'Ticket Médio Geral';
+                
+                document.getElementById('report-total-year').innerText = allTimeTotal.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
+                document.getElementById('report-total-month').innerText = totalMonth.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
+            }
+            
             document.getElementById('report-ticket-avg').innerText = realTicketAvg.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
         }
         

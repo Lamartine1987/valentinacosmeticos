@@ -138,6 +138,8 @@ export const funnelModule = {
         const counts = { inbox: 0, negotiation: 0, waiting: 0, won: 0, lost: 0 };
         const searchInput = document.getElementById('filter-funnel-search');
         const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
+        const storeFilterEl = document.getElementById('filter-funnel-store');
+        const filterStore = storeFilterEl ? storeFilterEl.value : 'all';
 
         // Organizar do mais recente (topo) pro mais antigo (base) lidando com Timestamps do Firebase e strings
         const getTime = (val) => {
@@ -163,6 +165,14 @@ export const funnelModule = {
                 const phoneMatch = searchPhone && phoneStr.includes(searchPhone);
                 
                 if (!nameMatch && !phoneMatch) return;
+            }
+
+            if (filterStore !== 'all') {
+                let sId = lead.storeId || 'loja_1';
+                if (sId === 'matriz') sId = 'loja_1';
+                if (sId === 'filial_1') sId = 'loja_2';
+                
+                if (sId !== filterStore && lead.sellerId !== filterStore && lead.storeId !== filterStore) return;
             }
 
             counts[status]++;

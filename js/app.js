@@ -343,7 +343,7 @@ const app = {
     },
 
     loadSellerStoreFilters() {
-        const selects = ['filter-client-store', 'filter-sale-store', 'dash-filter-store', 'report-filter-store'];
+        const selects = ['filter-client-store', 'filter-sale-store', 'dash-filter-store', 'report-filter-store', 'filter-funnel-store'];
         selects.forEach(selectId => {
             const selectEl = document.getElementById(selectId);
             if (selectEl) {
@@ -385,7 +385,7 @@ const app = {
                 }
             });
             
-            const selects = ['filter-client-store', 'filter-sale-store', 'dash-filter-store', 'report-filter-store'];
+            const selects = ['filter-client-store', 'filter-sale-store', 'dash-filter-store', 'report-filter-store', 'filter-funnel-store'];
             selects.forEach(selectId => {
                 const selectEl = document.getElementById(selectId);
                 if (selectEl) {
@@ -545,6 +545,16 @@ const app = {
         const ds = document.getElementById('dash-filter-start');
         const de = document.getElementById('dash-filter-end');
         const dt = document.getElementById('dash-filter-type');
+        
+        const todayISO = new Date().toISOString().split('T')[0];
+        if(ds && !ds.value) ds.value = todayISO;
+        if(de && !de.value) de.value = todayISO;
+
+        const rs = document.getElementById('report-filter-start');
+        const re = document.getElementById('report-filter-end');
+        if(rs && !rs.value) rs.value = todayISO;
+        if(re && !re.value) re.value = todayISO;
+
         if(ds) ds.addEventListener('change', () => this.renderDashboard());
         if(de) de.addEventListener('change', () => this.renderDashboard());
         if(dt) dt.addEventListener('change', () => this.renderDashboard());
