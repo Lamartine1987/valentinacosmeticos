@@ -319,6 +319,22 @@ export const apiModule = {
         }
     },
 
+    async updateSale(id, saleData) {
+        try {
+            const enrichedSale = { ...saleData, updatedAt: new Date().toISOString() };
+            if (this.user && this.currentUserProfile) {
+                if (saleData.overrideSellerId) enrichedSale.sellerId = saleData.overrideSellerId;
+                if (saleData.overrideSellerName) enrichedSale.sellerName = saleData.overrideSellerName;
+                if (saleData.overrideStoreId) enrichedSale.storeId = saleData.overrideStoreId;
+            }
+            await db.collection("sales").doc(id).update(enrichedSale);
+            if (typeof this.showToast === 'function') this.showToast('Venda atualizada com sucesso!');
+        } catch (e) {
+            console.error(e);
+            if (typeof this.showToast === 'function') this.showToast('Erro ao atualizar venda.', 'error');
+        }
+    },
+
     async updateClient(id, clientData) {
         try {
             await db.collection("clients").doc(id).update(clientData);

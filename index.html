@@ -436,8 +436,8 @@
                 <!-- Register Sale Page -->
                 <section class="page" id="page-register">
                     <div class="page-header">
-                        <h2>Registrar Nova Venda</h2>
-                        <p>Insira os dados da sua cliente para iniciar o fluxo de CRM automágico.</p>
+                        <h2 id="sale-form-title">Registrar Nova Venda</h2>
+                        <p id="sale-form-desc">Insira os dados da sua cliente para iniciar o fluxo de CRM automágico.</p>
                     </div>
 
                     <div class="form-card">
@@ -537,7 +537,7 @@
                                     onclick="app.cancelSaleProcess()">
                                     <i class="fas fa-undo"></i> Cancelar Ganho
                                 </button>
-                                <button type="submit" class="btn-primary"
+                                <button type="submit" id="sale-submit-btn" class="btn-primary"
                                     style="flex: 2; min-width: 250px; padding: 14px; font-size: 16px; justify-content: center;">
                                     <i class="fas fa-save"></i> Registrar Venda
                                 </button>
@@ -793,6 +793,20 @@
                             </tbody>
                         </table>
                     </div>
+
+                    <!-- Pagination Controls -->
+                    <div id="sales-pagination" style="display: flex; justify-content: flex-end; align-items: center; gap: 16px; margin-top: 16px;">
+                        <span id="sales-page-info" style="color: var(--text-muted); font-size: 14px;">Página 1 de 1</span>
+                        <div style="display: flex; gap: 8px;">
+                            <button type="button" class="btn-primary" id="btn-sales-prev" style="background: white; color: var(--text-main); border: 1px solid var(--border); box-shadow: var(--shadow-sm); padding: 8px 16px; min-width: unset;" onclick="app.changeSalesPage(-1)" disabled>
+                                <i class="fas fa-chevron-left"></i> Anterior
+                            </button>
+                            <button type="button" class="btn-primary" id="btn-sales-next" style="background: white; color: var(--text-main); border: 1px solid var(--border); box-shadow: var(--shadow-sm); padding: 8px 16px; min-width: unset;" onclick="app.changeSalesPage(1)" disabled>
+                                Próxima <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+
                 </section>
 
                 <!-- Products Page -->

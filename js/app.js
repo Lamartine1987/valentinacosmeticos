@@ -639,6 +639,11 @@ const app = {
     },
 
     clearSaleForm() {
+        this.editingSaleId = null;
+        if(document.getElementById('sale-form-title')) document.getElementById('sale-form-title').innerText = "Registrar Nova Venda";
+        if(document.getElementById('sale-form-desc')) document.getElementById('sale-form-desc').innerText = "Insira os dados da sua cliente para iniciar o fluxo de CRM automágico.";
+        if(document.getElementById('sale-submit-btn')) document.getElementById('sale-submit-btn').innerHTML = '<i class="fas fa-save"></i> Registrar Venda';
+
         const form = document.getElementById('form-sale');
         if (form) form.reset();
         
@@ -671,6 +676,78 @@ const app = {
                 this.originLeadWonId = null; 
             }
         }
+    },
+
+    editSale(id) {
+        if (this.currentUserProfile && this.currentUserProfile.role !== 'admin' && this.currentUserProfile.role !== 'manager') {
+            if (typeof this.showToast === 'function') this.showToast('Apenas administradores e gerentes podem editar vendas.', 'error');
+            return;
+        }
+
+        const sale = this.sales.find(s => s.id === id);
+        if (!sale) return;
+
+        this.editingSaleId = id;
+        if(document.getElementById('sale-form-title')) document.getElementById('sale-form-title').innerText = "Editar Venda";
+        if(document.getElementById('sale-form-desc')) document.getElementById('sale-form-desc').innerText = "Atualizando histórico (pode afetar comissões e relatórios).";
+        if(document.getElementById('sale-submit-btn')) document.getElementById('sale-submit-btn').innerHTML = '<i class="fas fa-save"></i> Salvar Alterações';
+
+        document.getElementById('r-name').value = sale.name || '';
+        if(document.getElementById('r-shortName')) document.getElementById('r-shortName').value = sale.overrideShortName || sale.shortName || '';
+        document.getElementById('r-phone').value = sale.phone || '';
+        document.getElementById('r-value').value = sale.value || '';
+        if(document.getElementById('r-discount')) document.getElementById('r-discount').value = sale.discount || '';
+        document.getElementById('r-date').value = sale.date || '';
+
+        const storeAssigned = document.getElementById('r-store-assigned');
+        if (storeAssigned && sale.overrideStoreId) storeAssigned.value = sale.overrideStoreId;
+
+        const sellerAssigned = document.getElementById('r-seller-assigned');
+        if (sellerAssigned && sale.sellerId) sellerAssigned.value = sale.sellerId;
+
+        const cont = document.getElementById('sale-items-container');
+        if (cont) {
+            cont.innerHTML = '';
+            if (sale.items && sale.items.length > 0) {
+                sale.items.forEach(item => {
+                    if(typeof this.addSaleItem === 'function') this.addSaleItem();
+                    const rows = cont.querySelectorAll('.sale-item-row');
+                    const lastRow = rows[rows.length - 1];
+                    if (lastRow) {
+                        lastRow.querySelector('.sale-item-product').value = item.product;
+                        lastRow.querySelector('.sale-item-qty').value = item.quantity;
+                        if (item.price !== undefined) {
+                            lastRow.querySelector('.sale-item-price').value = parseFloat(item.price).toFixed(2);
+                        } else {
+                            const prod = this.products ? this.products.find(p => p.name.toLowerCase() === item.product.toLowerCase()) : null;
+                            if (prod) lastRow.querySelector('.sale-item-price').value = parseFloat(prod.price).toFixed(2);
+                        }
+                    }
+                });
+            } else {
+                if(typeof this.addSaleItem === 'function') this.addSaleItem();
+                const rows = cont.querySelectorAll('.sale-item-row');
+                const lastRow = rows[rows.length - 1];
+                if (lastRow) {
+                    lastRow.querySelector('.sale-item-product').value = sale.product;
+                    lastRow.querySelector('.sale-item-qty').value = sale.quantity || 1;
+                    const prod = this.products ? this.products.find(p => p.name.toLowerCase() === sale.product.toLowerCase()) : null;
+                    if (prod) lastRow.querySelector('.sale-item-price').value = parseFloat(prod.price).toFixed(2);
+                }
+            }
+            if (typeof window.app !== 'undefined' && typeof window.app.calculateSaleTotal === 'function') {
+                window.app.calculateSaleTotal();
+            } else if (typeof this.calculateSaleTotal === 'function') {
+                this.calculateSaleTotal();
+            }
+        }
+        
+        const skipCb = document.getElementById('r-skip-thanks-msg');
+        if (skipCb) skipCb.checked = true;
+
+        if (typeof this.closeHistoryModal === 'function') this.closeHistoryModal();
+
+        this.navigateTo('register');
     },
 
     async cancelSaleProcess() {
@@ -1018,6 +1095,23 @@ const app = {
             } else {
                 const existingClient = this.clients.find(c => c.phone.replace(/\D/g, '') === phoneStr);
                 if (existingClient && !associatedClientShortName) associatedClientShortName = existingClient.shortName;
+            }
+
+            if (this.editingSaleId) {
+                await this.updateSale(this.editingSaleId, newSale);
+                
+                if (typeof this.saveAuditLog === 'function') {
+                    this.saveAuditLog('sale', 'edit', this.editingSaleId, `Venda editada para o cliente ${newSale.name} no valor de ${newSale.value}`);
+                }
+                
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                
+                this.originLeadWonId = null;
+                this.editingSaleId = null;
+                this.clearSaleForm();
+                this.navigateTo('dashboard');
+                return;
             }
 
             const saleId = await this.saveSale(newSale);

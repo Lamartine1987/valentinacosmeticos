@@ -110,7 +110,7 @@ body { background: var(--bg-color); color: var(--text-main); font-size: 15px; }
 .btn-whatsapp:hover { background: #128C7E; transform: translateY(-1px); box-shadow: 0 4px 10px rgba(37, 211, 102, 0.3);}
 
 /* Pages */
-.page-container { padding: 32px; max-width: 1440px; margin: 0 auto; width: 100%;}
+.page-container { padding: 32px; max-width: none; margin: 0 auto; width: 100%;}
 .page { display: none; animation: fadeIn 0.4s ease; }
 .page.active { display: block; }
 #page-funnel.active { display: flex; flex-direction: column; }

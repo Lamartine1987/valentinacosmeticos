@@ -162,6 +162,11 @@ export const clientsModule = {
         }
     },
 
+    changeSalesPage(delta) {
+        window.app.currentSalesPage = (window.app.currentSalesPage || 1) + delta;
+        this.renderClientsTable();
+    },
+
     renderClientsTable() {
         const tbody = document.getElementById('clients-table-body');
         if(!tbody) return;
@@ -216,11 +221,26 @@ export const clientsModule = {
         });
 
         if (filteredSales.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #64748B; padding: 32px;">Nenhuma venda encontrada na nuvem.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="12" style="text-align: center; color: #64748B; padding: 32px;">Nenhuma venda encontrada na nuvem.</td></tr>`;
+            if (document.getElementById('sales-page-info')) document.getElementById('sales-page-info').innerText = 'Página 1 de 1';
             return;
         }
 
-        filteredSales.forEach(sale => {
+        window.app = window.app || {};
+        window.app.currentSalesPage = window.app.currentSalesPage || 1;
+        window.app.salesPerPage = 30;
+
+        const totalPages = Math.ceil(filteredSales.length / window.app.salesPerPage);
+        if (window.app.currentSalesPage > totalPages) window.app.currentSalesPage = totalPages;
+        if (window.app.currentSalesPage < 1) window.app.currentSalesPage = 1;
+
+        if (document.getElementById('sales-page-info')) document.getElementById('sales-page-info').innerText = `Página ${window.app.currentSalesPage} de ${totalPages} (Total: ${filteredSales.length})`;
+        if (document.getElementById('btn-sales-prev')) document.getElementById('btn-sales-prev').disabled = window.app.currentSalesPage <= 1;
+        if (document.getElementById('btn-sales-next')) document.getElementById('btn-sales-next').disabled = window.app.currentSalesPage >= totalPages;
+
+        const paginatedSales = filteredSales.slice((window.app.currentSalesPage - 1) * window.app.salesPerPage, window.app.currentSalesPage * window.app.salesPerPage);
+
+        paginatedSales.forEach(sale => {
             const [y, m, d] = sale.date.split('-');
             const saleDate = new Date(y, m-1, d);
             const diffDays = Math.floor((today - saleDate) / (1000 * 60 * 60 * 24));
@@ -305,6 +325,9 @@ export const clientsModule = {
                 <td class="admin-only" style="${this.currentUserProfile && this.currentUserProfile.role === 'admin' ? '' : 'display:none;'} color:var(--text-muted); font-size:12px; text-transform:capitalize;">${sale.sellerName || 'Sistema'}</td>
                 <td style="text-align: center;">
                     <div style="display: flex; justify-content: center; gap: 8px;">
+                        <button class="btn-icon" style="color: #3B82F6;" onclick="app.editSale('${sale.id}')" title="Editar Venda">
+                            <i class="fas fa-edit"></i>
+                        </button>
                         <button class="btn-icon" style="color: #EF4444;" onclick="app.deleteSale('${sale.id}')" title="Excluir Venda">
                             <i class="fas fa-trash"></i>
                         </button>
@@ -629,6 +652,20 @@ export const clientsModule = {
                     storeBadge = `<span style="color: #64748B;"><i class="fas fa-store" style="font-size:10px;"></i> ${sName}</span> • `;
                 }
 
+                let adminActions = '';
+                if (window.app && window.app.currentUserProfile && (window.app.currentUserProfile.role === 'admin' || window.app.currentUserProfile.role === 'manager')) {
+                    adminActions = `
+                        <div style="display:flex; gap: 8px; margin-top: 8px; justify-content: flex-end;">
+                            <button class="btn-icon" style="color: #3B82F6; font-size: 14px;" onclick="app.editSale('${sale.id}')" title="Editar Venda">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn-icon" style="color: #EF4444; font-size: 14px;" onclick="app.deleteSale('${sale.id}')" title="Excluir Venda">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    `;
+                }
+
                 html += `
                     <div style="padding: 16px; border: 1px solid var(--border); border-radius: 8px; background: white; display: flex; justify-content: space-between; align-items: center; box-shadow: var(--shadow-sm);">
                         <div>
@@ -640,6 +677,7 @@ export const clientsModule = {
                                 R$ ${sale.value.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                             </div>
                             ${discountStr}
+                            ${adminActions}
                         </div>
                     </div>
                 `;
