@@ -1425,8 +1425,10 @@ const app = {
 
     agendaOrigin: null,
     agendaData: [],
+    agendaSelectedPhones: new Set(),
 
     openAgendaModal(origin) {
+        this.agendaSelectedPhones = new Set();
         this.agendaOrigin = origin;
         const modal = document.getElementById('agenda-modal-overlay');
         const listBody = document.getElementById('agenda-list-body');
@@ -1512,8 +1514,9 @@ const app = {
                         <td style="font-size: 14px; font-variant-numeric: tabular-nums;">${rawTel}</td>
                     `;
                 } else {
+                    const isChecked = this.agendaSelectedPhones && this.agendaSelectedPhones.has(rawTel) ? 'checked' : '';
                     tr.innerHTML = `
-                        <td style="text-align: center;"><input type="checkbox" class="agenda-checkbox" data-name="${rawName}" data-phone="${rawTel}"></td>
+                        <td style="text-align: center;"><input type="checkbox" class="agenda-checkbox" data-name="${rawName}" data-phone="${rawTel}" ${isChecked} onchange="app.toggleAgendaSelection(this)"></td>
                         <td style="font-size: 14px;">${rawName}</td>
                         <td style="font-size: 14px; font-variant-numeric: tabular-nums;">${rawTel}</td>
                     `;
@@ -1549,14 +1552,25 @@ const app = {
         this.renderAgendaList(filtered);
     },
 
+    toggleAgendaSelection(checkbox) {
+        const phone = checkbox.getAttribute('data-phone');
+        if (checkbox.checked) {
+            this.agendaSelectedPhones.add(phone);
+        } else {
+            this.agendaSelectedPhones.delete(phone);
+        }
+    },
+
     toggleSelectAllAgenda(checkbox) {
-        document.querySelectorAll('.agenda-checkbox').forEach(cb => cb.checked = checkbox.checked);
+        document.querySelectorAll('.agenda-checkbox').forEach(cb => {
+            cb.checked = checkbox.checked;
+            this.toggleAgendaSelection(cb);
+        });
     },
 
     async importSelectedAgendaToClients() {
         if (!db) return;
-        const checkboxes = document.querySelectorAll('.agenda-checkbox:checked');
-        if (checkboxes.length === 0) {
+        if (!this.agendaSelectedPhones || this.agendaSelectedPhones.size === 0) {
             this.showToast("Nenhum contato selecionado!");
             return;
         }
@@ -1572,11 +1586,15 @@ const app = {
             const selectStore = document.getElementById('agenda-instance-select');
             const explicitStoreId = selectStore ? selectStore.value : 'loja_1';
 
-            checkboxes.forEach(cb => {
+            this.agendaSelectedPhones.forEach(phone => {
+                const contact = this.agendaData.find(c => String(c.id || c.phone || '').replace(/\D/g, '') === phone);
+                if (!contact) return;
+                
+                const rawName = contact.name || contact.pushName || contact.id || 'Desconhecido';
                 const docRef = db.collection('clients').doc();
                 const clientData = {
-                    name: cb.getAttribute('data-name'),
-                    phone: cb.getAttribute('data-phone'),
+                    name: rawName,
+                    phone: phone,
                     email: '',
                     storeId: explicitStoreId,
                     createdAt: new Date().toISOString()
