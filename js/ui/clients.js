@@ -383,8 +383,13 @@ export const clientsModule = {
 
         if (searchVal) {
             const cleanSearchPhone = searchVal.replace(/\D/g, '');
+            const searchTerms = searchVal.split(' ').filter(t => t.length > 0);
             displayClients = displayClients.filter(c => {
-                const nameMatch = c.name && c.name.toLowerCase().includes(searchVal);
+                let nameMatch = false;
+                if (c.name) {
+                    const cNameLower = c.name.toLowerCase();
+                    nameMatch = searchTerms.every(term => cNameLower.includes(term));
+                }
                 const phoneMatch = cleanSearchPhone.length > 0 && c.phone && c.phone.replace(/\D/g, '').includes(cleanSearchPhone);
                 return nameMatch || phoneMatch;
             });

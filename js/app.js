@@ -178,8 +178,25 @@ const app = {
                 return;
             }
 
-            const matchedClients = this.clients.filter(c => c.name.toLowerCase().includes(val) || (c.phone && c.phone.includes(val))).slice(0, 3);
-            const matchedProducts = this.products.filter(p => p.name.toLowerCase().includes(val)).slice(0, 3);
+            const searchTerms = val.split(' ').filter(t => t.length > 0);
+            
+            const matchedClients = this.clients.filter(c => {
+                let nameMatch = false;
+                if (c.name) {
+                    const cLightLower = c.name.toLowerCase();
+                    nameMatch = searchTerms.every(t => cLightLower.includes(t));
+                }
+                return nameMatch || (c.phone && c.phone.includes(val));
+            }).slice(0, 3);
+
+            const matchedProducts = this.products.filter(p => {
+                let pMatch = false;
+                if (p.name) {
+                    const pLightLower = p.name.toLowerCase();
+                    pMatch = searchTerms.every(t => pLightLower.includes(t));
+                }
+                return pMatch;
+            }).slice(0, 3);
 
             let html = '';
             if (matchedClients.length > 0) {
@@ -942,8 +959,13 @@ const app = {
                     return;
                 }
 
+                const searchTerms = val.split(' ').filter(t => t.length > 0);
                 const matches = this.clients.filter(c => {
-                    const nameMatch = c.name && c.name.toLowerCase().includes(val);
+                    let nameMatch = false;
+                    if (c.name) {
+                        const cLightLower = c.name.toLowerCase();
+                        nameMatch = searchTerms.every(t => cLightLower.includes(t));
+                    }
                     const cleanValPhone = val.replace(/\D/g, '');
                     const phoneMatch = cleanValPhone.length > 0 && c.phone && c.phone.replace(/\D/g, '').includes(cleanValPhone);
                     return nameMatch || phoneMatch;
