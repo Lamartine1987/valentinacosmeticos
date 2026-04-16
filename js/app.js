@@ -471,7 +471,7 @@ const app = {
 
         let clientsQuery = db.collection("clients");
 
-        this.unsubClients = clientsQuery.orderBy("createdAt", "desc").limit(300).onSnapshot((snapshot) => {
+        this.unsubClients = clientsQuery.orderBy("createdAt", "desc").onSnapshot((snapshot) => {
             this.clients = [];
             snapshot.forEach((doc) => {
                 const data = doc.data();
