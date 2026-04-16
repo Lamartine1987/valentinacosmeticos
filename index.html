@@ -640,6 +640,18 @@
                             </tbody>
                         </table>
                     </div>
+                    <!-- Pagination Controls Clientes -->
+                    <div id="clients-pagination" style="display: flex; justify-content: flex-end; align-items: center; gap: 16px; margin-top: 16px;">
+                        <span id="clients-page-info" style="color: var(--text-muted); font-size: 14px;">Página 1 de 1</span>
+                        <div style="display: flex; gap: 8px;">
+                            <button type="button" class="btn-primary" id="btn-clients-prev" style="background: white; color: var(--text-main); border: 1px solid var(--border); box-shadow: var(--shadow-sm); padding: 8px 16px; min-width: unset;" onclick="app.changeClientsPage(-1)" disabled>
+                                <i class="fas fa-chevron-left"></i> Anterior
+                            </button>
+                            <button type="button" class="btn-primary" id="btn-clients-next" style="background: white; color: var(--text-main); border: 1px solid var(--border); box-shadow: var(--shadow-sm); padding: 8px 16px; min-width: unset;" onclick="app.changeClientsPage(1)" disabled>
+                                Próxima <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
                 </section>
 
                 <!-- Client Register Page -->

@@ -14,6 +14,7 @@ let storage;
 try {
     firebase.initializeApp(firebaseConfig);
     db = firebase.firestore();
+    db.enablePersistence({ synchronizeTabs: true }).catch(err => console.warn('Persistência não ativada:', err));
     storage = firebase.storage();
 } catch (e) {
     alert("Bloqueio de Carregamento na Nuvem! Verifique sua internet ou tente novamente. Código do erro: " + e.message);

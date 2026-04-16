@@ -167,6 +167,11 @@ export const clientsModule = {
         this.renderClientsTable();
     },
 
+    changeClientsPage(delta) {
+        window.app.currentClientsPage = (window.app.currentClientsPage || 1) + delta;
+        this.renderClientsList();
+    },
+
     renderClientsTable() {
         const tbody = document.getElementById('clients-table-body');
         if(!tbody) return;
@@ -411,11 +416,26 @@ export const clientsModule = {
         this.currentFilteredClients = displayClients;
 
         if (displayClients.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #64748B; padding: 32px;">Nenhuma cliente encontrada em sua base do Firebase.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #64748B; padding: 32px;">Nenhuma cliente encontrada em sua base do Firebase.</td></tr>`;
+            if (document.getElementById('clients-page-info')) document.getElementById('clients-page-info').innerText = 'Página 1 de 1';
             return;
         }
 
-        displayClients.forEach(client => {
+        window.app = window.app || {};
+        window.app.currentClientsPage = window.app.currentClientsPage || 1;
+        window.app.clientsPerPage = 50;
+
+        const totalPages = Math.ceil(displayClients.length / window.app.clientsPerPage);
+        if (window.app.currentClientsPage > totalPages) window.app.currentClientsPage = totalPages;
+        if (window.app.currentClientsPage < 1) window.app.currentClientsPage = 1;
+
+        if (document.getElementById('clients-page-info')) document.getElementById('clients-page-info').innerText = `Página ${window.app.currentClientsPage} de ${totalPages} (Total: ${displayClients.length})`;
+        if (document.getElementById('btn-clients-prev')) document.getElementById('btn-clients-prev').disabled = window.app.currentClientsPage <= 1;
+        if (document.getElementById('btn-clients-next')) document.getElementById('btn-clients-next').disabled = window.app.currentClientsPage >= totalPages;
+
+        const paginatedClients = displayClients.slice((window.app.currentClientsPage - 1) * window.app.clientsPerPage, window.app.currentClientsPage * window.app.clientsPerPage);
+
+        paginatedClients.forEach(client => {
             let storeBadge = '';
             if (client.storeId === 'loja_2') {
                 storeBadge = '<span style="background: #FCE7F3; color: #DB2777; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 8px; font-weight: bold; vertical-align: middle;">LOJA 2</span>';
