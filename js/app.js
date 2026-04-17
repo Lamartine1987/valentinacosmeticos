@@ -397,7 +397,7 @@ const app = {
             const sellers = [];
             snapshot.forEach(doc => {
                 const data = doc.data();
-                if (data.role === 'seller') {
+                if (data.role === 'seller' || data.role === 'manager' || data.role === 'admin') {
                     sellers.push({ id: doc.id, ...data });
                 }
             });
@@ -411,7 +411,7 @@ const app = {
                     html += '<option value="loja_2">🏢 Somente Loja 2 (Consolidado)</option>';
                     
                     if (sellers.length > 0) {
-                        html += '<optgroup label="Desempenho por Vendedor">';
+                        html += '<optgroup label="Desempenho por Equipe">';
                         sellers.forEach(s => {
                             html += `<option value="${s.id}">${s.name}</option>`;
                         });
