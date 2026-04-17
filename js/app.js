@@ -413,7 +413,9 @@ const app = {
                     if (sellers.length > 0) {
                         html += '<optgroup label="Desempenho por Equipe">';
                         sellers.forEach(s => {
-                            html += `<option value="${s.id}">${s.name}</option>`;
+                            if (s.name !== 'Administrador Principal') {
+                                html += `<option value="${s.id}">${s.name}</option>`;
+                            }
                         });
                         html += '</optgroup>';
                     }
@@ -427,11 +429,13 @@ const app = {
             if (assignSelect || clientAssignSelect) {
                 let assignHtml = '<option value="me">Deixar Comigo (Minha Autoria)</option>';
                 sellers.forEach(s => {
-                    let sId = s.storeId;
-                    if (sId === 'matriz') sId = 'loja_1';
-                    if (sId === 'filial_1') sId = 'loja_2';
-                    const storeName = sId === 'loja_1' ? 'Loja 1' : (sId === 'loja_2' ? 'Loja 2' : 'Global');
-                    assignHtml += `<option value="${s.id}" data-name="${s.name}" data-store="${s.storeId}">${storeName} - ${s.name}</option>`;
+                    if (s.name !== 'Administrador Principal') {
+                        let sId = s.storeId;
+                        if (sId === 'matriz') sId = 'loja_1';
+                        if (sId === 'filial_1') sId = 'loja_2';
+                        const storeName = sId === 'loja_1' ? 'Loja 1' : (sId === 'loja_2' ? 'Loja 2' : 'Global');
+                        assignHtml += `<option value="${s.id}" data-name="${s.name}" data-store="${s.storeId}">${storeName} - ${s.name}</option>`;
+                    }
                 });
                 if (assignSelect) assignSelect.innerHTML = assignHtml;
                 if (clientAssignSelect) clientAssignSelect.innerHTML = assignHtml;
