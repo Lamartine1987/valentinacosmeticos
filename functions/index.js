@@ -96,6 +96,21 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
             }
         }
     }
+    // 3. Tentar ler no formato Handoff (Transbordo de Robôs Externos)
+    else if (payload.handoff === true || payload.isHandoff === true) {
+        isFromMe = false;
+        phoneNum = payload.phone || payload.phoneNum || "";
+        
+        // Remove quaisquer caracteres que não sejam números (incluindo o +) e garante o formato padrão
+        phoneNum = phoneNum.replace(/\D/g, ''); 
+        
+        senderName = payload.name || payload.senderName || "Cliente Webhook";
+        textBody = payload.text || payload.message || "🤖 *TRANSBORDO DE ROBÔ*";
+        
+        if (payload.history) {
+            textBody = "🤖 *TRANSBORDO DE ROBÔ*\n\n" + textBody + "\n\n_*[Resumo Histórico do Robô]*_\n" + payload.history;
+        }
+    }
 
     // Ignorar Status e LIDs
     if (phoneNum.includes('@broadcast') || phoneNum.includes('@lid')) {

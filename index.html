@@ -1015,9 +1015,60 @@
                             style="background: none; border: none; padding: 12px 4px; font-size: 15px; font-weight: 500; color: var(--text-muted); border-bottom: 2px solid transparent; cursor: pointer; margin-bottom: -2px;">
                             <i class="fas fa-percent"></i> Comissionamento
                         </button>
+                        <button type="button" class="tab-btn admin-only" id="tab-btn-webhook"
+                            onclick="app.switchSettingsTab('webhook')"
+                            style="background: none; border: none; padding: 12px 4px; font-size: 15px; font-weight: 500; color: var(--text-muted); border-bottom: 2px solid transparent; cursor: pointer; margin-bottom: -2px;">
+                            <i class="fas fa-satellite-dish"></i> Webhooks Externos
+                        </button>
                     </div>
 
                     <form id="form-templates">
+                        <!-- TAB 7: WEBHOOK -->
+                        <div id="tab-content-webhook" class="settings-tab-content"
+                            style="display: none; width: 100%;">
+                            <div class="form-card" style="margin-bottom: 24px;">
+                                <div
+                                    style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px;">
+                                    <div>
+                                        <h3
+                                            style="color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                                            <i class="fas fa-satellite-dish" style="color: #6366F1;"></i> Integração com Robôs / Ferramentas Externas</h3>
+                                        <p style="color: var(--text-muted); font-size: 14px; margin-top: 4px;">
+                                            Gere o seu link exclusivo de Webhook para receber contatos (leads) automaticamente no seu Funil de Vendas, vindo de ferramentas como BotConversa, Make, N8N, ChatBot, Zapier, etc.
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="form-grid">
+                                    <div class="form-group" style="grid-column: span 2;">
+                                        <label>Selecione o Destino (Loja Responsável)</label>
+                                        <select id="setting-webhook-store"
+                                            style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer;"
+                                            onchange="app.generateWebhookUrl()">
+                                            <option value="">-- Selecione uma loja primeiro --</option>
+                                            <option value="loja_1">Loja 1</option>
+                                            <option value="loja_2">Loja 2</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group" style="grid-column: span 2;">
+                                        <label>URL de Automação (Copie e cole na ferramenta externa)</label>
+                                        <div style="display: flex; gap: 8px;">
+                                            <input type="text" id="setting-webhook-url" readonly
+                                                style="flex: 1; background: #F1F5F9; font-weight: 500; font-family: monospace; color: #475569;"
+                                                placeholder="Selecione a loja para gerar a URL...">
+                                            <button type="button" class="btn-primary" onclick="app.copyWebhookUrl()" id="btn-copy-webhook"
+                                                style="background: #6366F1; box-shadow: none;" disabled>
+                                                <i class="fas fa-copy"></i> Copiar
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div
+                                    style="margin-top: 16px; background: #EFF6FF; border: 1px solid #3B82F6; color: #1E3A8A; padding: 12px; border-radius: 8px; font-size: 13px;">
+                                    <i class="fas fa-info-circle"></i> Em sua aplicação de Origem (Ex: BotConversa), acesse as <b>Integrações/Webhooks</b> e cole este link apontando o método para <b>POST</b>. O sistema de triagem (Handoff) direcionará automaticamente as mensagens para cá.
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- TAB 6: COMMISSION -->
                         <div id="tab-content-commission" class="settings-tab-content"
                             style="display: none; width: 100%;">

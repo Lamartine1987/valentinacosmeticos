@@ -232,7 +232,7 @@ export const settingsModule = {
                     </div>
                     <div class="form-group" style="grid-column: span 2;">
                         <label>Token de Autenticação</label>
-                        <input type="text" class="api-v-token" placeholder="Bearer Token" value="${inst.token || ''}">
+                        <input type="password" class="api-v-token" placeholder="Bearer Token" value="${inst.token || ''}">
                     </div>
                     <div class="form-group" style="display: flex; align-items: center; gap: 8px; grid-column: span 2;">
                         <input type="checkbox" class="api-v-active" style="width: 20px; height: 20px;" ${inst.active ? 'checked' : ''}>
@@ -466,7 +466,8 @@ export const settingsModule = {
             'api': 'tab-content-api',
             'team': 'tab-content-team',
             'pix': 'tab-content-pix',
-            'commission': 'tab-content-commission'
+            'commission': 'tab-content-commission',
+            'webhook': 'tab-content-webhook'
         };
         const contentId = tabContents[tabId];
         const contentEl = document.getElementById(contentId);
@@ -505,6 +506,43 @@ export const settingsModule = {
         } finally {
             if (btn) { btn.innerHTML = originalHtml; btn.disabled = false; }
         }
+    },
+
+    generateWebhookUrl() {
+        const storeId = document.getElementById('setting-webhook-store').value;
+        const urlInput = document.getElementById('setting-webhook-url');
+        const btnCopy = document.getElementById('btn-copy-webhook');
+        
+        if (!storeId) {
+            urlInput.value = '';
+            btnCopy.disabled = true;
+            return;
+        }
+
+        const projectId = window.firebase ? window.firebase.app().options.projectId : 'valentinacosmeticos-5f239';
+        const region = 'us-central1';
+        const webhookEndpoint = `https://${region}-${projectId}.cloudfunctions.net/whatsappWebhook`;
+        
+        const finalUrl = `${webhookEndpoint}?storeId=${storeId}`;
+        urlInput.value = finalUrl;
+        btnCopy.disabled = false;
+    },
+
+    copyWebhookUrl() {
+        const urlInput = document.getElementById('setting-webhook-url');
+        if (!urlInput || !urlInput.value) return;
+
+        urlInput.select();
+        urlInput.setSelectionRange(0, 99999); 
+        navigator.clipboard.writeText(urlInput.value).then(() => {
+            if (typeof this.showToast === 'function') {
+                this.showToast('URL copiada para a área de transferência!');
+            } else if (window.app && typeof window.app.showToast === 'function') {
+                window.app.showToast('URL copiada para a área de transferência!');
+            }
+        }).catch(err => {
+            console.error('Falha ao copiar:', err);
+        });
     },
 
     async triggerDailyFunnels() {
