@@ -1293,9 +1293,16 @@ const app = {
                         const row = rows[i];
                         const storeId = row.querySelector('.api-v-store').value;
                         const provider = row.querySelector('.api-v-provider').value;
-                        const url = row.querySelector('.api-v-url').value;
-                        const token = row.querySelector('.api-v-token').value;
+                        let url = row.querySelector('.api-v-url').value;
+                        let token = row.querySelector('.api-v-token').value;
                         const active = row.querySelector('.api-v-active').checked;
+                        
+                        if (provider === 'meumotor') {
+                            const instanceName = storeId.replace('_', '');
+                            url = `https://apiz.com.br/${instanceName}/send-text`;
+                            token = 'minha_chave_super_secreta_123';
+                        }
+                        
                         this.apiSettings.instances.push({ id: Date.now() + i, storeId, provider, url, token, active });
                     }
                 }

@@ -219,20 +219,22 @@ export const settingsModule = {
                     </div>
                     <div class="form-group" style="grid-column: span 2;">
                         <label>Serviço da API</label>
-                        <select class="api-v-provider" required onchange="const panel = this.parentElement.parentElement.querySelector('.w-motor-panel'); if(panel) panel.style.display = this.value === 'meumotor' ? 'block' : 'none';">
+                        <select class="api-v-provider" required onchange="const panel = this.parentElement.parentElement.querySelector('.w-motor-panel'); if(panel) panel.style.display = this.value === 'meumotor' ? 'block' : 'none'; const urlTokens = this.parentElement.parentElement.querySelector('.url-token-groups'); if(urlTokens) urlTokens.style.display = this.value === 'meumotor' ? 'none' : 'contents';">
                             <option value="zapi" ${inst.provider === 'zapi' ? 'selected' : ''}>Z-API / ChatPro</option>
                             <option value="evolution" ${inst.provider === 'evolution' ? 'selected' : ''}>Evolution API / WhaConnect</option>
                             <option value="meumotor" ${inst.provider === 'meumotor' ? 'selected' : ''}>WhatsApp Motor (Próprio)</option>
                             <option value="webhook" ${inst.provider === 'webhook' ? 'selected' : ''}>Webhook Externo</option>
                         </select>
                     </div>
-                    <div class="form-group" style="grid-column: span 2;">
-                        <label>URL / Webhook Endpoint</label>
-                        <input type="url" class="api-v-url" placeholder="https://api..." value="${inst.url || ''}" required>
-                    </div>
-                    <div class="form-group" style="grid-column: span 2;">
-                        <label>Token de Autenticação</label>
-                        <input type="password" class="api-v-token" placeholder="Bearer Token" value="${inst.token || ''}">
+                    <div class="url-token-groups" style="display: ${inst.provider === 'meumotor' ? 'none' : 'contents'};">
+                        <div class="form-group" style="grid-column: span 2;">
+                            <label>URL / Webhook Endpoint</label>
+                            <input type="url" class="api-v-url" placeholder="https://api..." value="${inst.url || ''}">
+                        </div>
+                        <div class="form-group" style="grid-column: span 2;">
+                            <label>Token de Autenticação</label>
+                            <input type="password" class="api-v-token" placeholder="Bearer Token" value="${inst.token || ''}">
+                        </div>
                     </div>
                     <div class="form-group" style="display: flex; align-items: center; gap: 8px; grid-column: span 2;">
                         <input type="checkbox" class="api-v-active" style="width: 20px; height: 20px;" ${inst.active ? 'checked' : ''}>
@@ -261,35 +263,47 @@ export const settingsModule = {
             const row = container.children[index];
             if (!row) return;
 
-            const urlInput = row.querySelector('.api-v-url').value;
-            const tokenInput = row.querySelector('.api-v-token').value;
+            const providerInput = row.querySelector('.api-v-provider')?.value;
+            const isMeuMotor = providerInput === 'meumotor';
+            
             const statusText = document.getElementById(`qr-status-text-${index}`);
             const qrContainer = document.getElementById(`qr-code-container-${index}`);
-
-            if (!urlInput) {
-                if (statusText) {
-                    statusText.textContent = "Preencha a URL da API primeiro e clique em Salvar!";
-                    statusText.style.color = "#EF4444";
-                }
-                return;
-            }
-
+            
+            let urlInput = '';
+            let tokenInput = '';
             let baseUrl = '';
             let instanceName = '';
 
-            try {
-                const url = new URL(urlInput);
-                baseUrl = url.origin;
-                // example: http://187.127.4.145:3000/loja1/send-text
-                const paths = url.pathname.split('/').filter(p => p);
-                if (paths.length >= 2) {
-                    instanceName = paths[0]; // 'loja1'
-                } else {
-                    instanceName = prompt("Não foi possível detectar o nome da instância pela URL. Digite o nome da instância manualmente:", "loja1");
+            if (isMeuMotor) {
+                const storeInput = row.querySelector('.api-v-store')?.value || 'loja_1';
+                instanceName = storeInput.replace('_', '');
+                baseUrl = 'https://apiz.com.br';
+                tokenInput = 'minha_chave_super_secreta_123';
+            } else {
+                urlInput = row.querySelector('.api-v-url').value;
+                tokenInput = row.querySelector('.api-v-token').value;
+
+                if (!urlInput) {
+                    if (statusText) {
+                        statusText.textContent = "Preencha a URL da API primeiro e clique em Salvar!";
+                        statusText.style.color = "#EF4444";
+                    }
+                    return;
                 }
-            } catch (e) {
-                if (statusText) statusText.textContent = "URL Inválida.";
-                return;
+
+                try {
+                    const url = new URL(urlInput);
+                    baseUrl = url.origin;
+                    const paths = url.pathname.split('/').filter(p => p);
+                    if (paths.length >= 2) {
+                        instanceName = paths[0]; 
+                    } else {
+                        instanceName = prompt("Não foi possível detectar o nome da instância pela URL. Digite o nome da instância manualmente:", "loja1");
+                    }
+                } catch (e) {
+                    if (statusText) statusText.textContent = "URL Inválida.";
+                    return;
+                }
             }
 
             if (!instanceName) return;
