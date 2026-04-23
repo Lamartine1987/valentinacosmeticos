@@ -283,6 +283,14 @@
 
                 <!-- Reports Page -->
                 <section class="page" id="page-reports">
+                    <!-- PRINT ONLY HEADER -->
+                    <div id="print-header" class="print-only" style="display: none; text-align: center; margin-bottom: 24px;">
+                        <img src="assets/img/logo.png" alt="Valentina Cosméticos" style="width: 200px; margin-bottom: 16px;">
+                        <h1 style="font-size: 24px; color: #1E293B; margin-bottom: 8px;">Relatório de Resultados</h1>
+                        <p style="font-size: 14px; color: #64748B;" id="print-header-details">Consultor: Todos | Período: Todo o histórico</p>
+                        <hr style="margin-top: 16px; border: 0; border-top: 1px solid #E2E8F0;">
+                    </div>
+                    
                     <div class="page-header" style="flex-direction: column; align-items: flex-start; gap: 16px;">
                         <div>
                             <h2>Estatísticas e Resultados</h2>
@@ -327,13 +335,35 @@
                                     style="color: var(--text-muted); font-size: 14px; margin-left: 8px;"></i>
                                 <select id="report-filter-store" onchange="app.renderReports()"
                                     style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; outline: none; background: white; font-size: 13px; color: var(--text-main); cursor: pointer;">
-                                    <option value="all">Rede Completa</option>
+                                    <option value="all">Todas as Lojas</option>
+                                    <option value="loja_1">Loja 1</option>
+                                    <option value="loja_2">Loja 2</option>
                                 </select>
                             </div>
-                            <button class="btn-secondary"
-                                onclick="document.getElementById('report-filter-start').value=''; document.getElementById('report-filter-end').value=''; document.getElementById('report-filter-client').value=''; document.getElementById('report-filter-product').value=''; document.getElementById('report-filter-city').value=''; const rStore = document.getElementById('report-filter-store'); if(rStore) rStore.value='all'; app.renderReports();"
-                                style="padding: 6px 12px; font-size: 12px; border-radius: 6px; background: transparent; color: #EF4444; border: 1px solid #EF4444; cursor: pointer; margin-left: auto;">Limpar
-                                Filtros</button>
+                            <div class="admin-only" style="display:flex; align-items:center; gap:8px; display:none;">
+                                <i class="fas fa-user-tie"
+                                    style="color: var(--text-muted); font-size: 14px; margin-left: 8px;"></i>
+                                <select id="report-filter-seller" onchange="app.renderReports()"
+                                    style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; outline: none; background: white; font-size: 13px; color: var(--text-main); cursor: pointer;">
+                                    <option value="all">Todos os Membros</option>
+                                </select>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <label style="font-size: 13px; color: var(--text-muted); font-weight: 500; margin-left: 8px;">Qtd. Top Produtos:</label>
+                                <input type="number" id="report-top-products-limit" value="" placeholder="5" min="1" max="100" onchange="app.renderReports()" style="padding: 8px; border: 1px solid var(--border); border-radius: 6px; outline: none; background: white; font-size: 13px; color: var(--text-main); width: 60px;">
+                            </div>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <label style="font-size: 13px; color: var(--text-muted); font-weight: 500; margin-left: 8px;">Qtd. Top Clientes:</label>
+                                <input type="number" id="report-top-clients-limit" value="" placeholder="10" min="1" max="100" onchange="app.renderReports()" style="padding: 8px; border: 1px solid var(--border); border-radius: 6px; outline: none; background: white; font-size: 13px; color: var(--text-main); width: 60px;">
+                            </div>
+                            <div style="display: flex; gap: 8px; margin-left: auto;">
+                                <button class="btn-secondary" onclick="window.print()" style="padding: 6px 12px; font-size: 12px; border-radius: 6px; background: transparent; color: #4F46E5; border: 1px solid #4F46E5; cursor: pointer;">
+                                    <i class="fas fa-print"></i> Imprimir
+                                </button>
+                                <button class="btn-secondary"
+                                    onclick="document.getElementById('report-filter-start').value=''; document.getElementById('report-filter-end').value=''; document.getElementById('report-filter-client').value=''; document.getElementById('report-filter-product').value=''; document.getElementById('report-filter-city').value=''; const rStore = document.getElementById('report-filter-store'); if(rStore) rStore.value='all'; const rSeller = document.getElementById('report-filter-seller'); if(rSeller) rSeller.value='all'; const tp = document.getElementById('report-top-products-limit'); if(tp) tp.value=''; const tc = document.getElementById('report-top-clients-limit'); if(tc) tc.value=''; app.renderReports();"
+                                    style="padding: 6px 12px; font-size: 12px; border-radius: 6px; background: transparent; color: #EF4444; border: 1px solid #EF4444; cursor: pointer;">Limpar Filtros</button>
+                            </div>
                         </div>
                     </div>
 
@@ -376,18 +406,31 @@
 
                     <div class="charts-grid" style="grid-template-columns: repeat(3, 1fr);">
                         <div class="chart-card" style="grid-column: span 2;">
-                            <h3 style="margin-bottom: 16px; font-size: 16px;">Faturamento Mensal (Anual)</h3>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                                <h3 style="margin-bottom: 0; font-size: 16px;">Faturamento</h3>
+                                <select id="report-time-grouping" class="filter-input" style="width: auto; padding: 4px 8px; font-size: 13px;" onchange="app.renderReports()">
+                                    <option value="day">Por Dia</option>
+                                    <option value="month" selected>Por Mês</option>
+                                    <option value="year">Por Ano</option>
+                                </select>
+                            </div>
                             <canvas id="chart-revenue" height="100"></canvas>
                         </div>
                         <div class="chart-card">
-                            <h3 style="margin-bottom: 16px; font-size: 16px;">Top 5 Produtos Mais Vendidos</h3>
-                            <div style="height: 250px; display: flex; justify-content: center;">
-                                <canvas id="chart-products"></canvas>
+                            <h3 style="margin-bottom: 16px; font-size: 16px;">
+                                <span id="lbl-top-products">Top 5 Produtos Mais Vendidos</span>
+                            </h3>
+                            <div class="scrollable-list" style="height: 360px; overflow-y: auto; padding-right: 8px;">
+                                <div id="list-top-products" style="display: flex; flex-direction: column; gap: 8px;"></div>
                             </div>
                         </div>
                         <div class="chart-card" style="grid-column: span 2;">
-                            <h3 style="margin-bottom: 16px; font-size: 16px;">Top 10 Clientes Mais Valiosos (LTV)</h3>
-                            <canvas id="chart-top-clients" height="80"></canvas>
+                            <h3 style="margin-bottom: 16px; font-size: 16px;">
+                                <span id="lbl-top-clients">Top 10 Clientes Mais Valiosos (LTV)</span>
+                            </h3>
+                            <div class="scrollable-list" style="height: 360px; overflow-y: auto; padding-right: 8px;">
+                                <div id="list-top-clients" style="display: flex; flex-direction: column; gap: 8px;"></div>
+                            </div>
                         </div>
                         <div class="chart-card">
                             <h3 style="margin-bottom: 16px; font-size: 16px;">Faturamento por Loja</h3>

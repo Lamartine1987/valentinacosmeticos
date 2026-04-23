@@ -411,7 +411,7 @@ export const settingsModule = {
                         correctLevel : QRCode.CorrectLevel.H
                     });
                     
-                    // Simple polling mechanism
+                    let currentQr = data.qr;
                     let attempts = 0;
                     const checkInterval = setInterval(async () => {
                         attempts++;
@@ -424,9 +424,20 @@ export const settingsModule = {
                                     statusText.innerHTML = 'WhatsApp Conectado!';
                                     statusText.style.color = "#10B981";
                                 }
+                            } else if (pollData.qr && pollData.qr !== currentQr) {
+                                currentQr = pollData.qr;
+                                qrContainer.innerHTML = '';
+                                new window.QRCode(qrContainer, {
+                                    text: currentQr,
+                                    width: 256,
+                                    height: 256,
+                                    colorDark: "#000000",
+                                    colorLight: "#ffffff",
+                                    correctLevel: window.QRCode.CorrectLevel.H
+                                });
                             }
                         } catch (e) {}
-                        if (attempts > 30) clearInterval(checkInterval); // Stop after 1 minute
+                        if (attempts > 60) clearInterval(checkInterval); // Stop after 2 minutes
                     }, 2000);
                 }
             } else {

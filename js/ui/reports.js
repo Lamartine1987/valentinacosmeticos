@@ -42,6 +42,29 @@ export const reportsModule = {
                 cityDt.appendChild(opt);
             });
         }
+        
+        const sellerFilter = document.getElementById('report-filter-seller');
+        if (sellerFilter) {
+            const currentSellerVal = sellerFilter.value;
+            sellerFilter.innerHTML = '<option value="all">Todos os Membros</option>';
+            let sellers = [];
+            if (window.app && window.app.teamUsersList) {
+                sellers = window.app.teamUsersList.map(u => u.name).filter(Boolean);
+            } else {
+                sellers = [...new Set(this.sales.map(s => s.sellerName))].filter(Boolean);
+            }
+            sellers.sort().forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s;
+                opt.textContent = s;
+                sellerFilter.appendChild(opt);
+            });
+            if (currentSellerVal && Array.from(sellerFilter.options).some(opt => opt.value === currentSellerVal)) {
+                sellerFilter.value = currentSellerVal;
+            } else {
+                sellerFilter.value = 'all';
+            }
+        }
     },
 
     renderReports() {
@@ -50,13 +73,35 @@ export const reportsModule = {
         const fClient = (document.getElementById('report-filter-client') || {value:''}).value.trim().toLowerCase();
         const fProd = (document.getElementById('report-filter-product') || {value:''}).value.trim().toLowerCase();
         const fCity = (document.getElementById('report-filter-city') || {value:''}).value.trim().toLowerCase();
-        const fStoreSeller = (document.getElementById('report-filter-store') || {value:'all'}).value;
+        const fStore = (document.getElementById('report-filter-store') || {value:'all'}).value;
+        const fSeller = (document.getElementById('report-filter-seller') || {value:'all'}).value;
+        const topProductsLimit = parseInt((document.getElementById('report-top-products-limit') || {value: 5}).value) || 5;
+        const topClientsLimit = parseInt((document.getElementById('report-top-clients-limit') || {value: 10}).value) || 10;
+        const timeGrouping = (document.getElementById('report-time-grouping') || {value: 'month'}).value;
+
+        const printDetails = document.getElementById('print-header-details');
+        if (printDetails) {
+            const consultorName = fSeller === 'all' ? 'Todos' : fSeller;
+            let dateStr = 'Todo o histórico';
+            if (fStart && fEnd) dateStr = `De ${fStart.split('-').reverse().join('/')} até ${fEnd.split('-').reverse().join('/')}`;
+            else if (fStart) dateStr = `A partir de ${fStart.split('-').reverse().join('/')}`;
+            else if (fEnd) dateStr = `Até ${fEnd.split('-').reverse().join('/')}`;
+            printDetails.innerText = `Consultor: ${consultorName} | Período: ${dateStr}`;
+        }
+
+        if (document.getElementById('lbl-top-products')) {
+            document.getElementById('lbl-top-products').innerText = `Top ${topProductsLimit} Produtos Mais Vendidos`;
+        }
+        if (document.getElementById('lbl-top-clients')) {
+            document.getElementById('lbl-top-clients').innerText = `Top ${topClientsLimit} Clientes Mais Valiosos (LTV)`;
+        }
 
         let filteredSales = [...this.sales];
 
         if (fClient) filteredSales = filteredSales.filter(s => s.name && s.name.toLowerCase().includes(fClient));
         if (fProd) filteredSales = filteredSales.filter(s => s.product && s.product.toLowerCase().includes(fProd));
-        if (fStoreSeller !== 'all') filteredSales = filteredSales.filter(s => s.sellerId === fStoreSeller || s.storeId === fStoreSeller);
+        if (fStore !== 'all') filteredSales = filteredSales.filter(s => s.storeId === fStore);
+        if (fSeller !== 'all') filteredSales = filteredSales.filter(s => s.sellerName === fSeller);
         
         if (fCity) {
             filteredSales = filteredSales.filter(s => {
@@ -111,6 +156,8 @@ export const reportsModule = {
         }
         
         const monthlyRevenue = Array(12).fill(0);
+        const dailyRevenue = {};
+        const yearlyRevenue = {};
         const productCounts = {};
         const clientGlobalAgg = {};
         const storeRevenue = {};
@@ -144,6 +191,12 @@ export const reportsModule = {
                 const month = parseInt(m);
                 const day = parseInt(dStr || '1');
                 
+                if (!dailyRevenue[sale.date]) dailyRevenue[sale.date] = 0;
+                dailyRevenue[sale.date] += val;
+                
+                if (!yearlyRevenue[year]) yearlyRevenue[year] = 0;
+                yearlyRevenue[year] += val;
+
                 if (year === chartYear) {
                     totalYear += val;
                     monthlyRevenue[month - 1] += val;
@@ -159,30 +212,38 @@ export const reportsModule = {
                 sale.items.forEach(item => {
                     const prodName = item.product;
                     if (fProd && !prodName.toLowerCase().includes(fProd)) return;
-                    if (!productCounts[prodName]) productCounts[prodName] = 0;
-                    productCounts[prodName] += (parseInt(item.quantity) || 1);
+                    if (!productCounts[prodName]) productCounts[prodName] = {count: 0, value: 0};
+                    const qty = parseInt(item.quantity) || 1;
+                    productCounts[prodName].count += qty;
+                    let itemVal = (parseFloat(item.price) || 0) * qty;
+                    if (itemVal === 0 && val > 0) itemVal = val / sale.items.length;
+                    productCounts[prodName].value += itemVal;
                 });
             } else if (sale.product) {
                 const prods = sale.product.split(',').map(p => p.trim());
                 if (prods.length > 1) {
+                    const valPerProd = val / prods.length;
                     prods.forEach(p => {
                         if (fProd && !p.toLowerCase().includes(fProd)) return;
-                        if (!productCounts[p]) productCounts[p] = 0;
-                        productCounts[p] += 1;
+                        if (!productCounts[p]) productCounts[p] = {count: 0, value: 0};
+                        productCounts[p].count += 1;
+                        productCounts[p].value += valPerProd;
                     });
                 } else {
                     const prodName = sale.product.trim();
                     if (fProd && !prodName.toLowerCase().includes(fProd)) return;
-                    if (!productCounts[prodName]) productCounts[prodName] = 0;
-                    productCounts[prodName] += (parseInt(sale.quantity) || 1);
+                    if (!productCounts[prodName]) productCounts[prodName] = {count: 0, value: 0};
+                    const qty = parseInt(sale.quantity) || 1;
+                    productCounts[prodName].count += qty;
+                    productCounts[prodName].value += val;
                 }
             }
         });
 
         const sortedProducts = Object.keys(productCounts)
-            .map(p => ({ name: p, count: productCounts[p] }))
+            .map(p => ({ name: p, count: productCounts[p].count, value: productCounts[p].value }))
             .sort((a, b) => b.count - a.count)
-            .slice(0, 5);
+            .slice(0, topProductsLimit);
             
         const prodLabels = sortedProducts.map(p => p.name);
         const prodData = sortedProducts.map(p => p.count);
@@ -214,6 +275,29 @@ export const reportsModule = {
             document.getElementById('stat-total-commissions').innerText = `R$ ${totalCommissions.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
         }
 
+        let revLabels = [];
+        let revData = [];
+        let revTitle = 'Faturamento';
+
+        if (timeGrouping === 'day') {
+            const sortedDates = Object.keys(dailyRevenue).sort();
+            revLabels = sortedDates.map(d => {
+                const [y, m, day] = d.split('-');
+                return `${day}/${m}`;
+            });
+            revData = sortedDates.map(d => dailyRevenue[d]);
+            revTitle = 'Faturamento Diário';
+        } else if (timeGrouping === 'year') {
+            const sortedYears = Object.keys(yearlyRevenue).sort();
+            revLabels = sortedYears;
+            revData = sortedYears.map(y => yearlyRevenue[y]);
+            revTitle = 'Faturamento Anual';
+        } else {
+            revLabels = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+            revData = monthlyRevenue;
+            revTitle = 'Faturamento (' + chartYear + ')';
+        }
+
         const revCanvas = document.getElementById('chart-revenue');
         if (typeof Chart !== 'undefined' && revCanvas) {
             const ctxRev = revCanvas.getContext('2d');
@@ -221,10 +305,10 @@ export const reportsModule = {
             this.charts.revenue = new Chart(ctxRev, {
                 type: 'bar',
                 data: {
-                    labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
+                    labels: revLabels,
                     datasets: [{
-                        label: 'Faturamento (' + chartYear + ')',
-                        data: monthlyRevenue,
+                        label: revTitle,
+                        data: revData,
                         backgroundColor: 'rgba(109, 40, 217, 0.7)',
                         borderColor: 'rgba(109, 40, 217, 1)',
                         borderWidth: 1,
@@ -235,96 +319,71 @@ export const reportsModule = {
             });
         }
 
-        const prodCanvas = document.getElementById('chart-products');
-        if (typeof Chart !== 'undefined' && prodCanvas) {
-            const ctxProd = prodCanvas.getContext('2d');
-            if (this.charts.products) this.charts.products.destroy();
-            
-            const hasData = prodData.length > 0;
-
-            this.charts.products = new Chart(ctxProd, {
-                type: 'doughnut',
-                data: {
-                    labels: hasData ? prodLabels : ['Nenhuma venda encontrada'],
-                    datasets: [{
-                        data: hasData ? prodData : [1],
-                        backgroundColor: hasData ? ['#8B5CF6', '#EC4899', '#10B981', '#F59E0B', '#3B82F6'] : ['#E2E8F0'],
-                        borderWidth: 0
-                    }]
-                },
-                options: { 
-                    animation: { duration: 0 },
-                    responsive: true, 
-                    maintainAspectRatio: false, 
-                    plugins: { 
-                         legend: { position: 'bottom' },
-                         tooltip: {
-                             callbacks: {
-                                 label: function(context) {
-                                     if (!hasData) return ' 0 unidades vendidas';
-                                     return ' ' + context.formattedValue + ' unidades vendidas';
-                                 }
-                             }
-                         }
-                    } 
-                }
-            });
+        const listProducts = document.getElementById('list-top-products');
+        if (listProducts) {
+            listProducts.innerHTML = '';
+            if (sortedProducts.length === 0) {
+                listProducts.innerHTML = '<p style="color: var(--text-muted); font-size: 13px; text-align: center; margin-top: 20px;">Nenhum produto vendido no período.</p>';
+            } else {
+                const maxProdCount = sortedProducts[0].count;
+                sortedProducts.forEach((p, idx) => {
+                    const pct = Math.max(1, (p.count / maxProdCount) * 100);
+                    const row = document.createElement('div');
+                    row.style.cssText = "position: relative; padding: 12px; border-bottom: 1px solid var(--border); overflow: hidden;";
+                    row.innerHTML = `
+                        <div style="position: absolute; top: 0; left: 0; height: 100%; background: var(--primary-light); width: ${pct}%; opacity: 0.6; z-index: 0; border-top-right-radius: 6px; border-bottom-right-radius: 6px; transition: width 0.5s ease;"></div>
+                        <div style="position: relative; z-index: 1; display: flex; justify-content: space-between; align-items: center;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <span style="font-weight: bold; color: var(--text-muted); width: 24px;">#${idx + 1}</span>
+                                <span style="font-size: 13px; color: var(--text-main); font-weight: 500;">${p.name}</span>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <div style="font-size: 13px; font-weight: bold; color: var(--primary); background: rgba(255,255,255,0.7); border: 1px solid var(--primary-light); padding: 4px 8px; border-radius: 4px; white-space: nowrap; backdrop-filter: blur(2px);">
+                                    ${p.count} un
+                                </div>
+                                <div style="font-size: 13px; font-weight: bold; color: #10B981; background: rgba(255,255,255,0.7); border: 1px solid #DEF7EC; padding: 4px 8px; border-radius: 4px; white-space: nowrap; backdrop-filter: blur(2px);">
+                                    R$ ${p.value.toLocaleString('pt-BR', {minimumFractionDigits: 2})}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    listProducts.appendChild(row);
+                });
+            }
         }
 
-        const topClientsCanvas = document.getElementById('chart-top-clients');
-        if (typeof Chart !== 'undefined' && topClientsCanvas) {
-            const ctxTopClients = topClientsCanvas.getContext('2d');
-            if (this.charts.topClients) this.charts.topClients.destroy();
-            
+        const listClients = document.getElementById('list-top-clients');
+        if (listClients) {
+            listClients.innerHTML = '';
             const sortedClients = Object.keys(clientGlobalAgg)
                 .filter(c => c !== 'Desconhecido')
                 .map(c => ({ name: c, value: clientGlobalAgg[c] }))
                 .sort((a, b) => b.value - a.value)
-                .slice(0, 10);
-                
-            const hasClientData = sortedClients.length > 0;
-            const clientLabels = hasClientData ? sortedClients.map(c => c.name) : ['Nenhuma venda encontrada'];
-            const clientData = hasClientData ? sortedClients.map(c => c.value) : [0];
+                .slice(0, topClientsLimit);
 
-            this.charts.topClients = new Chart(ctxTopClients, {
-                type: 'bar',
-                data: {
-                    labels: clientLabels,
-                    datasets: [{
-                        label: 'Total Comprado (R$)',
-                        data: clientData,
-                        backgroundColor: 'rgba(16, 185, 129, 0.7)',
-                        borderColor: 'rgba(16, 185, 129, 1)',
-                        borderWidth: 1,
-                        borderRadius: 4
-                    }]
-                },
-                options: { 
-                    animation: { duration: 0 },
-                    responsive: true,
-                    indexAxis: 'y',
-                    scales: { 
-                        x: { 
-                            beginAtZero: true,
-                            ticks: {
-                                callback: function(value) {
-                                    return 'R$ ' + value;
-                                }
-                            }
-                        } 
-                    },
-                    plugins: {
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    if (!hasClientData) return ' R$ 0,00';
-                                    return ' R$ ' + context.parsed.x.toLocaleString('pt-BR', {minimumFractionDigits: 2});
-                                }
-                            }
-                        }
-                    }
-                }
-            });
+            if (sortedClients.length === 0) {
+                listClients.innerHTML = '<p style="color: var(--text-muted); font-size: 13px; text-align: center; margin-top: 20px;">Nenhum cliente no período.</p>';
+            } else {
+                const maxClientValue = sortedClients[0].value;
+                sortedClients.forEach((c, idx) => {
+                    const pct = Math.max(1, (c.value / maxClientValue) * 100);
+                    const row = document.createElement('div');
+                    row.style.cssText = "position: relative; padding: 12px; border-bottom: 1px solid var(--border); overflow: hidden;";
+                    row.innerHTML = `
+                        <div style="position: absolute; top: 0; left: 0; height: 100%; background: #DEF7EC; width: ${pct}%; opacity: 0.8; z-index: 0; border-top-right-radius: 6px; border-bottom-right-radius: 6px; transition: width 0.5s ease;"></div>
+                        <div style="position: relative; z-index: 1; display: flex; justify-content: space-between; align-items: center;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <span style="font-weight: bold; color: var(--text-muted); width: 24px;">#${idx + 1}</span>
+                                <span style="font-size: 13px; color: var(--text-main); font-weight: 500;">${c.name}</span>
+                            </div>
+                            <div style="font-size: 13px; font-weight: bold; color: #059669; background: rgba(255,255,255,0.7); border: 1px solid #A7F3D0; padding: 4px 8px; border-radius: 4px; white-space: nowrap; backdrop-filter: blur(2px);">
+                                R$ ${c.value.toLocaleString('pt-BR', {minimumFractionDigits: 2})}
+                            </div>
+                        </div>
+                    `;
+                    listClients.appendChild(row);
+                });
+            }
         }
 
         const storeCanvas = document.getElementById('chart-stores');
