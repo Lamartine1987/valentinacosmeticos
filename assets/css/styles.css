@@ -530,6 +530,7 @@ body { background: var(--bg-color); color: var(--text-main); font-size: 15px; }
 
 @media print {
     .print-only { display: block !important; }
+    #report-filtered-clients { display: none !important; }
     .toast { display: none !important; }
     .sidebar, .filters-bar, .page-header, .btn-primary, .btn-secondary, .btn-icon, .actions, .sidebar-overlay, .topbar { display: none !important; }
     .app-container { display: block !important; height: auto !important; overflow: visible !important; background: white !important; }

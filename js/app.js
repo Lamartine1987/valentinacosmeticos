@@ -53,7 +53,8 @@ const app = {
         if (this.setupFinance) this.setupFinance();
         
         // Setup date defaulting to today
-        document.getElementById('r-date').valueAsDate = new Date();
+        const tzoffsetInit = (new Date()).getTimezoneOffset() * 60000;
+        document.getElementById('r-date').value = (new Date(Date.now() - tzoffsetInit)).toISOString().split('T')[0];
 
         // Apply Sidebar Desktop preference
         if (window.innerWidth > 900) {
@@ -669,7 +670,10 @@ const app = {
         if (form) form.reset();
         
         const dateInput = document.getElementById('r-date');
-        if (dateInput) dateInput.valueAsDate = new Date();
+        if (dateInput) {
+            const tzoffset = (new Date()).getTimezoneOffset() * 60000;
+            dateInput.value = (new Date(Date.now() - tzoffset)).toISOString().split('T')[0];
+        }
         
         const cont = document.getElementById('sale-items-container');
         if (cont) { 
