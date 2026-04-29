@@ -913,3 +913,80 @@ exports.getInfrastructureCosts = functions.https.onCall(async (data, context) =>
         return { rawCost: 0, finalCost: 0, currency: 'BRL', status: 'error', error: e.message };
     }
 });
+
+exports.recordMonthlyFirebaseCost = onSchedule({
+    schedule: "15 0 1 * *",
+    timeZone: "America/Sao_Paulo"
+}, async (event) => {
+    try {
+        console.log("Iniciando rotina de fechamento de custos do Firebase (mês anterior)...");
+        
+        const datasetId = 'faturamento_crm';
+        const dataset = bigquery.dataset(datasetId);
+        const [tables] = await dataset.getTables();
+        
+        let billingTableId = null;
+        for (let table of tables) {
+            if (table.id.startsWith('gcp_billing_export_v1_')) {
+                billingTableId = table.id;
+                break;
+            }
+        }
+
+        if (!billingTableId) {
+             console.error("Tabela de faturamento não encontrada no BigQuery.");
+             return;
+        }
+
+        const projectId = process.env.GCP_PROJECT || process.env.GCLOUD_PROJECT || 'valentinacosmeticos-5f239';
+
+        const sqlQuery = `
+            SELECT
+                SUM(cost) as total_cost,
+                currency
+            FROM
+                \`${projectId}.${datasetId}.${billingTableId}\`
+            WHERE
+                EXTRACT(MONTH FROM usage_start_time) = EXTRACT(MONTH FROM CURRENT_TIMESTAMP() - INTERVAL 1 DAY)
+                AND EXTRACT(YEAR FROM usage_start_time) = EXTRACT(YEAR FROM CURRENT_TIMESTAMP() - INTERVAL 1 DAY)
+            GROUP BY
+                currency
+        `;
+
+        const options = {
+            query: sqlQuery,
+            location: 'US',
+        };
+
+        const [job] = await bigquery.createQueryJob(options);
+        const [rows] = await job.getQueryResults();
+
+        let rawCost = 0;
+        let currency = 'BRL';
+
+        if (rows && rows.length > 0) {
+            rawCost = rows[0].total_cost || 0;
+            currency = rows[0].currency || 'BRL';
+        }
+
+        const finalCost = rawCost * 1.30;
+        
+        const now = new Date();
+        now.setMonth(now.getMonth() - 1);
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const docId = `${year}-${month}`;
+
+        await db.collection('firebase_costs').doc(docId).set({
+            period: `${month}/${year}`,
+            rawCost: parseFloat(rawCost.toFixed(2)),
+            finalCost: parseFloat(finalCost.toFixed(2)),
+            currency: currency,
+            timestamp: admin.firestore.FieldValue.serverTimestamp()
+        });
+        
+        console.log(`Custos do período ${docId} salvos com sucesso: ${finalCost.toFixed(2)} ${currency}`);
+    } catch(e) {
+        console.error("Erro na rotina de custos do Firebase:", e);
+    }
+});

@@ -68,6 +68,57 @@ export const financeModule = {
         }
     },
 
+    async openFirebaseCostHistory() {
+        if (!this.currentUserProfile || this.currentUserProfile.role !== 'admin') return;
+        
+        const modal = document.getElementById('firebase-cost-history-modal');
+        if (!modal) return;
+        
+        const tbody = document.getElementById('firebase-cost-list');
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 20px;"><i class="fas fa-spinner fa-spin"></i> Carregando...</td></tr>';
+        }
+        
+        modal.classList.add('active');
+
+        try {
+            const snapshot = await db.collection('firebase_costs').orderBy('period', 'desc').get();
+            if (!tbody) return;
+            
+            if (snapshot.empty) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding: 20px;">Nenhum histórico encontrado. O primeiro faturamento será registrado no próximo dia 1º.</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = '';
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                
+                // Formatar a data de registro
+                let dataRegistro = '-';
+                if (data.timestamp && data.timestamp.toDate) {
+                    const d = data.timestamp.toDate();
+                    dataRegistro = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth()+1).padStart(2, '0')}/${d.getFullYear()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+                }
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="font-weight: 500;">${data.period}</td>
+                    <td>R$ ${(data.rawCost || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                    <td style="color: #D97706; font-weight: bold;">R$ ${(data.finalCost || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                    <td>${data.currency || 'BRL'}</td>
+                    <td style="color: var(--text-muted); font-size: 13px;">${dataRegistro}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        } catch (e) {
+            console.error('Erro ao buscar histórico de custos do Firebase:', e);
+            if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#EF4444; padding: 20px;">Erro ao carregar o histórico.</td></tr>';
+            }
+        }
+    },
+
     async submitExpense(e) {
         const btn = e.target.querySelector('button[type="submit"]');
         const originalText = btn.innerHTML;

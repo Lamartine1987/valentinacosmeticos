@@ -112,7 +112,8 @@
                         </div>
                     </div>
                     <div style="display:flex; gap: 4px;">
-                        <button class="btn-icon" style="color: #64748B;" onclick="app.requestPasswordChange()" title="Redefinir Senha">
+                        <button class="btn-icon" style="color: #64748B;" onclick="app.requestPasswordChange()"
+                            title="Redefinir Senha">
                             <i class="fas fa-key"></i>
                         </button>
                         <button class="btn-icon" style="color: #EF4444;" onclick="app.logout()" title="Sair do Sistema">
@@ -263,14 +264,16 @@
                                     <button class="btn-primary" id="btn-disparar-aniversarios"
                                         onclick="app.dispararAniversarios()"
                                         style="padding: 6px 12px; font-size: 13px; background: #db2777; align-items: center; display: none;">
-                                        <i class="fas fa-bullhorn" style="margin-right: 6px;"></i> <span>Campanha Promocional</span>
+                                        <i class="fas fa-bullhorn" style="margin-right: 6px;"></i> <span>Campanha
+                                            Promocional</span>
                                     </button>
                                     <span class="pill active"
                                         style="background:#db2777; color:white; font-size: 11px; padding: 4px 8px;"
                                         id="bday-month-label">Este Mês</span>
                                 </div>
                             </div>
-                            <div class="action-list" id="birthdays-list-container" style="max-height: calc(100vh - 280px);">
+                            <div class="action-list" id="birthdays-list-container"
+                                style="max-height: calc(100vh - 280px);">
                                 <!-- JS will populate this -->
                                 <div class="empty-state">
                                     <i class="fas fa-calendar-check" style="color: #fbcfe8;"></i>
@@ -284,13 +287,16 @@
                 <!-- Reports Page -->
                 <section class="page" id="page-reports">
                     <!-- PRINT ONLY HEADER -->
-                    <div id="print-header" class="print-only" style="display: none; text-align: center; margin-bottom: 24px;">
-                        <img src="assets/img/logo.png" alt="Valentina Cosméticos" style="width: 200px; margin-bottom: 16px;">
+                    <div id="print-header" class="print-only"
+                        style="display: none; text-align: center; margin-bottom: 24px;">
+                        <img src="assets/img/logo.png" alt="Valentina Cosméticos"
+                            style="width: 200px; margin-bottom: 16px;">
                         <h1 style="font-size: 24px; color: #1E293B; margin-bottom: 8px;">Relatório de Resultados</h1>
-                        <p style="font-size: 14px; color: #64748B;" id="print-header-details">Consultor: Todos | Período: Todo o histórico</p>
+                        <p style="font-size: 14px; color: #64748B;" id="print-header-details">Consultor: Todos |
+                            Período: Todo o histórico</p>
                         <hr style="margin-top: 16px; border: 0; border-top: 1px solid #E2E8F0;">
                     </div>
-                    
+
                     <div class="page-header" style="flex-direction: column; align-items: flex-start; gap: 16px;">
                         <div>
                             <h2>Estatísticas e Resultados</h2>
@@ -349,20 +355,30 @@
                                 </select>
                             </div>
                             <div style="display:flex; align-items:center; gap:8px;">
-                                <label style="font-size: 13px; color: var(--text-muted); font-weight: 500; margin-left: 8px;">Qtd. Top Produtos:</label>
-                                <input type="number" id="report-top-products-limit" value="" placeholder="5" min="1" max="100" onchange="app.renderReports()" style="padding: 8px; border: 1px solid var(--border); border-radius: 6px; outline: none; background: white; font-size: 13px; color: var(--text-main); width: 60px;">
+                                <label
+                                    style="font-size: 13px; color: var(--text-muted); font-weight: 500; margin-left: 8px;">Qtd.
+                                    Top Produtos:</label>
+                                <input type="number" id="report-top-products-limit" value="" placeholder="5" min="1"
+                                    max="100" onchange="app.renderReports()"
+                                    style="padding: 8px; border: 1px solid var(--border); border-radius: 6px; outline: none; background: white; font-size: 13px; color: var(--text-main); width: 60px;">
                             </div>
                             <div style="display:flex; align-items:center; gap:8px;">
-                                <label style="font-size: 13px; color: var(--text-muted); font-weight: 500; margin-left: 8px;">Qtd. Top Clientes:</label>
-                                <input type="number" id="report-top-clients-limit" value="" placeholder="10" min="1" max="100" onchange="app.renderReports()" style="padding: 8px; border: 1px solid var(--border); border-radius: 6px; outline: none; background: white; font-size: 13px; color: var(--text-main); width: 60px;">
+                                <label
+                                    style="font-size: 13px; color: var(--text-muted); font-weight: 500; margin-left: 8px;">Qtd.
+                                    Top Clientes:</label>
+                                <input type="number" id="report-top-clients-limit" value="" placeholder="10" min="1"
+                                    max="100" onchange="app.renderReports()"
+                                    style="padding: 8px; border: 1px solid var(--border); border-radius: 6px; outline: none; background: white; font-size: 13px; color: var(--text-main); width: 60px;">
                             </div>
                             <div style="display: flex; gap: 8px; margin-left: auto;">
-                                <button class="btn-secondary" onclick="window.print()" style="padding: 6px 12px; font-size: 12px; border-radius: 6px; background: transparent; color: #4F46E5; border: 1px solid #4F46E5; cursor: pointer;">
+                                <button class="btn-secondary" onclick="window.print()"
+                                    style="padding: 6px 12px; font-size: 12px; border-radius: 6px; background: transparent; color: #4F46E5; border: 1px solid #4F46E5; cursor: pointer;">
                                     <i class="fas fa-print"></i> Imprimir
                                 </button>
                                 <button class="btn-secondary"
                                     onclick="document.getElementById('report-filter-start').value=''; document.getElementById('report-filter-end').value=''; document.getElementById('report-filter-client').value=''; document.getElementById('report-filter-product').value=''; document.getElementById('report-filter-city').value=''; const rStore = document.getElementById('report-filter-store'); if(rStore) rStore.value='all'; const rSeller = document.getElementById('report-filter-seller'); if(rSeller) rSeller.value='all'; const tp = document.getElementById('report-top-products-limit'); if(tp) tp.value=''; const tc = document.getElementById('report-top-clients-limit'); if(tc) tc.value=''; app.renderReports();"
-                                    style="padding: 6px 12px; font-size: 12px; border-radius: 6px; background: transparent; color: #EF4444; border: 1px solid #EF4444; cursor: pointer;">Limpar Filtros</button>
+                                    style="padding: 6px 12px; font-size: 12px; border-radius: 6px; background: transparent; color: #EF4444; border: 1px solid #EF4444; cursor: pointer;">Limpar
+                                    Filtros</button>
                             </div>
                         </div>
                     </div>
@@ -406,9 +422,12 @@
 
                     <div class="charts-grid" style="grid-template-columns: repeat(3, 1fr);">
                         <div class="chart-card" style="grid-column: span 2;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
                                 <h3 style="margin-bottom: 0; font-size: 16px;">Faturamento</h3>
-                                <select id="report-time-grouping" class="filter-input" style="width: auto; padding: 4px 8px; font-size: 13px;" onchange="app.renderReports()">
+                                <select id="report-time-grouping" class="filter-input"
+                                    style="width: auto; padding: 4px 8px; font-size: 13px;"
+                                    onchange="app.renderReports()">
                                     <option value="day">Por Dia</option>
                                     <option value="month" selected>Por Mês</option>
                                     <option value="year">Por Ano</option>
@@ -421,7 +440,8 @@
                                 <span id="lbl-top-products">Top 5 Produtos Mais Vendidos</span>
                             </h3>
                             <div class="scrollable-list" style="height: 360px; overflow-y: auto; padding-right: 8px;">
-                                <div id="list-top-products" style="display: flex; flex-direction: column; gap: 8px;"></div>
+                                <div id="list-top-products" style="display: flex; flex-direction: column; gap: 8px;">
+                                </div>
                             </div>
                         </div>
                         <div class="chart-card" style="grid-column: span 2;">
@@ -429,7 +449,8 @@
                                 <span id="lbl-top-clients">Top 10 Clientes Mais Valiosos (LTV)</span>
                             </h3>
                             <div class="scrollable-list" style="height: 360px; overflow-y: auto; padding-right: 8px;">
-                                <div id="list-top-clients" style="display: flex; flex-direction: column; gap: 8px;"></div>
+                                <div id="list-top-clients" style="display: flex; flex-direction: column; gap: 8px;">
+                                </div>
                             </div>
                         </div>
                         <div class="chart-card">
@@ -480,7 +501,8 @@
                 <section class="page" id="page-register">
                     <div class="page-header">
                         <h2 id="sale-form-title">Registrar Nova Venda</h2>
-                        <p id="sale-form-desc">Insira os dados da sua cliente para iniciar o fluxo de CRM automágico.</p>
+                        <p id="sale-form-desc">Insira os dados da sua cliente para iniciar o fluxo de CRM automágico.
+                        </p>
                     </div>
 
                     <div class="form-card">
@@ -562,9 +584,15 @@
                                     </select>
                                 </div>
                                 <div class="form-group" style="grid-column: span 2;">
-                                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: normal; color: #92400E; margin: 0; padding: 14px; background: #FEF3C7; border: 1px solid #F59E0B; border-radius: 8px; transition: background 0.2s;">
-                                        <input type="checkbox" id="r-skip-thanks-msg" style="width: 20px; height: 20px; cursor: pointer; accent-color: #D97706;">
-                                        <span style="user-select: none;">🔇 <strong>Não enviar</strong> mensagem de WhatsApp automática <small style="display:block; color: #B45309; font-size: 12px; margin-top: 4px;">Ative para silenciar as automações desta compra em específico (ex: Venda de Balcão).</small></span>
+                                    <label
+                                        style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: normal; color: #92400E; margin: 0; padding: 14px; background: #FEF3C7; border: 1px solid #F59E0B; border-radius: 8px; transition: background 0.2s;">
+                                        <input type="checkbox" id="r-skip-thanks-msg"
+                                            style="width: 20px; height: 20px; cursor: pointer; accent-color: #D97706;">
+                                        <span style="user-select: none;">🔇 <strong>Não enviar</strong> mensagem de
+                                            WhatsApp automática <small
+                                                style="display:block; color: #B45309; font-size: 12px; margin-top: 4px;">Ative
+                                                para silenciar as automações desta compra em específico (ex: Venda de
+                                                Balcão).</small></span>
                                     </label>
                                 </div>
                             </div>
@@ -684,13 +712,19 @@
                         </table>
                     </div>
                     <!-- Pagination Controls Clientes -->
-                    <div id="clients-pagination" style="display: flex; justify-content: flex-end; align-items: center; gap: 16px; margin-top: 16px;">
-                        <span id="clients-page-info" style="color: var(--text-muted); font-size: 14px;">Página 1 de 1</span>
+                    <div id="clients-pagination"
+                        style="display: flex; justify-content: flex-end; align-items: center; gap: 16px; margin-top: 16px;">
+                        <span id="clients-page-info" style="color: var(--text-muted); font-size: 14px;">Página 1 de
+                            1</span>
                         <div style="display: flex; gap: 8px;">
-                            <button type="button" class="btn-primary" id="btn-clients-prev" style="background: white; color: var(--text-main); border: 1px solid var(--border); box-shadow: var(--shadow-sm); padding: 8px 16px; min-width: unset;" onclick="app.changeClientsPage(-1)" disabled>
+                            <button type="button" class="btn-primary" id="btn-clients-prev"
+                                style="background: white; color: var(--text-main); border: 1px solid var(--border); box-shadow: var(--shadow-sm); padding: 8px 16px; min-width: unset;"
+                                onclick="app.changeClientsPage(-1)" disabled>
                                 <i class="fas fa-chevron-left"></i> Anterior
                             </button>
-                            <button type="button" class="btn-primary" id="btn-clients-next" style="background: white; color: var(--text-main); border: 1px solid var(--border); box-shadow: var(--shadow-sm); padding: 8px 16px; min-width: unset;" onclick="app.changeClientsPage(1)" disabled>
+                            <button type="button" class="btn-primary" id="btn-clients-next"
+                                style="background: white; color: var(--text-main); border: 1px solid var(--border); box-shadow: var(--shadow-sm); padding: 8px 16px; min-width: unset;"
+                                onclick="app.changeClientsPage(1)" disabled>
                                 Próxima <i class="fas fa-chevron-right"></i>
                             </button>
                         </div>
@@ -749,9 +783,12 @@
                                     </select>
                                 </div>
                                 <div class="form-group admin-only" id="c-global-container" style="grid-column: span 2;">
-                                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: normal; color: var(--text-main);">
-                                        <input type="checkbox" id="c-isGlobal" style="width: 18px; height: 18px; cursor: pointer;">
-                                        <span><strong>Visibilidade Global</strong> (Mostrar cliente para controle de todas as lojas)</span>
+                                    <label
+                                        style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: normal; color: var(--text-main);">
+                                        <input type="checkbox" id="c-isGlobal"
+                                            style="width: 18px; height: 18px; cursor: pointer;">
+                                        <span><strong>Visibilidade Global</strong> (Mostrar cliente para controle de
+                                            todas as lojas)</span>
                                     </label>
                                 </div>
                             </div>
@@ -850,13 +887,19 @@
                     </div>
 
                     <!-- Pagination Controls -->
-                    <div id="sales-pagination" style="display: flex; justify-content: flex-end; align-items: center; gap: 16px; margin-top: 16px;">
-                        <span id="sales-page-info" style="color: var(--text-muted); font-size: 14px;">Página 1 de 1</span>
+                    <div id="sales-pagination"
+                        style="display: flex; justify-content: flex-end; align-items: center; gap: 16px; margin-top: 16px;">
+                        <span id="sales-page-info" style="color: var(--text-muted); font-size: 14px;">Página 1 de
+                            1</span>
                         <div style="display: flex; gap: 8px;">
-                            <button type="button" class="btn-primary" id="btn-sales-prev" style="background: white; color: var(--text-main); border: 1px solid var(--border); box-shadow: var(--shadow-sm); padding: 8px 16px; min-width: unset;" onclick="app.changeSalesPage(-1)" disabled>
+                            <button type="button" class="btn-primary" id="btn-sales-prev"
+                                style="background: white; color: var(--text-main); border: 1px solid var(--border); box-shadow: var(--shadow-sm); padding: 8px 16px; min-width: unset;"
+                                onclick="app.changeSalesPage(-1)" disabled>
                                 <i class="fas fa-chevron-left"></i> Anterior
                             </button>
-                            <button type="button" class="btn-primary" id="btn-sales-next" style="background: white; color: var(--text-main); border: 1px solid var(--border); box-shadow: var(--shadow-sm); padding: 8px 16px; min-width: unset;" onclick="app.changeSalesPage(1)" disabled>
+                            <button type="button" class="btn-primary" id="btn-sales-next"
+                                style="background: white; color: var(--text-main); border: 1px solid var(--border); box-shadow: var(--shadow-sm); padding: 8px 16px; min-width: unset;"
+                                onclick="app.changeSalesPage(1)" disabled>
                                 Próxima <i class="fas fa-chevron-right"></i>
                             </button>
                         </div>
@@ -1067,17 +1110,20 @@
 
                     <form id="form-templates">
                         <!-- TAB 7: WEBHOOK -->
-                        <div id="tab-content-webhook" class="settings-tab-content"
-                            style="display: none; width: 100%;">
+                        <div id="tab-content-webhook" class="settings-tab-content" style="display: none; width: 100%;">
                             <div class="form-card" style="margin-bottom: 24px;">
                                 <div
                                     style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px;">
                                     <div>
                                         <h3
                                             style="color: var(--text-main); display: flex; align-items: center; gap: 8px;">
-                                            <i class="fas fa-satellite-dish" style="color: #6366F1;"></i> Integração com Robôs / Ferramentas Externas</h3>
+                                            <i class="fas fa-satellite-dish" style="color: #6366F1;"></i> Integração com
+                                            Robôs / Ferramentas Externas
+                                        </h3>
                                         <p style="color: var(--text-muted); font-size: 14px; margin-top: 4px;">
-                                            Gere o seu link exclusivo de Webhook para receber contatos (leads) automaticamente no seu Funil de Vendas, vindo de ferramentas como BotConversa, Make, N8N, ChatBot, Zapier, etc.
+                                            Gere o seu link exclusivo de Webhook para receber contatos (leads)
+                                            automaticamente no seu Funil de Vendas, vindo de ferramentas como
+                                            BotConversa, Make, N8N, ChatBot, Zapier, etc.
                                         </p>
                                     </div>
                                 </div>
@@ -1098,8 +1144,9 @@
                                             <input type="text" id="setting-webhook-url" readonly
                                                 style="flex: 1; background: #F1F5F9; font-weight: 500; font-family: monospace; color: #475569;"
                                                 placeholder="Selecione a loja para gerar a URL...">
-                                            <button type="button" class="btn-primary" onclick="app.copyWebhookUrl()" id="btn-copy-webhook"
-                                                style="background: #6366F1; box-shadow: none;" disabled>
+                                            <button type="button" class="btn-primary" onclick="app.copyWebhookUrl()"
+                                                id="btn-copy-webhook" style="background: #6366F1; box-shadow: none;"
+                                                disabled>
                                                 <i class="fas fa-copy"></i> Copiar
                                             </button>
                                         </div>
@@ -1107,7 +1154,10 @@
                                 </div>
                                 <div
                                     style="margin-top: 16px; background: #EFF6FF; border: 1px solid #3B82F6; color: #1E3A8A; padding: 12px; border-radius: 8px; font-size: 13px;">
-                                    <i class="fas fa-info-circle"></i> Em sua aplicação de Origem (Ex: BotConversa), acesse as <b>Integrações/Webhooks</b> e cole este link apontando o método para <b>POST</b>. O sistema de triagem (Handoff) direcionará automaticamente as mensagens para cá.
+                                    <i class="fas fa-info-circle"></i> Em sua aplicação de Origem (Ex: BotConversa),
+                                    acesse as <b>Integrações/Webhooks</b> e cole este link apontando o método para
+                                    <b>POST</b>. O sistema de triagem (Handoff) direcionará automaticamente as mensagens
+                                    para cá.
                                 </div>
                             </div>
                         </div>
@@ -1122,7 +1172,8 @@
                                         <h3
                                             style="color: var(--text-main); display: flex; align-items: center; gap: 8px;">
                                             <i class="fas fa-percent" style="color: #10B981;"></i> Regras de
-                                            Comissionamento</h3>
+                                            Comissionamento
+                                        </h3>
                                         <p style="color: var(--text-muted); font-size: 14px; margin-top: 4px;">
                                             Defina a taxa padrão de comissão para a equipe. Essa taxa é calculada sobre
                                             o valor final da venda.
@@ -1675,7 +1726,8 @@
                             oninput="app.renderFunnelBoard()">
 
                         <div class="admin-only" style="display: flex; gap: 8px; align-items: center; display: none;">
-                            <span style="font-size: 13px; color: var(--text-muted); font-weight: 500;"><i class="fas fa-store" style="margin-right:4px;"></i> Filtro Gerencial</span>
+                            <span style="font-size: 13px; color: var(--text-muted); font-weight: 500;"><i
+                                    class="fas fa-store" style="margin-right:4px;"></i> Filtro Gerencial</span>
                             <select id="filter-funnel-store"
                                 style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer; transition: border-color 0.2s;"
                                 onchange="app.renderFunnelBoard()">
@@ -1769,7 +1821,8 @@
                                 <input type="date" id="finance-filter-start"
                                     onchange="if(window.app && app.renderFinanceDashboard) app.renderFinanceDashboard()"
                                     style="padding: 10px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); font-weight: 500; box-shadow: 0 2px 4px rgba(0,0,0,0.02); cursor: pointer; transition: all 0.2s;">
-                                <span style="font-weight: 500; color: var(--text-muted); font-size: 14px; margin: 0 4px;">até</span>
+                                <span
+                                    style="font-weight: 500; color: var(--text-muted); font-size: 14px; margin: 0 4px;">até</span>
                                 <input type="date" id="finance-filter-end"
                                     onchange="if(window.app && app.renderFinanceDashboard) app.renderFinanceDashboard()"
                                     style="padding: 10px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); font-weight: 500; box-shadow: 0 2px 4px rgba(0,0,0,0.02); cursor: pointer; transition: all 0.2s;">
@@ -1798,20 +1851,33 @@
                     </div>
 
                     <!-- Infra Cost Full Width Toolbar -->
-                    <div class="stat-card admin-only" style="display: none; margin-top: 24px; flex-direction: row; align-items: center; justify-content: space-between; padding: 16px 24px; background: linear-gradient(135deg, rgba(245,158,11,0.05) 0%, rgba(245,158,11,0.15) 100%); border-left: 4px solid #F59E0B;" id="fin-infra-card">
+                    <div class="stat-card admin-only"
+                        style="display: none; margin-top: 24px; flex-direction: row; align-items: center; justify-content: space-between; padding: 16px 24px; background: linear-gradient(135deg, rgba(245,158,11,0.05) 0%, rgba(245,158,11,0.15) 100%); border-left: 4px solid #F59E0B;"
+                        id="fin-infra-card">
                         <div style="display: flex; align-items: center; gap: 16px;">
-                            <div class="stat-icon" style="background: white; color: #F59E0B; width: 48px; height: 48px; min-width: 48px; box-shadow: 0 4px 6px -1px rgba(245,158,11,0.1);">
+                            <div class="stat-icon"
+                                style="background: white; color: #F59E0B; width: 48px; height: 48px; min-width: 48px; box-shadow: 0 4px 6px -1px rgba(245,158,11,0.1);">
                                 <i class="fas fa-server"></i>
                             </div>
                             <div class="stat-info" style="display: flex; flex-direction: column;">
-                                <h3 style="display: flex; align-items: center; gap: 4px; margin: 0; font-size: 14px;">Custos Operacionais de Servidor (Firebase) <i class="fas fa-sync fa-spin" style="font-size:10px; color:#F59E0B; display:none;" id="fin-infra-loader"></i></h3>
-                                <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">Atualizado automaticamente via Google Cloud BigQuery</div>
+                                <h3 style="display: flex; align-items: center; gap: 4px; margin: 0; font-size: 14px;">
+                                    Custos Operacionais de Servidor (Firebase) <i class="fas fa-sync fa-spin"
+                                        style="font-size:10px; color:#F59E0B; display:none;" id="fin-infra-loader"></i>
+                                </h3>
+                                <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">Atualizado
+                                    automaticamente via Google Cloud BigQuery</div>
+                                <div style="font-size:12px; margin-top:4px;"><a href="#"
+                                        onclick="app.openFirebaseCostHistory(); return false;"
+                                        style="color:var(--primary); text-decoration:none; font-weight:500;"><i
+                                            class="fas fa-history"></i> Ver Histórico de Faturamento</a></div>
                             </div>
                         </div>
-                        <div class="stat-value" id="fin-stat-infra" style="color:#D97706; font-size: 28px; font-weight: 800; text-align: right;">R$ --,--</div>
+                        <div class="stat-value" id="fin-stat-infra"
+                            style="color:#D97706; font-size: 28px; font-weight: 800; text-align: right;">R$ --,--</div>
                     </div>
 
-                    <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-top: 24px;">
+                    <div class="stats-grid"
+                        style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-top: 24px;">
                         <div class="stat-card">
                             <div class="stat-icon" style="background: rgba(30, 215, 96, 0.1); color: #1ed760;">
                                 <i class="fas fa-arrow-trend-up"></i>
@@ -1995,6 +2061,43 @@
         </div>
     </div>
 
+    <!-- Firebase Cost History Modal -->
+    <div class="login-overlay" id="firebase-cost-history-modal">
+        <div class="login-card"
+            style="max-width: 600px; width: 100%; max-height: 80vh; display: flex; flex-direction: column;">
+            <div class="modal-header"
+                style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="margin: 0; font-size: 18px;"><i class="fas fa-server"
+                        style="color: #F59E0B; margin-right: 8px;"></i> Histórico de Faturamento</h2>
+                <button class="btn-icon"
+                    onclick="document.getElementById('firebase-cost-history-modal').classList.remove('active')"><i
+                        class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body" style="flex: 1; overflow-y: auto; padding-right: 4px;">
+                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">Custos consolidados de
+                    infraestrutura (Firebase/Google Cloud). A varredura é feita no dia 1º de cada mês referente ao mês
+                    anterior.</p>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Período (Mês/Ano)</th>
+                            <th>Custo Base</th>
+                            <th>Custo Final (+30%)</th>
+                            <th>Moeda</th>
+                            <th>Data de Registro</th>
+                        </tr>
+                    </thead>
+                    <tbody id="firebase-cost-list">
+                        <tr>
+                            <td colspan="5" style="text-align:center; padding: 20px;"><i
+                                    class="fas fa-spinner fa-spin"></i> Carregando...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <!-- Confirm Dialog Overlay -->
     <div class="login-overlay" id="confirm-overlay" style="align-items: center; justify-content: center;">
         <div class="modal"
@@ -2120,7 +2223,8 @@
 
     <!-- Promo Modal -->
     <div id="promo-overlay" class="login-overlay">
-        <div class="login-card" style="max-width: 600px; max-height: 90vh; overflow-y: auto; display: flex; flex-direction: column;">
+        <div class="login-card"
+            style="max-width: 600px; max-height: 90vh; overflow-y: auto; display: flex; flex-direction: column;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
                 <h2 style="margin: 0; text-align: left; font-size: 20px;"><i class="fas fa-bullhorn"
                         style="color: #8B5CF6; margin-right: 8px;"></i> Disparar Campanha Promocional</h2>
@@ -2315,10 +2419,13 @@
     <div id="password-modal-overlay" class="login-overlay">
         <div class="login-card" style="max-width: 400px; width: 90%; display: flex; flex-direction: column;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h3 style="margin: 0; font-size: 18px; color: var(--text-main);"><i class="fas fa-key" style="color: #8B5CF6; margin-right: 8px;"></i> Alterar Senha</h3>
-                <button type="button" class="btn-icon" onclick="app.closePasswordModal()" style="font-size: 20px;"><i class="fas fa-times"></i></button>
+                <h3 style="margin: 0; font-size: 18px; color: var(--text-main);"><i class="fas fa-key"
+                        style="color: #8B5CF6; margin-right: 8px;"></i> Alterar Senha</h3>
+                <button type="button" class="btn-icon" onclick="app.closePasswordModal()" style="font-size: 20px;"><i
+                        class="fas fa-times"></i></button>
             </div>
-            <form id="form-change-password" style="display: flex; flex-direction: column; gap: 16px;" onsubmit="app.submitPasswordChange(event)">
+            <form id="form-change-password" style="display: flex; flex-direction: column; gap: 16px;"
+                onsubmit="app.submitPasswordChange(event)">
                 <div class="form-group">
                     <label>Senha Atual</label>
                     <input type="password" id="cp-current" required placeholder="Digite sua senha atual">
@@ -2331,9 +2438,12 @@
                     <label>Confirmar Nova Senha</label>
                     <input type="password" id="cp-confirm" required placeholder="Repita a nova senha">
                 </div>
-                <div id="cp-error" style="color: #EF4444; font-size: 13px; display: none; text-align: center; margin-top: -8px;"></div>
+                <div id="cp-error"
+                    style="color: #EF4444; font-size: 13px; display: none; text-align: center; margin-top: -8px;"></div>
                 <div class="form-actions" style="margin-top: 8px;">
-                    <button type="submit" class="btn-primary" style="width: 100%; justify-content: center; padding: 12px; background: #8B5CF6;"><i class="fas fa-save"></i> Atualizar Senha</button>
+                    <button type="submit" class="btn-primary"
+                        style="width: 100%; justify-content: center; padding: 12px; background: #8B5CF6;"><i
+                            class="fas fa-save"></i> Atualizar Senha</button>
                 </div>
             </form>
         </div>
