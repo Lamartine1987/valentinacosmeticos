@@ -76,7 +76,7 @@ export const financeModule = {
         
         const tbody = document.getElementById('firebase-cost-list');
         if (tbody) {
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 20px;"><i class="fas fa-spinner fa-spin"></i> Carregando...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 20px;"><i class="fas fa-spinner fa-spin"></i> Carregando...</td></tr>';
         }
         
         modal.classList.add('active');
@@ -86,7 +86,7 @@ export const financeModule = {
             if (!tbody) return;
             
             if (snapshot.empty) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding: 20px;">Nenhum histórico encontrado. O primeiro faturamento será registrado no próximo dia 1º.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding: 20px;">Nenhum histórico encontrado. O primeiro faturamento será registrado no próximo dia 1º.</td></tr>';
                 return;
             }
             
@@ -104,7 +104,6 @@ export const financeModule = {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td style="font-weight: 500;">${data.period}</td>
-                    <td>R$ ${(data.rawCost || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                     <td style="color: #D97706; font-weight: bold;">R$ ${(data.finalCost || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                     <td>${data.currency || 'BRL'}</td>
                     <td style="color: var(--text-muted); font-size: 13px;">${dataRegistro}</td>
@@ -114,7 +113,7 @@ export const financeModule = {
         } catch (e) {
             console.error('Erro ao buscar histórico de custos do Firebase:', e);
             if (tbody) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#EF4444; padding: 20px;">Erro ao carregar o histórico.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#EF4444; padding: 20px;">Erro ao carregar o histórico.</td></tr>';
             }
         }
     },
