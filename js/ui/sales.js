@@ -17,7 +17,7 @@ export const salesModule = {
             <div style="flex: 0 0 110px; position:relative;" title="Subtotal do Item"><span style="position:absolute; left:12px; top:13px; color:#94A3B8; font-size:13px;">R$</span><input type="text" class="sale-item-total" readonly placeholder="0.00" style="padding:12px 4px 12px 34px; border:1px solid var(--border); border-radius:8px; font-size:14px; font-weight:bold; color:var(--text-main); background:#F8FAFC; width:100%; box-sizing:border-box; outline:none;"></div>
             <button type="button" title="Excluir Linha" onclick="app.removeSaleItem(this)" style="border:none; background:#FEE2E2; color:#EF4444; border-radius:8px; cursor:pointer; width:44px; height:44px; display:flex; align-items:center; justify-content:center; flex-shrink:0;"><i class="fas fa-times"></i></button>
         `;
-        
+
         const prodInput = row.querySelector('.sale-item-product');
         const priceInput = row.querySelector('.sale-item-price');
         const qtyInput = row.querySelector('.sale-item-qty');
@@ -26,9 +26,9 @@ export const salesModule = {
         prodInput.addEventListener('change', () => {
             if (this.products) {
                 const prodName = prodInput.value.trim().toLowerCase();
-                const prod = this.products.find(p => 
+                const prod = this.products.find(p =>
                     ((p.name && p.name.trim().toLowerCase() === prodName) ||
-                    (p.barcode && p.barcode.trim() === prodInput.value.trim())) && p.active !== false
+                        (p.barcode && p.barcode.trim() === prodInput.value.trim())) && p.active !== false
                 );
                 if (prod && prod.price !== undefined) {
                     priceInput.value = parseFloat(prod.price).toFixed(2);
@@ -40,13 +40,13 @@ export const salesModule = {
         prodInput.addEventListener('input', () => {
             const val = prodInput.value.toLowerCase().trim();
             suggDiv.innerHTML = '';
-            
+
             if (val.length < 2) {
                 suggDiv.style.display = 'none';
                 this.calculateSaleTotal();
                 return;
             }
-            
+
             let matches = [];
             if (this.products) {
                 const searchTerms = val.split(' ').filter(t => t.trim() !== '');
@@ -68,7 +68,7 @@ export const salesModule = {
                         <div class="suggestion-name" style="white-space: normal;">${m.name}</div>
                         <div class="suggestion-phone" style="display:flex; justify-content:space-between; margin-top:4px;">
                             <span>Cód: ${m.barcode || '-'}</span>
-                            <span style="color:var(--primary); font-weight:bold;">R$ ${parseFloat(m.price||0).toFixed(2)}</span>
+                            <span style="color:var(--primary); font-weight:bold;">R$ ${parseFloat(m.price || 0).toFixed(2)}</span>
                         </div>
                     `;
                     itemDiv.addEventListener('click', () => {
@@ -94,7 +94,7 @@ export const salesModule = {
 
         priceInput.addEventListener('input', () => this.calculateSaleTotal());
         qtyInput.addEventListener('input', () => this.calculateSaleTotal());
-        
+
         container.appendChild(row);
         this.updateRemoveButtons();
     },
@@ -119,7 +119,10 @@ export const salesModule = {
         const rows = document.querySelectorAll('.sale-item-row');
         let total = 0;
         let foundAny = false;
-        
+
+        let criticalWarningHtml = '';
+        const warningContainer = document.getElementById('sale-critical-warning');
+
         rows.forEach(row => {
             const prodInput = row.querySelector('.sale-item-product');
             const qtyInput = row.querySelector('.sale-item-qty');
@@ -130,21 +133,21 @@ export const salesModule = {
                 const prodName = prodInput.value.trim();
                 const qty = parseInt(qtyInput.value) || 1;
                 const price = parseFloat(priceInput.value) || 0;
-                
+
                 const lineTotal = price * qty;
-                if(totalInput) totalInput.value = lineTotal.toFixed(2);
-                
+                if (totalInput) totalInput.value = lineTotal.toFixed(2);
+
                 // Try case-insensitive exact match
-                const prod = this.products ? this.products.find(p => 
+                const prod = this.products ? this.products.find(p =>
                     ((p.name && p.name.trim().toLowerCase() === prodName.toLowerCase()) ||
-                    (p.barcode && p.barcode.trim() === prodName.trim())) && p.active !== false
+                        (p.barcode && p.barcode.trim() === prodName.trim())) && p.active !== false
                 ) : null;
-                
+
                 let warningDiv = row.querySelector('.unrecognized-warning');
 
                 if (prodName.length > 0 && !prod) {
                     prodInput.style.borderColor = '#EF4444';
-                    
+
                     if (!warningDiv) {
                         warningDiv = document.createElement('div');
                         warningDiv.className = 'unrecognized-warning';
@@ -157,15 +160,30 @@ export const salesModule = {
                     if (warningDiv) {
                         warningDiv.remove();
                     }
+
+                    if (prod && prod.criticalQty > 0) {
+                        let dateStr = prod.criticalDate ? prod.criticalDate.split('-').reverse().join('/') : 'em breve';
+                        criticalWarningHtml += `<div style="margin-top: 4px;"><strong>${prod.name}</strong>: Lote vence dia ${dateStr} - Faltam vender ${prod.criticalQty} unidade(s).</div>`;
+                    }
                 }
-                
+
                 if (prodName.length > 0 || lineTotal > 0) {
                     total += lineTotal;
                     foundAny = true;
                 }
             }
         });
-        
+
+        if (warningContainer) {
+            if (criticalWarningHtml) {
+                warningContainer.innerHTML = `<strong style="font-size: 15px;">⚠️ Atenção - Lote Crítico!</strong> Priorize a venda do(s) seguinte(s) lote(s):<br>` + criticalWarningHtml;
+                warningContainer.style.display = 'block';
+            } else {
+                warningContainer.style.display = 'none';
+                warningContainer.innerHTML = '';
+            }
+        }
+
         const valueInput = document.getElementById('r-value');
         const discountInput = document.getElementById('r-discount');
         let discount = 0;
@@ -187,7 +205,7 @@ export const salesModule = {
         if (this.currentUserProfile && this.currentUserProfile.role !== 'admin') {
             if (typeof this.showToast === 'function') this.showToast('Sem permissão para excluir vendas do histórico. Contate um Administrador.', 'error');
             const s = this.sales.find(x => x.id === id);
-            if (typeof this.saveAuditLog === 'function') this.saveAuditLog('sale', 'attempt_delete', id, `Tentativa de exclusão no Histórico bloqueada.<br><strong>Cliente:</strong> ${s ? s.name+' ('+s.phone+')' : id}<br><strong>Item:</strong> ${s ? s.product : 'Desconhecido'}`);
+            if (typeof this.saveAuditLog === 'function') this.saveAuditLog('sale', 'attempt_delete', id, `Tentativa de exclusão no Histórico bloqueada.<br><strong>Cliente:</strong> ${s ? s.name + ' (' + s.phone + ')' : id}<br><strong>Item:</strong> ${s ? s.product : 'Desconhecido'}`);
             return;
         }
 
@@ -198,7 +216,7 @@ export const salesModule = {
                 try {
                     await db.collection("sales").doc(id).delete();
                     this.showToast('Venda excluída do histórico com sucesso!');
-                } catch(e) {
+                } catch (e) {
                     console.error(e);
                     this.showToast('Erro ao excluir venda.', 'error');
                 }
@@ -256,9 +274,9 @@ export const salesModule = {
                     await batch.commit();
                     this.showToast(`${idsToDelete.length} venda(s) excluída(s) com sucesso!`);
                     const selectAll = document.getElementById('selectAllSales');
-                    if(selectAll) selectAll.checked = false;
-                    if(this.selectedSaleIds) this.selectedSaleIds.clear();
-                } catch(e) {
+                    if (selectAll) selectAll.checked = false;
+                    if (this.selectedSaleIds) this.selectedSaleIds.clear();
+                } catch (e) {
                     console.error(e);
                     this.showToast('Erro na exclusão em massa.', 'error');
                 }

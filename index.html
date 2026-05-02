@@ -555,6 +555,7 @@
                                             0.00</span>
                                     </div>
                                     <datalist id="products-datalist"></datalist>
+                                    <div id="sale-critical-warning" style="display:none; margin-top: 12px; padding: 12px; background: #FEF3C7; border: 1px solid #F59E0B; border-radius: 8px; color: #92400E; font-size: 14px;"></div>
                                 </div>
                                 <div class="form-group">
                                     <label>Desconto (R$)</label>
@@ -973,6 +974,10 @@
                         <input type="text" id="filter-product-catalog"
                             placeholder="Buscar por Nome ou Código de Barras..."
                             style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); transition: border-color 0.2s; flex: 1; min-width: 200px;">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-main); font-size: 14px; background: white; padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px;">
+                            <input type="checkbox" id="filter-critical-lots" style="width: 16px; height: 16px;" onchange="app.renderProductsList()">
+                            ⚠️ Apenas Lotes Críticos
+                        </label>
                     </div>
 
                     <div id="products-pagination-top"
@@ -1053,6 +1058,14 @@
                                 <div class="form-group">
                                     <label>Preço Padrão (R$)</label>
                                     <input type="number" id="p-price" placeholder="149.90" step="0.01">
+                                </div>
+                                <div class="form-group admin-only">
+                                    <label>Vencimento do Lote Crítico (Opcional)</label>
+                                    <input type="date" id="p-critical-date">
+                                </div>
+                                <div class="form-group admin-only">
+                                    <label>Quantidade em Risco (Opcional)</label>
+                                    <input type="number" id="p-critical-qty" placeholder="Ex: 10" min="0">
                                 </div>
                             </div>
                             <div class="form-actions" style="display:flex; gap:16px;">

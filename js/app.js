@@ -1146,6 +1146,27 @@ const app = {
 
             const saleId = await this.saveSale(newSale);
             
+            // Lógica de Baixa de Lote Crítico
+            try {
+                const batch = db.batch();
+                let hasCriticalDecrements = false;
+                items.forEach(item => {
+                    const catalogProd = this.products.find(p => p.name === item.product);
+                    if (catalogProd && catalogProd.criticalQty > 0) {
+                        const newQty = Math.max(0, catalogProd.criticalQty - item.quantity);
+                        const pRef = db.collection('products').doc(catalogProd.id);
+                        batch.update(pRef, { criticalQty: newQty });
+                        hasCriticalDecrements = true;
+                        catalogProd.criticalQty = newQty; // update local cache optimistically
+                    }
+                });
+                if (hasCriticalDecrements) {
+                    await batch.commit();
+                }
+            } catch(e) {
+                console.error("Erro ao dar baixa no lote crítico:", e);
+            }
+            
             // Auto send WhatsApp Message if API is active
             let isApiActive = false;
             if (this.apiSettings) {
@@ -1264,7 +1285,9 @@ const app = {
                     name: document.getElementById('p-name').value,
                     barcode: document.getElementById('p-barcode').value.trim(),
                     category: document.getElementById('p-category').value || 'Geral',
-                    price: document.getElementById('p-price').value ? parseFloat(document.getElementById('p-price').value) : 0
+                    price: document.getElementById('p-price').value ? parseFloat(document.getElementById('p-price').value) : 0,
+                    criticalDate: document.getElementById('p-critical-date') ? document.getElementById('p-critical-date').value : '',
+                    criticalQty: document.getElementById('p-critical-qty') && document.getElementById('p-critical-qty').value ? parseInt(document.getElementById('p-critical-qty').value) : 0
                 };
                 if (this.editingProductId) {
                     await this.updateProduct(this.editingProductId, newProduct);

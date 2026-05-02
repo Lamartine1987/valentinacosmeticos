@@ -14,6 +14,10 @@ export const productsModule = {
         document.getElementById('p-barcode').value = prod.barcode || '';
         document.getElementById('p-category').value = prod.category || '';
         document.getElementById('p-price').value = prod.price || '';
+        const cDate = document.getElementById('p-critical-date');
+        if(cDate) cDate.value = prod.criticalDate || '';
+        const cQty = document.getElementById('p-critical-qty');
+        if(cQty) cQty.value = prod.criticalQty || '';
         document.getElementById('product-form-title').innerText = "Editar Produto";
         document.getElementById('product-form-desc').innerText = "Atualize as informações deste item no catálogo.";
         document.getElementById('product-submit-text').innerText = "Atualizar Produto";
@@ -177,8 +181,13 @@ export const productsModule = {
         if (page === 'last') {
             const filterInput = document.getElementById('filter-product-catalog');
             const filterVal = filterInput ? filterInput.value.toLowerCase().trim() : '';
+            const filterCritical = document.getElementById('filter-critical-lots') ? document.getElementById('filter-critical-lots').checked : false;
 
             let displayProducts = this.products;
+            if (filterCritical) {
+                displayProducts = displayProducts.filter(p => p.criticalQty && p.criticalQty > 0);
+            }
+            
             if (filterVal) {
                 const filterTerms = filterVal.split(' ').filter(t => t.trim() !== '');
                 displayProducts = this.products.filter(p => {
@@ -203,8 +212,13 @@ export const productsModule = {
         
         const filterInput = document.getElementById('filter-product-catalog');
         const filterVal = filterInput ? filterInput.value.toLowerCase().trim() : '';
+        const filterCritical = document.getElementById('filter-critical-lots') ? document.getElementById('filter-critical-lots').checked : false;
 
         let displayProducts = this.products;
+        if (filterCritical) {
+            displayProducts = displayProducts.filter(p => p.criticalQty && p.criticalQty > 0);
+        }
+        
         if (filterVal) {
             const filterTerms = filterVal.split(' ').filter(t => t.trim() !== '');
             displayProducts = this.products.filter(p => {
@@ -283,7 +297,9 @@ export const productsModule = {
             
             row.innerHTML = `
                 <td style="text-align: center;"><input type="checkbox" class="product-checkbox" value="${prod.id}" ${isChecked ? 'checked' : ''} style="cursor: pointer; width: 16px; height: 16px;"></td>
-                <td style="display:flex; align-items:center;"><strong>${prod.name}</strong>${statusBadge}<br><small style="color:var(--text-muted); padding-left:4px;">${prod.barcode || ''}</small></td>
+                <td style="display:flex; align-items:center;"><strong>${prod.name}</strong>${statusBadge}
+                    ${prod.criticalQty > 0 ? `<span class="pill" style="background:#FEF3C7; color:#D97706; pointer-events:none; margin-left:8px;" title="Vencimento Crítico: ${prod.criticalDate}">⚠️ Lote Crítico (${prod.criticalQty})</span>` : ''}
+                    <br><small style="color:var(--text-muted); padding-left:4px;">${prod.barcode || ''}</small></td>
                 <td><span class="pill" style="pointer-events:none;">${prod.category || 'Geral'}</span></td>
                 <td>${price}</td>
                 <td style="color:var(--text-muted); font-size:12px; text-transform:capitalize;">${prod.sellerName || 'Sistema'}</td>
