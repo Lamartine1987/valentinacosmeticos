@@ -63,7 +63,7 @@ export const dashboardModule = {
                         colorClass: 'tag-promo',
                         msg: promo.msg,
                         status: promo.status || 'sent',
-                        date: promo.createdAt ? promo.createdAt.split('T')[0] : new Date().toISOString().split('T')[0]
+                        date: promo.createdAt ? promo.createdAt.split('T')[0] : (new Date(Date.now() - (new Date()).getTimezoneOffset() * 60000)).toISOString().split('T')[0]
                     });
                 }
             });

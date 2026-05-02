@@ -1803,15 +1803,17 @@
                 </section>
                 <!-- Finance Page -->
                 <section class="page" id="page-finance">
+                    <div id="finance-print-filters" class="print-only" style="margin-bottom: 24px; width: 100%; text-align: center; border-bottom: 1px solid #E2E8F0; padding-bottom: 20px; padding-top: 16px;">
+                        <img src="assets/img/logo.png" alt="Valentina Logo" style="height: 50px; object-fit: contain; margin-bottom: 16px;">
+                        <div style="font-size: 22px; font-weight: 700; color: #1e293b; margin-bottom: 8px;">Relatório Financeiro</div>
+                        <div style="font-size: 14px; color: #475569; font-weight: 500;">
+                            Loja: <span id="print-f-store">Todas as Lojas</span> | Período: <span id="print-f-month">Todos</span>
+                        </div>
+                    </div>
                     <div class="page-header" style="flex-direction: column; align-items: flex-start; gap: 16px;">
                         <div>
                             <h2>Gestão Financeira (Balanço)</h2>
                             <p>Acompanhe suas receitas, lance despesas e monitore o lucro do mês.</p>
-                            <div id="finance-print-filters" class="print-only"
-                                style="margin-top: 12px; font-weight: 600; color: #64748B;">
-                                Período: <span id="print-f-month">Todos</span> | Loja: <span id="print-f-store">Todas as
-                                    Lojas</span>
-                            </div>
                         </div>
                         <div class="filters-bar"
                             style="width: 100%; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; border-top: 1px solid var(--border); padding-top: 16px;">
@@ -1845,7 +1847,7 @@
                                 onclick="if(window.app && app.renderFinanceCategoriesModal) app.renderFinanceCategoriesModal()"
                                 style="background: #8B5CF6;"><i class="fas fa-tags"></i> Gerenciar Categorias</button>
                             <button type="button" class="btn-primary"
-                                onclick="document.getElementById('finance-expense-modal').classList.add('active')"
+                                onclick="if(window.app) app.openExpenseModal()"
                                 style="background: #10B981;"><i class="fas fa-plus"></i> Lançar Despesa</button>
                         </div>
                     </div>
@@ -1921,18 +1923,59 @@
 
                         <!-- Lista de Despesas e Gráfico -->
                         <div style="display: flex; flex-direction: column; gap: 24px; height: 100%;">
-                            <div class="form-card"
-                                style="display: flex; gap: 16px; align-items: flex-start; min-height: 250px;">
-                                <div style="flex: 1; min-width: 200px; max-width: 250px;">
-                                    <canvas id="chart-expenses" width="100%" height="100%"></canvas>
+                            <div id="fin-breakdown-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; width: 100%;">
+                                <!-- Geral -->
+                                <div class="form-card" style="display: flex; flex-direction: column; gap: 16px; min-height: 250px;" id="fin-breakdown-card-all">
+                                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                        <div>
+                                            <h3 style="margin-bottom: 4px;">Breakdown (Geral)</h3>
+                                            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 0; margin-top: 0;">Agrupamento consolidado.</p>
+                                        </div>
+                                        <div style="text-align: right;">
+                                            <span style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Total</span>
+                                            <div id="fin-breakdown-total-all" style="font-size: 16px; font-weight: 700; color: #EF4444;">R$ 0,00</div>
+                                        </div>
+                                    </div>
+                                    <div style="height: 200px; width: 100%; position: relative; margin-bottom: 16px; max-width: 400px; margin-left: auto; margin-right: auto;">
+                                        <canvas id="chart-expenses-all"></canvas>
+                                    </div>
+                                    <div id="fin-category-legend-all" style="display: flex; flex-direction: column; gap: 8px; max-width: 500px; margin: 0 auto; width: 100%;">
+                                    </div>
                                 </div>
-                                <div style="flex: 2;">
-                                    <h3 style="margin-bottom: 8px;">Breakdown de Custos</h3>
-                                    <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">Despesas
-                                        agrupadas do mês selecionado.</p>
-                                    <div id="fin-category-legend"
-                                        style="display: flex; flex-direction: column; gap: 8px;">
-                                        <!-- Legends JS -->
+                                <!-- Loja 1 -->
+                                <div class="form-card" style="display: flex; flex-direction: column; gap: 16px; min-height: 250px;" id="fin-breakdown-card-loja1">
+                                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                        <div>
+                                            <h3 style="margin-bottom: 4px;">Breakdown (Loja 1)</h3>
+                                            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 0; margin-top: 0;">Despesas da Loja 1.</p>
+                                        </div>
+                                        <div style="text-align: right;">
+                                            <span style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Total</span>
+                                            <div id="fin-breakdown-total-loja1" style="font-size: 16px; font-weight: 700; color: #EF4444;">R$ 0,00</div>
+                                        </div>
+                                    </div>
+                                    <div style="height: 200px; width: 100%; position: relative; margin-bottom: 16px; max-width: 400px; margin-left: auto; margin-right: auto;">
+                                        <canvas id="chart-expenses-loja1"></canvas>
+                                    </div>
+                                    <div id="fin-category-legend-loja1" style="display: flex; flex-direction: column; gap: 8px; max-width: 500px; margin: 0 auto; width: 100%;">
+                                    </div>
+                                </div>
+                                <!-- Loja 2 -->
+                                <div class="form-card" style="display: flex; flex-direction: column; gap: 16px; min-height: 250px;" id="fin-breakdown-card-loja2">
+                                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                        <div>
+                                            <h3 style="margin-bottom: 4px;">Breakdown (Loja 2)</h3>
+                                            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 0; margin-top: 0;">Despesas da Loja 2.</p>
+                                        </div>
+                                        <div style="text-align: right;">
+                                            <span style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Total</span>
+                                            <div id="fin-breakdown-total-loja2" style="font-size: 16px; font-weight: 700; color: #EF4444;">R$ 0,00</div>
+                                        </div>
+                                    </div>
+                                    <div style="height: 200px; width: 100%; position: relative; margin-bottom: 16px; max-width: 400px; margin-left: auto; margin-right: auto;">
+                                        <canvas id="chart-expenses-loja2"></canvas>
+                                    </div>
+                                    <div id="fin-category-legend-loja2" style="display: flex; flex-direction: column; gap: 8px; max-width: 500px; margin: 0 auto; width: 100%;">
                                     </div>
                                 </div>
                             </div>
@@ -1948,7 +1991,7 @@
                                                 <th>Categoria</th>
                                                 <th>Loja</th>
                                                 <th>Valor</th>
-                                                <th>Ações</th>
+                                                <th class="hide-print">Ações</th>
                                             </tr>
                                         </thead>
                                         <tbody id="finance-table-body">
@@ -2004,8 +2047,9 @@
                     <div class="form-group">
                         <label
                             style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--text-main);">Descrição</label>
-                        <input type="text" id="e-desc" required placeholder="Ex: Conta de Luz, Refil Caixa"
+                        <input type="text" id="e-desc" required placeholder="Ex: Conta de Luz, Refil Caixa" list="expense-desc-list"
                             style="width: 100%; height: 46px; box-sizing: border-box; padding: 0 14px; border: 1px solid var(--border); border-radius: 8px; outline: none; font-size: 14px; background: white;">
+                        <datalist id="expense-desc-list"></datalist>
                     </div>
                     <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                         <div class="form-group">

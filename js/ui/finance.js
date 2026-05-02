@@ -21,6 +21,21 @@ export const financeModule = {
             financeStart.value = `${y}-${m}-01`;
             financeEnd.value = `${y}-${m}-${String(lastDay).padStart(2, '0')}`;
         }
+
+        const descInput = document.getElementById('e-desc');
+        if (descInput) {
+            descInput.addEventListener('change', (e) => {
+                if (!this.expenses) return;
+                const val = e.target.value.trim().toLowerCase();
+                const match = this.expenses.find(exp => exp.description && exp.description.trim().toLowerCase() === val);
+                if (match) {
+                    if (match.category) document.getElementById('e-category').value = match.category;
+                    if (match.storeId) document.getElementById('e-store').value = match.storeId;
+                    if (match.expenseType) document.getElementById('e-type').value = match.expenseType;
+                    if (match.amount) document.getElementById('e-amount').value = match.amount;
+                }
+            });
+        }
     },
 
     async fetchInfraCost() {
@@ -124,6 +139,8 @@ export const financeModule = {
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
         btn.disabled = true;
 
+        const isEditing = !!this.editingExpenseId;
+
         const newExpense = {
             description: document.getElementById('e-desc').value.trim(),
             amount: parseFloat(document.getElementById('e-amount').value),
@@ -154,11 +171,28 @@ export const financeModule = {
         }
 
         try {
-            await db.collection("expenses").add(newExpense);
-            this.showToast('Despesa registrada com sucesso!');
+            if (isEditing) {
+                // Prevent overriding sellerId/createdAt
+                const updateData = {
+                    description: newExpense.description,
+                    amount: newExpense.amount,
+                    date: newExpense.date,
+                    category: newExpense.category,
+                    storeId: newExpense.storeId,
+                    expenseType: newExpense.expenseType,
+                    updatedAt: new Date().toISOString()
+                };
+                await db.collection("expenses").doc(this.editingExpenseId).update(updateData);
+                this.showToast('Despesa atualizada com sucesso!');
+                this.editingExpenseId = null;
+            } else {
+                await db.collection("expenses").add(newExpense);
+                this.showToast('Despesa registrada com sucesso!');
+            }
+            
             e.target.reset();
             // Refilter to today automatically if date is cleared
-            document.getElementById('e-date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('e-date').value = (new Date(Date.now() - (new Date()).getTimezoneOffset() * 60000)).toISOString().split('T')[0];
             
             // Close the modal
             const modal = document.getElementById('finance-expense-modal');
@@ -187,6 +221,40 @@ export const financeModule = {
                 }
             }
         );
+    },
+
+    openExpenseModal() {
+        this.editingExpenseId = null;
+        const form = document.getElementById('form-expense');
+        if(form) {
+            form.reset();
+            document.getElementById('e-date').value = (new Date(Date.now() - (new Date()).getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+            const btn = form.querySelector('button[type="submit"]');
+            if(btn) btn.innerHTML = '<i class="fas fa-save"></i> Registrar Despesa';
+        }
+        document.getElementById('finance-expense-modal').classList.add('active');
+    },
+
+    editExpense(id) {
+        if (!this.expenses) return;
+        const exp = this.expenses.find(e => e.id === id);
+        if (!exp) return;
+        
+        this.editingExpenseId = id;
+        
+        const form = document.getElementById('form-expense');
+        if(form) {
+            document.getElementById('e-desc').value = exp.description || '';
+            document.getElementById('e-amount').value = exp.amount || '';
+            document.getElementById('e-date').value = exp.date || '';
+            document.getElementById('e-category').value = exp.category || 'Geral';
+            document.getElementById('e-store').value = exp.storeId || 'loja_1';
+            document.getElementById('e-type').value = exp.expenseType || 'Variável';
+            
+            const btn = form.querySelector('button[type="submit"]');
+            if(btn) btn.innerHTML = '<i class="fas fa-save"></i> Atualizar Despesa';
+        }
+        document.getElementById('finance-expense-modal').classList.add('active');
     },
 
     populateCategoryDropdown() {
@@ -280,7 +348,9 @@ export const financeModule = {
         let totalRevenue = 0;
         let totalExpenses = 0;
         let expensesList = [];
-        let expensesByCategory = {};
+        let expensesByCategoryAll = {};
+        let expensesByCategoryLoja1 = {};
+        let expensesByCategoryLoja2 = {};
 
         // Parse target dates
         let startFull = null, endFull = null;
@@ -332,7 +402,15 @@ export const financeModule = {
 
                 // Group by category for chart
                 let cat = exp.category || 'Outros';
-                expensesByCategory[cat] = (expensesByCategory[cat] || 0) + (exp.amount || 0);
+                let amt = exp.amount || 0;
+                
+                expensesByCategoryAll[cat] = (expensesByCategoryAll[cat] || 0) + amt;
+
+                if (exp.storeId === 'loja_1' || exp.storeId === 'matriz') {
+                    expensesByCategoryLoja1[cat] = (expensesByCategoryLoja1[cat] || 0) + amt;
+                } else if (exp.storeId === 'loja_2' || exp.storeId === 'filial_1') {
+                    expensesByCategoryLoja2[cat] = (expensesByCategoryLoja2[cat] || 0) + amt;
+                }
             });
         }
 
@@ -389,7 +467,10 @@ export const financeModule = {
                         </td>
                         <td>${exp.storeId === 'loja_2' ? 'Loja 2' : 'Loja 1'}</td>
                         <td style="color: #EF4444; font-weight: bold;">R$ ${(exp.amount||0).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                        <td>
+                        <td class="hide-print" style="white-space: nowrap;">
+                            <button class="btn-icon" style="color: #3B82F6; margin-right: 8px;" onclick="if(window.app) app.editExpense('${exp.id}')" title="Editar Despesa">
+                                <i class="fas fa-edit"></i>
+                            </button>
                             <button class="btn-icon" style="color: #EF4444;" onclick="if(window.app) app.deleteExpense('${exp.id}')" title="Excluir Despesa">
                                 <i class="fas fa-trash"></i>
                             </button>
@@ -423,11 +504,72 @@ export const financeModule = {
         }
 
         // Render Chart
-        this.drawFinanceChart(expensesByCategory);
+        const cardAll = document.getElementById('fin-breakdown-card-all');
+        const cardLoja1 = document.getElementById('fin-breakdown-card-loja1');
+        const cardLoja2 = document.getElementById('fin-breakdown-card-loja2');
+
+        if (cardAll && cardLoja1 && cardLoja2) {
+            if (fStore === 'all') {
+                cardAll.style.display = 'flex';
+                cardLoja1.style.display = 'flex';
+                cardLoja2.style.display = 'flex';
+                
+                this.drawFinanceChart('all', expensesByCategoryAll);
+                this.drawFinanceChart('loja1', expensesByCategoryLoja1);
+                this.drawFinanceChart('loja2', expensesByCategoryLoja2);
+            } else if (fStore === 'loja_1') {
+                cardAll.style.display = 'none';
+                cardLoja1.style.display = 'flex';
+                cardLoja2.style.display = 'none';
+
+                this.drawFinanceChart('loja1', expensesByCategoryAll); // has only loja_1 data due to early filtering
+            } else if (fStore === 'loja_2') {
+                cardAll.style.display = 'none';
+                cardLoja1.style.display = 'none';
+                cardLoja2.style.display = 'flex';
+
+                this.drawFinanceChart('loja2', expensesByCategoryAll); // has only loja_2 data due to early filtering
+            }
+        } else {
+            // Fallback just in case old DOM is still there
+            this.drawFinanceChart('all', expensesByCategoryAll);
+        }
+
+        this.updateExpenseDescriptionAutocomplete();
     },
 
-    drawFinanceChart(dataObj) {
-        const ctx = document.getElementById('chart-expenses');
+    updateExpenseDescriptionAutocomplete() {
+        const dataList = document.getElementById('expense-desc-list');
+        if (!dataList) return;
+
+        dataList.innerHTML = '';
+        if (!this.expenses || this.expenses.length === 0) return;
+
+        const descSet = new Set();
+        const uniqueDescs = [];
+        
+        this.expenses.forEach(exp => {
+            if (exp.description) {
+                const cleanDesc = exp.description.trim();
+                const lowerDesc = cleanDesc.toLowerCase();
+                if (cleanDesc && !descSet.has(lowerDesc)) {
+                    descSet.add(lowerDesc);
+                    uniqueDescs.push(cleanDesc);
+                }
+            }
+        });
+
+        uniqueDescs.sort((a, b) => a.localeCompare(b));
+
+        uniqueDescs.forEach(desc => {
+            const opt = document.createElement('option');
+            opt.value = desc;
+            dataList.appendChild(opt);
+        });
+    },
+
+    drawFinanceChart(suffix, dataObj) {
+        const ctx = document.getElementById(suffix === 'all' && !document.getElementById('chart-expenses-all') ? 'chart-expenses' : `chart-expenses-${suffix}`);
         if (!ctx) return;
         
         if (!window.Chart) {
@@ -438,20 +580,26 @@ export const financeModule = {
         const labels = Object.keys(dataObj);
         const data = Object.values(dataObj);
         
+        const total = data.reduce((acc, curr) => acc + curr, 0);
+        const totalEl = document.getElementById(`fin-breakdown-total-${suffix}`);
+        if (totalEl) {
+            totalEl.innerText = `R$ ${total.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        }
+        
         // Define standard vivid colors
         const bgColors = [
             '#EF4444', '#F59E0B', '#3B82F6', '#8B5CF6', '#10B981', '#EC4899', '#6366F1', '#14B8A6'
         ];
 
         // Custom Legends fallback mapping
-        const legendContainer = document.getElementById('fin-category-legend');
+        const legendContainer = document.getElementById(suffix === 'all' && !document.getElementById('fin-category-legend-all') ? 'fin-category-legend' : `fin-category-legend-${suffix}`);
         if (legendContainer) {
             legendContainer.innerHTML = '';
             labels.forEach((lb, i) => {
                 const color = bgColors[i % bgColors.length];
                 const vl = data[i];
                 legendContainer.innerHTML += `
-                    <div style="display:flex; justify-content:space-between; font-size: 13px;">
+                    <div style="display:flex; justify-content:space-between; font-size: 13px; padding-bottom: 8px; border-bottom: 1px dashed var(--border);">
                         <span style="display:flex; align-items:center; gap:6px;">
                             <span style="width: 10px; height: 10px; border-radius: 50%; background: ${color};"></span>
                             ${lb}
@@ -466,15 +614,19 @@ export const financeModule = {
             }
         }
 
-        if (this.expenseChartInstance) {
-            this.expenseChartInstance.data.labels = labels;
-            this.expenseChartInstance.data.datasets[0].data = data;
-            this.expenseChartInstance.data.datasets[0].backgroundColor = bgColors.slice(0, labels.length);
-            this.expenseChartInstance.update();
+        if (!this.expenseChartInstances) {
+            this.expenseChartInstances = {};
+        }
+
+        if (this.expenseChartInstances[suffix]) {
+            this.expenseChartInstances[suffix].data.labels = labels;
+            this.expenseChartInstances[suffix].data.datasets[0].data = data;
+            this.expenseChartInstances[suffix].data.datasets[0].backgroundColor = bgColors.slice(0, labels.length);
+            this.expenseChartInstances[suffix].update();
             return;
         }
 
-        this.expenseChartInstance = new Chart(ctx, {
+        this.expenseChartInstances[suffix] = new Chart(ctx, {
             type: 'doughnut',
             data: {
                 labels: labels,

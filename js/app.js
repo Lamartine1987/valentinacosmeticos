@@ -568,7 +568,7 @@ const app = {
         const de = document.getElementById('dash-filter-end');
         const dt = document.getElementById('dash-filter-type');
         
-        const todayISO = new Date().toISOString().split('T')[0];
+        const todayISO = (new Date(Date.now() - (new Date()).getTimezoneOffset() * 60000)).toISOString().split('T')[0];
         if(ds && !ds.value) ds.value = todayISO;
         if(de && !de.value) de.value = todayISO;
 
