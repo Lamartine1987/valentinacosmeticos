@@ -413,9 +413,20 @@ export const reportsModule = {
                 displayRevenue = storeRevenue;
             }
 
-            Object.keys(displayRevenue).forEach(k => {
+            let sortedKeys = Object.keys(displayRevenue).sort((a,b) => {
+                if (a === 'loja_1') return -1;
+                if (b === 'loja_1') return 1;
+                if (a === 'loja_2') return -1;
+                if (b === 'loja_2') return 1;
+                return a.localeCompare(b);
+            });
+            
+            let geralTotal = 0;
+
+            sortedKeys.forEach(k => {
                 const sName = k === 'loja_1' ? 'Loja 1' : (k === 'loja_2' ? 'Loja 2' : k);
                 const sVal = displayRevenue[k];
+                geralTotal += sVal;
                 if (sVal > 0) {
                     const storeColor = k === 'loja_1' ? '#10B981' : (k === 'loja_2' ? '#3B82F6' : '#F59E0B');
                     const div = document.createElement('div');
@@ -429,6 +440,18 @@ export const reportsModule = {
                     storeTotalsContainer.appendChild(div);
                 }
             });
+            
+            if (geralTotal > 0) {
+                const div = document.createElement('div');
+                div.style.cssText = "text-align: center;";
+                div.innerHTML = `
+                    <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">
+                        <span style="display:inline-block; width:8px; height:8px; background:#8B5CF6; border-radius:50%; margin-right:4px;"></span>Geral
+                    </div>
+                    <div style="font-size: 16px; font-weight: bold; color: var(--text-main);">R$ ${geralTotal.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</div>
+                `;
+                storeTotalsContainer.appendChild(div);
+            }
             
             if(Object.keys(displayRevenue).length === 0 || Object.values(displayRevenue).every(v => v === 0)) {
                 storeTotalsContainer.innerHTML = '<div style="font-size: 13px; color: var(--text-muted);">Sem dados</div>';
