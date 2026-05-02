@@ -550,9 +550,9 @@ body { background: var(--bg-color); color: var(--text-main); font-size: 15px; }
     
     /* Custom Breakdown Print Layout */
     #fin-breakdown-grid { display: block !important; width: 100% !important; }
-    #fin-breakdown-card-all { display: block !important; width: 100% !important; page-break-after: always; break-after: page; margin-bottom: 24px; }
-    #fin-breakdown-card-loja1, #fin-breakdown-card-loja2 { display: inline-block !important; width: 48% !important; vertical-align: top; page-break-inside: avoid; break-inside: avoid; margin-bottom: 16px; box-sizing: border-box; }
-    #fin-breakdown-card-loja1 { margin-right: 2%; }
+    #fin-breakdown-card-all:not([style*="none"]) { display: block !important; width: 100% !important; page-break-after: always; break-after: page; margin-bottom: 24px; }
+    #fin-breakdown-card-loja1:not([style*="none"]), #fin-breakdown-card-loja2:not([style*="none"]) { display: inline-block !important; width: 48% !important; vertical-align: top; page-break-inside: avoid; break-inside: avoid; margin-bottom: 16px; box-sizing: border-box; }
+    #fin-breakdown-card-loja1:not([style*="none"]) { margin-right: 2%; }
 
     /* Relatórios Layout Print */
     #report-charts-grid { display: flex !important; flex-direction: column !important; }

@@ -21,6 +21,7 @@ const app = {
     financeCategories: [],
     user: null,
     charts: { revenue: null, products: null },
+    currentAnnouncement: null,
 
     editingClientId: null,
     editingProductId: null,
@@ -1824,6 +1825,162 @@ const app = {
         } catch (e) {
             console.error(e);
             this.showToast('Erro ao iniciar chat.');
+        }
+    },
+
+    async fetchAnnouncement() {
+        try {
+            const doc = await db.collection('settings').doc('announcement').get();
+            if (doc.exists) {
+                this.currentAnnouncement = doc.data();
+                const btn = document.getElementById('btn-announcement');
+                const hasMessage = this.currentAnnouncement.message && this.currentAnnouncement.message.trim().length > 0;
+                
+                if (btn) {
+                    if (hasMessage || (this.currentUserProfile && (this.currentUserProfile.role === 'admin' || this.currentUserProfile.role === 'manager'))) {
+                        btn.style.display = 'block';
+                    } else {
+                        btn.style.display = 'none';
+                    }
+                }
+
+                if (this.currentAnnouncement.active && hasMessage) {
+                    const storageKey = this.user ? 'lastSeenAnnouncement_' + this.user.uid : 'lastSeenAnnouncement';
+                    const lastSeen = localStorage.getItem(storageKey);
+                    
+                    const badge = document.getElementById('announcement-badge');
+                    
+                    if (lastSeen !== this.currentAnnouncement.updatedAt) {
+                        if (badge) badge.style.display = 'block';
+                        // Open automatically if not seen
+                        setTimeout(() => this.openAnnouncementModal(true), 1500); // Small delay to let UI load
+                    } else {
+                        if (badge) badge.style.display = 'none';
+                    }
+                } else {
+                    const badge = document.getElementById('announcement-badge');
+                    if (badge) badge.style.display = 'none';
+                }
+            } else {
+                // Se não existir, libera pra admin/gerente criar se clicar no megafone
+                const btn = document.getElementById('btn-announcement');
+                if (btn && this.currentUserProfile && (this.currentUserProfile.role === 'admin' || this.currentUserProfile.role === 'manager')) {
+                    btn.style.display = 'block';
+                }
+            }
+        } catch (e) {
+            console.error("Erro ao buscar aviso:", e);
+        }
+    },
+
+    openAnnouncementModal(isAutoOpen = false) {
+        const modal = document.getElementById('announcement-overlay');
+        const content = document.getElementById('announcement-content');
+        const dateEl = document.getElementById('announcement-date');
+        const btnEdit = document.getElementById('btn-edit-announcement');
+        const readView = document.getElementById('announcement-read-view');
+        const editView = document.getElementById('announcement-edit-view');
+        
+        if (!modal) return;
+        
+        readView.style.display = 'block';
+        editView.style.display = 'none';
+
+        if (this.currentUserProfile && (this.currentUserProfile.role === 'admin' || this.currentUserProfile.role === 'manager')) {
+            btnEdit.style.display = 'inline-block';
+        } else {
+            btnEdit.style.display = 'none';
+        }
+
+        if (this.currentAnnouncement && this.currentAnnouncement.message) {
+            content.textContent = this.currentAnnouncement.message;
+            if (this.currentAnnouncement.updatedAt) {
+                const dateObj = new Date(this.currentAnnouncement.updatedAt);
+                dateEl.innerText = 'Atualizado em: ' + dateObj.toLocaleString('pt-BR');
+            } else {
+                dateEl.innerText = '';
+            }
+        } else {
+            content.textContent = "Nenhum aviso ativo no momento.";
+            dateEl.innerText = '';
+        }
+
+        modal.classList.add('active');
+    },
+
+    closeAnnouncementModal() {
+        const modal = document.getElementById('announcement-overlay');
+        if (modal) modal.classList.remove('active');
+        
+        if (this.currentAnnouncement && this.currentAnnouncement.updatedAt) {
+            const storageKey = this.user ? 'lastSeenAnnouncement_' + this.user.uid : 'lastSeenAnnouncement';
+            localStorage.setItem(storageKey, this.currentAnnouncement.updatedAt);
+            
+            const badge = document.getElementById('announcement-badge');
+            if (badge) badge.style.display = 'none';
+        }
+    },
+
+    enableEditAnnouncement() {
+        document.getElementById('announcement-read-view').style.display = 'none';
+        document.getElementById('announcement-edit-view').style.display = 'block';
+        
+        const textarea = document.getElementById('announcement-textarea');
+        const checkbox = document.getElementById('announcement-active-checkbox');
+        
+        if (this.currentAnnouncement) {
+            textarea.value = this.currentAnnouncement.message || '';
+            checkbox.checked = this.currentAnnouncement.active !== false; // default true
+        } else {
+            textarea.value = '';
+            checkbox.checked = true;
+        }
+    },
+
+    cancelEditAnnouncement() {
+        document.getElementById('announcement-read-view').style.display = 'block';
+        document.getElementById('announcement-edit-view').style.display = 'none';
+    },
+
+    async saveAnnouncement() {
+        if (!this.currentUserProfile || (this.currentUserProfile.role !== 'admin' && this.currentUserProfile.role !== 'manager')) return;
+        
+        const textarea = document.getElementById('announcement-textarea');
+        const checkbox = document.getElementById('announcement-active-checkbox');
+        const message = textarea.value.trim();
+        let active = checkbox.checked;
+        
+        if (!message) {
+            // Se apagou todo o texto, força a desativação para não ficar pulando vazio
+            active = false;
+        }
+        
+        const updateData = {
+            message: message,
+            active: active,
+            updatedAt: new Date().toISOString()
+        };
+        
+        try {
+            await db.collection('settings').doc('announcement').set(updateData, { merge: true });
+            this.showToast('Aviso atualizado com sucesso!');
+            this.currentAnnouncement = updateData;
+            // set local storage so the admin doesn't get annoyed by their own popup on next refresh
+            const storageKey = this.user ? 'lastSeenAnnouncement_' + this.user.uid : 'lastSeenAnnouncement';
+            localStorage.setItem(storageKey, updateData.updatedAt);
+            
+            const badge = document.getElementById('announcement-badge');
+            if (badge) badge.style.display = 'none';
+            
+            this.cancelEditAnnouncement();
+            this.openAnnouncementModal(); // re-render read view
+            
+            const btn = document.getElementById('btn-announcement');
+            if (btn) btn.style.display = 'block';
+            
+        } catch(e) {
+            console.error(e);
+            this.showToast('Erro ao salvar aviso.', 'error');
         }
     },
 

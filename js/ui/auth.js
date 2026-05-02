@@ -38,6 +38,9 @@ export const authModule = {
                 if(loginScreen) loginScreen.classList.remove('active');
                 this.listenData();
                 this.loadSettings();
+                if (window.app && typeof window.app.fetchAnnouncement === 'function') {
+                    window.app.fetchAnnouncement();
+                }
             } else {
                 this.user = null;
                 if(loginScreen) loginScreen.classList.add('active');

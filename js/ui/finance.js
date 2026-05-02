@@ -365,6 +365,9 @@ export const financeModule = {
             endFull.setHours(23,59,59,999);
         }
 
+        let revenueLoja1 = 0;
+        let revenueLoja2 = 0;
+
         // Loop Sales for Revenue matching the date range/store
         if (this.sales) {
             this.sales.forEach(sale => {
@@ -377,11 +380,24 @@ export const financeModule = {
 
                 if (startFull && localSaleDate < startFull) return;
                 if (endFull && localSaleDate > endFull) return;
-                if (fStore !== 'all' && sale.storeId !== fStore) return;
-
-                totalRevenue += (sale.value || 0);
+                
+                let val = sale.value || 0;
+                
+                // For the top general summary card (respects fStore filter)
+                if (fStore === 'all' || sale.storeId === fStore) {
+                    totalRevenue += val;
+                }
+                
+                // For the breakdown cards (always calculated individually)
+                if (sale.storeId === 'loja_1' || sale.storeId === 'matriz') {
+                    revenueLoja1 += val;
+                } else if (sale.storeId === 'loja_2' || sale.storeId === 'filial_1') {
+                    revenueLoja2 += val;
+                }
             });
         }
+        
+        let revenueAll = revenueLoja1 + revenueLoja2;
 
         // Loop Expenses matching the date range/store
         if (this.expenses) {
@@ -514,25 +530,25 @@ export const financeModule = {
                 cardLoja1.style.display = 'flex';
                 cardLoja2.style.display = 'flex';
                 
-                this.drawFinanceChart('all', expensesByCategoryAll);
-                this.drawFinanceChart('loja1', expensesByCategoryLoja1);
-                this.drawFinanceChart('loja2', expensesByCategoryLoja2);
+                this.drawFinanceChart('all', expensesByCategoryAll, revenueAll);
+                this.drawFinanceChart('loja1', expensesByCategoryLoja1, revenueLoja1);
+                this.drawFinanceChart('loja2', expensesByCategoryLoja2, revenueLoja2);
             } else if (fStore === 'loja_1') {
                 cardAll.style.display = 'none';
                 cardLoja1.style.display = 'flex';
                 cardLoja2.style.display = 'none';
 
-                this.drawFinanceChart('loja1', expensesByCategoryAll); // has only loja_1 data due to early filtering
+                this.drawFinanceChart('loja1', expensesByCategoryAll, revenueLoja1); // has only loja_1 data due to early filtering
             } else if (fStore === 'loja_2') {
                 cardAll.style.display = 'none';
                 cardLoja1.style.display = 'none';
                 cardLoja2.style.display = 'flex';
 
-                this.drawFinanceChart('loja2', expensesByCategoryAll); // has only loja_2 data due to early filtering
+                this.drawFinanceChart('loja2', expensesByCategoryAll, revenueLoja2); // has only loja_2 data due to early filtering
             }
         } else {
             // Fallback just in case old DOM is still there
-            this.drawFinanceChart('all', expensesByCategoryAll);
+            this.drawFinanceChart('all', expensesByCategoryAll, revenueAll);
         }
 
         this.updateExpenseDescriptionAutocomplete();
@@ -568,7 +584,7 @@ export const financeModule = {
         });
     },
 
-    drawFinanceChart(suffix, dataObj) {
+    drawFinanceChart(suffix, dataObj, revenue = 0) {
         const ctx = document.getElementById(suffix === 'all' && !document.getElementById('chart-expenses-all') ? 'chart-expenses' : `chart-expenses-${suffix}`);
         if (!ctx) return;
         
@@ -580,10 +596,29 @@ export const financeModule = {
         const labels = Object.keys(dataObj);
         const data = Object.values(dataObj);
         
-        const total = data.reduce((acc, curr) => acc + curr, 0);
+        const totalExpenses = data.reduce((acc, curr) => acc + curr, 0);
+        
+        const revEl = document.getElementById(`fin-breakdown-revenue-${suffix}`);
+        if (revEl) revEl.innerText = `R$ ${revenue.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
         const totalEl = document.getElementById(`fin-breakdown-total-${suffix}`);
         if (totalEl) {
-            totalEl.innerText = `R$ ${total.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            totalEl.innerText = `R$ ${totalExpenses.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        }
+        
+        const profit = revenue - totalExpenses;
+        const profitEl = document.getElementById(`fin-breakdown-profit-${suffix}`);
+        if (profitEl) {
+            profitEl.innerText = `R$ ${profit.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            profitEl.style.color = profit < 0 ? '#EF4444' : '#10B981';
+        }
+        
+        const marginEl = document.getElementById(`fin-breakdown-margin-${suffix}`);
+        if (marginEl) {
+            let margin = 0;
+            if (revenue > 0) margin = (profit / revenue) * 100;
+            marginEl.innerText = `${margin.toFixed(1)}%`;
+            marginEl.style.color = profit < 0 ? '#EF4444' : '#8B5CF6';
         }
         
         // Define standard vivid colors
