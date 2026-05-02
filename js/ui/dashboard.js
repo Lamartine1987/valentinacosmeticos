@@ -127,7 +127,30 @@ export const dashboardModule = {
             actions = actions.filter(a => a.type === fType);
         }
 
-        const totalSales = filteredSales.reduce((acc, curr) => acc + curr.value, 0);
+        const role = (window.app && window.app.currentUserProfile) ? window.app.currentUserProfile.role : 'seller';
+        const currentYear = new Date().getFullYear();
+        const currentMonth = new Date().getMonth() + 1;
+
+        let totalSales = 0;
+        filteredSales.forEach(curr => {
+            if (role === 'seller') {
+                if (curr.date) {
+                    const [y, m, d] = curr.date.split('-');
+                    if (parseInt(y) === currentYear && parseInt(m) === currentMonth) {
+                        totalSales += curr.value;
+                    }
+                }
+            } else {
+                totalSales += curr.value;
+            }
+        });
+
+        if (role === 'seller') {
+            document.getElementById('stat-total-sales').parentElement.querySelector('h3').innerText = 'Faturamento Mensal';
+        } else {
+            document.getElementById('stat-total-sales').parentElement.querySelector('h3').innerText = 'Total Faturado';
+        }
+
         document.getElementById('stat-total-sales').innerText = `R$ ${totalSales.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
 
         this.currentDashboardActions = actions;

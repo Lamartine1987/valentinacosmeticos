@@ -541,7 +541,7 @@ body { background: var(--bg-color); color: var(--text-main); font-size: 15px; }
     .page.active { display: block !important; padding: 0 !important; height: auto !important; overflow: visible !important; }
     body, html { background: white !important; height: auto !important; overflow: visible !important; margin: 0; padding: 0; }
     .dashboard-content, .table-container, .form-card { height: auto !important; max-height: none !important; overflow: visible !important; }
-    .stat-card, .form-card { box-shadow: none !important; border: 1px solid #e2e8f0 !important; page-break-inside: avoid; margin-bottom: 16px; }
+    .stat-card, .form-card, .chart-card { box-shadow: none !important; border: 1px solid #e2e8f0 !important; page-break-inside: avoid; break-inside: avoid; margin-bottom: 16px; }
     .data-table { page-break-inside: auto; }
     .data-table tr { page-break-inside: avoid; page-break-after: auto; }
     .data-table th, .data-table td { border-bottom: 1px solid #cbd5e1 !important; color: black !important; padding: 12px 8px !important; }
@@ -553,5 +553,10 @@ body { background: var(--bg-color); color: var(--text-main); font-size: 15px; }
     #fin-breakdown-card-all { display: block !important; width: 100% !important; page-break-after: always; break-after: page; margin-bottom: 24px; }
     #fin-breakdown-card-loja1, #fin-breakdown-card-loja2 { display: inline-block !important; width: 48% !important; vertical-align: top; page-break-inside: avoid; break-inside: avoid; margin-bottom: 16px; box-sizing: border-box; }
     #fin-breakdown-card-loja1 { margin-right: 2%; }
+
+    /* Relatórios Layout Print */
+    #report-charts-grid { display: flex !important; flex-direction: column !important; }
+    #card-top-products { order: 1 !important; }
+    #card-top-clients { order: 2 !important; }
 }
 

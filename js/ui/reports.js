@@ -168,8 +168,9 @@ export const reportsModule = {
             allTimeTotal += val;
             
             const sName = (sale.sellerName && sale.sellerName.trim() !== '') ? sale.sellerName : 'Sistema/Desconhecido';
-            if (!sellerCommissions[sName]) sellerCommissions[sName] = { count: 0, total: 0 };
+            if (!sellerCommissions[sName]) sellerCommissions[sName] = { count: 0, total: 0, totalRevenue: 0 };
             sellerCommissions[sName].count += 1;
+            sellerCommissions[sName].totalRevenue += val;
             
             if (sale.commissionValue) {
                 const cv = parseFloat(sale.commissionValue);
@@ -386,6 +387,54 @@ export const reportsModule = {
             }
         }
 
+        const storeTotalsContainer = document.getElementById('report-store-totals');
+        if (storeTotalsContainer) {
+            storeTotalsContainer.innerHTML = '';
+            
+            // Reapply seller restriction if needed, but the pie chart is built from filteredSales so it's already accurate
+            // except if role=seller we were limiting global total to current month. 
+            // The pie chart itself uses storeRevenue which comes directly from filteredSales (without currentMonth check).
+            // For sellers we might want to restrict storeRevenue to currentMonth too if we want it to match perfectly.
+            const role = (window.app && window.app.currentUserProfile) ? window.app.currentUserProfile.role : 'seller';
+            
+            let displayRevenue = {};
+            if (role === 'seller') {
+                filteredSales.forEach(s => {
+                    if (s.date) {
+                        const [y, m, d] = s.date.split('-');
+                        if (parseInt(y) === currentYear && parseInt(m) === currentMonth) {
+                            const sId = s.storeId || 'loja_1';
+                            if(!displayRevenue[sId]) displayRevenue[sId] = 0;
+                            displayRevenue[sId] += (Number(s.value) || 0);
+                        }
+                    }
+                });
+            } else {
+                displayRevenue = storeRevenue;
+            }
+
+            Object.keys(displayRevenue).forEach(k => {
+                const sName = k === 'loja_1' ? 'Loja 1' : (k === 'loja_2' ? 'Loja 2' : k);
+                const sVal = displayRevenue[k];
+                if (sVal > 0) {
+                    const storeColor = k === 'loja_1' ? '#10B981' : (k === 'loja_2' ? '#3B82F6' : '#F59E0B');
+                    const div = document.createElement('div');
+                    div.style.cssText = "text-align: center;";
+                    div.innerHTML = `
+                        <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">
+                            <span style="display:inline-block; width:8px; height:8px; background:${storeColor}; border-radius:50%; margin-right:4px;"></span>${sName}
+                        </div>
+                        <div style="font-size: 16px; font-weight: bold; color: var(--text-main);">R$ ${sVal.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</div>
+                    `;
+                    storeTotalsContainer.appendChild(div);
+                }
+            });
+            
+            if(Object.keys(displayRevenue).length === 0 || Object.values(displayRevenue).every(v => v === 0)) {
+                storeTotalsContainer.innerHTML = '<div style="font-size: 13px; color: var(--text-muted);">Sem dados</div>';
+            }
+        }
+
         const storeCanvas = document.getElementById('chart-stores');
         if (typeof Chart !== 'undefined' && storeCanvas) {
             const ctxStore = storeCanvas.getContext('2d');
@@ -487,14 +536,16 @@ export const reportsModule = {
             const sellers = Object.keys(sellerCommissions).sort((a,b) => sellerCommissions[b].total - sellerCommissions[a].total);
             
             if (sellers.length === 0) {
-                commissionListBody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--text-muted); padding: 24px;">Nenhuma venda contendo comissão no período.</td></tr>';
+                commissionListBody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 24px;">Nenhuma venda contendo comissão no período.</td></tr>';
             } else {
                 sellers.forEach(seller => {
                     const info = sellerCommissions[seller];
+                    const avgTicket = info.count > 0 ? info.totalRevenue / info.count : 0;
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td style="text-transform: capitalize;"><strong>${seller}</strong></td>
                         <td style="text-align: center; font-weight: 500; color: var(--text-muted);">${info.count}</td>
+                        <td style="text-align: center; font-weight: bold; color: var(--text-main);">R$ ${avgTicket.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                         <td style="text-align: right; color: #10B981; font-weight: bold; font-size: 15px;">R$ ${info.total.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                     `;
                     commissionListBody.appendChild(row);

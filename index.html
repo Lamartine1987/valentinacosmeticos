@@ -420,7 +420,7 @@
                         </div>
                     </div>
 
-                    <div class="charts-grid" style="grid-template-columns: repeat(3, 1fr);">
+                    <div class="charts-grid" id="report-charts-grid" style="grid-template-columns: repeat(3, 1fr);">
                         <div class="chart-card" style="grid-column: span 2;">
                             <div
                                 style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
@@ -435,16 +435,17 @@
                             </div>
                             <canvas id="chart-revenue" height="100"></canvas>
                         </div>
-                        <div class="chart-card">
-                            <h3 style="margin-bottom: 16px; font-size: 16px;">
-                                <span id="lbl-top-products">Top 5 Produtos Mais Vendidos</span>
-                            </h3>
-                            <div class="scrollable-list" style="height: 360px; overflow-y: auto; padding-right: 8px;">
-                                <div id="list-top-products" style="display: flex; flex-direction: column; gap: 8px;">
+                        <div class="chart-card" style="display: flex; flex-direction: column;">
+                            <h3 style="margin-bottom: 16px; font-size: 16px;">Faturamento por Loja</h3>
+                            <div id="report-store-totals" style="display: flex; justify-content: center; gap: 16px; margin-bottom: 16px; flex-wrap: wrap;">
+                            </div>
+                            <div style="height: 220px; display: flex; justify-content: center; align-items: center;">
+                                <div style="position: relative; width: 220px; height: 220px;">
+                                    <canvas id="chart-stores"></canvas>
                                 </div>
                             </div>
                         </div>
-                        <div class="chart-card" style="grid-column: span 2;">
+                        <div class="chart-card" id="card-top-clients" style="grid-column: span 2;">
                             <h3 style="margin-bottom: 16px; font-size: 16px;">
                                 <span id="lbl-top-clients">Top 10 Clientes Mais Valiosos (LTV)</span>
                             </h3>
@@ -453,10 +454,13 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="chart-card">
-                            <h3 style="margin-bottom: 16px; font-size: 16px;">Faturamento por Loja</h3>
-                            <div style="height: 200px; display: flex; justify-content: center;">
-                                <canvas id="chart-stores"></canvas>
+                        <div class="chart-card" id="card-top-products">
+                            <h3 style="margin-bottom: 16px; font-size: 16px;">
+                                <span id="lbl-top-products">Top 5 Produtos Mais Vendidos</span>
+                            </h3>
+                            <div class="scrollable-list" style="height: 360px; overflow-y: auto; padding-right: 8px;">
+                                <div id="list-top-products" style="display: flex; flex-direction: column; gap: 8px;">
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -486,6 +490,7 @@
                                     <tr>
                                         <th>Consultor Responsável</th>
                                         <th style="text-align: center;">Vendas Fechadas no Período</th>
+                                        <th style="text-align: center;">Ticket Médio</th>
                                         <th style="text-align: right;">Total de Comissões de Vendas (R$)</th>
                                     </tr>
                                 </thead>
