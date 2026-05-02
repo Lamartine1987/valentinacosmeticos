@@ -298,8 +298,8 @@ export const productsModule = {
             row.innerHTML = `
                 <td style="text-align: center;"><input type="checkbox" class="product-checkbox" value="${prod.id}" ${isChecked ? 'checked' : ''} style="cursor: pointer; width: 16px; height: 16px;"></td>
                 <td style="display:flex; align-items:center;"><strong>${prod.name}</strong>${statusBadge}
-                    ${prod.criticalQty > 0 ? `<span class="pill" style="background:#FEF3C7; color:#D97706; pointer-events:none; margin-left:8px;" title="Vencimento Crítico: ${prod.criticalDate}">⚠️ Lote Crítico (${prod.criticalQty})</span>` : ''}
-                    <br><small style="color:var(--text-muted); padding-left:4px;">${prod.barcode || ''}</small></td>
+                    <span style="color:var(--text-muted); padding-left:8px; font-size:13px;">${prod.barcode || ''}</span>
+                    ${prod.criticalQty > 0 ? `<span class="pill" style="background:#FEF3C7; color:#D97706; pointer-events:none; margin-left:8px;" title="Vencimento Crítico: ${prod.criticalDate}">⚠️ Lote Crítico (${prod.criticalQty})</span>` : ''}</td>
                 <td><span class="pill" style="pointer-events:none;">${prod.category || 'Geral'}</span></td>
                 <td>${price}</td>
                 <td style="color:var(--text-muted); font-size:12px; text-transform:capitalize;">${prod.sellerName || 'Sistema'}</td>
