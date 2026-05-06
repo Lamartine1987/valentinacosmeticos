@@ -1838,159 +1838,257 @@ const app = {
         }
     },
 
+    announcements: [],
+
     async fetchAnnouncement() {
         try {
-            const doc = await db.collection('settings').doc('announcement').get();
-            if (doc.exists) {
-                this.currentAnnouncement = doc.data();
-                const btn = document.getElementById('btn-announcement');
-                const hasMessage = this.currentAnnouncement.message && this.currentAnnouncement.message.trim().length > 0;
-                
-                if (btn) {
-                    if (hasMessage || (this.currentUserProfile && (this.currentUserProfile.role === 'admin' || this.currentUserProfile.role === 'manager'))) {
-                        btn.style.display = 'block';
-                    } else {
-                        btn.style.display = 'none';
-                    }
-                }
+            const snapshot = await db.collection('announcements').get();
+            this.announcements = [];
+            snapshot.forEach(doc => {
+                this.announcements.push({ id: doc.id, ...doc.data() });
+            });
+            
+            // Sort by creation date descending
+            this.announcements.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 
-                if (this.currentAnnouncement.active && hasMessage) {
-                    const storageKey = this.user ? 'lastSeenAnnouncement_' + this.user.uid : 'lastSeenAnnouncement';
-                    const lastSeen = localStorage.getItem(storageKey);
-                    
-                    const badge = document.getElementById('announcement-badge');
-                    
-                    if (lastSeen !== this.currentAnnouncement.updatedAt) {
-                        if (badge) badge.style.display = 'block';
-                        // Open automatically if not seen
-                        setTimeout(() => this.openAnnouncementModal(true), 1500); // Small delay to let UI load
-                    } else {
-                        if (badge) badge.style.display = 'none';
-                    }
+            const isAdmin = this.currentUserProfile && (this.currentUserProfile.role === 'admin' || this.currentUserProfile.role === 'manager');
+            const activeAnnouncements = this.announcements.filter(a => a.active);
+            
+            const btn = document.getElementById('btn-announcement');
+            if (btn) {
+                if (activeAnnouncements.length > 0 || isAdmin) {
+                    btn.style.display = 'block';
                 } else {
-                    const badge = document.getElementById('announcement-badge');
+                    btn.style.display = 'none';
+                }
+            }
+
+            const badge = document.getElementById('announcement-badge');
+            
+            if (activeAnnouncements.length > 0) {
+                const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD format
+                const storageKey = this.user ? 'lastSeenAnnouncementDate_' + this.user.uid : 'lastSeenAnnouncementDate';
+                const lastSeenDate = localStorage.getItem(storageKey);
+                
+                if (lastSeenDate !== today) {
+                    if (badge) badge.style.display = 'block';
+                    // Open automatically if not seen today
+                    setTimeout(() => this.openAnnouncementModal(true), 1500);
+                } else {
                     if (badge) badge.style.display = 'none';
                 }
             } else {
-                // Se não existir, libera pra admin/gerente criar se clicar no megafone
-                const btn = document.getElementById('btn-announcement');
-                if (btn && this.currentUserProfile && (this.currentUserProfile.role === 'admin' || this.currentUserProfile.role === 'manager')) {
-                    btn.style.display = 'block';
-                }
+                if (badge) badge.style.display = 'none';
             }
         } catch (e) {
-            console.error("Erro ao buscar aviso:", e);
+            console.error("Erro ao buscar avisos:", e);
         }
     },
 
     openAnnouncementModal(isAutoOpen = false) {
         const modal = document.getElementById('announcement-overlay');
-        const content = document.getElementById('announcement-content');
-        const dateEl = document.getElementById('announcement-date');
-        const btnEdit = document.getElementById('btn-edit-announcement');
         const readView = document.getElementById('announcement-read-view');
         const editView = document.getElementById('announcement-edit-view');
+        const btnNew = document.getElementById('btn-new-announcement');
         
         if (!modal) return;
         
-        readView.style.display = 'block';
+        readView.style.display = 'flex';
         editView.style.display = 'none';
 
-        if (this.currentUserProfile && (this.currentUserProfile.role === 'admin' || this.currentUserProfile.role === 'manager')) {
-            btnEdit.style.display = 'inline-block';
+        const isAdmin = this.currentUserProfile && (this.currentUserProfile.role === 'admin' || this.currentUserProfile.role === 'manager');
+
+        if (isAdmin) {
+            if (btnNew) btnNew.style.display = 'inline-block';
         } else {
-            btnEdit.style.display = 'none';
+            if (btnNew) btnNew.style.display = 'none';
         }
 
-        if (this.currentAnnouncement && this.currentAnnouncement.message) {
-            content.textContent = this.currentAnnouncement.message;
-            if (this.currentAnnouncement.updatedAt) {
-                const dateObj = new Date(this.currentAnnouncement.updatedAt);
-                dateEl.innerText = 'Atualizado em: ' + dateObj.toLocaleString('pt-BR');
-            } else {
-                dateEl.innerText = '';
-            }
-        } else {
-            content.textContent = "Nenhum aviso ativo no momento.";
-            dateEl.innerText = '';
-        }
-
+        this.renderAnnouncements();
         modal.classList.add('active');
+        
+        // Mark as seen today
+        const today = new Date().toLocaleDateString('en-CA');
+        const storageKey = this.user ? 'lastSeenAnnouncementDate_' + this.user.uid : 'lastSeenAnnouncementDate';
+        localStorage.setItem(storageKey, today);
+        const badge = document.getElementById('announcement-badge');
+        if (badge) badge.style.display = 'none';
+    },
+
+    renderAnnouncements() {
+        const readView = document.getElementById('announcement-read-view');
+        if (!readView) return;
+        readView.innerHTML = '';
+        
+        const isAdmin = this.currentUserProfile && (this.currentUserProfile.role === 'admin' || this.currentUserProfile.role === 'manager');
+        const listToRender = isAdmin ? this.announcements : this.announcements.filter(a => a.active);
+
+        if (listToRender.length === 0) {
+            readView.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 20px;">Nenhum aviso no momento.</div>';
+            return;
+        }
+
+        listToRender.forEach(aviso => {
+            const card = document.createElement('div');
+            card.style.cssText = `
+                background: white;
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                padding: 16px;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                opacity: ${aviso.active ? '1' : '0.6'};
+                flex-shrink: 0;
+            `;
+
+            let dateStr = '';
+            if (aviso.updatedAt || aviso.createdAt) {
+                const dateObj = new Date(aviso.updatedAt || aviso.createdAt);
+                dateStr = 'Em: ' + dateObj.toLocaleString('pt-BR');
+            }
+
+            let adminControls = '';
+            if (isAdmin) {
+                adminControls = `
+                    <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; border-top: 1px solid var(--border); padding-top: 12px;">
+                        <span style="margin-right: auto; font-size: 11px; color: ${aviso.active ? '#10B981' : '#EF4444'}; font-weight: 600; padding-top: 6px;">
+                            ${aviso.active ? 'ATIVO' : 'INATIVO'}
+                        </span>
+                        <button class="btn-icon" onclick="app.enableEditAnnouncement('${aviso.id}')" style="font-size: 13px; color: var(--primary); background: #F1F5F9; border-radius: 4px; padding: 4px 8px; width: auto; height: auto;"><i class="fas fa-edit" style="margin-right: 4px;"></i> Editar</button>
+                        <button class="btn-icon" onclick="app.deleteAnnouncement('${aviso.id}')" style="font-size: 13px; color: #EF4444; background: #FEE2E2; border-radius: 4px; padding: 4px 8px; width: auto; height: auto;"><i class="fas fa-trash" style="margin-right: 4px;"></i> Excluir</button>
+                    </div>
+                `;
+            }
+
+            card.innerHTML = `
+                <div style="color: var(--text-main); font-size: 14px; margin: 0; word-break: break-word;">${aviso.message}</div>
+                <div style="font-size: 11px; color: var(--text-muted); text-align: right; margin-top: 8px;">${dateStr}</div>
+                ${adminControls}
+            `;
+            readView.appendChild(card);
+        });
     },
 
     closeAnnouncementModal() {
         const modal = document.getElementById('announcement-overlay');
         if (modal) modal.classList.remove('active');
-        
-        if (this.currentAnnouncement && this.currentAnnouncement.updatedAt) {
-            const storageKey = this.user ? 'lastSeenAnnouncement_' + this.user.uid : 'lastSeenAnnouncement';
-            localStorage.setItem(storageKey, this.currentAnnouncement.updatedAt);
-            
-            const badge = document.getElementById('announcement-badge');
-            if (badge) badge.style.display = 'none';
-        }
+        this.cancelEditAnnouncement(); // Reset view state
     },
 
-    enableEditAnnouncement() {
+    enableEditAnnouncement(id = null) {
         document.getElementById('announcement-read-view').style.display = 'none';
         document.getElementById('announcement-edit-view').style.display = 'block';
+        const btnNew = document.getElementById('btn-new-announcement');
+        if (btnNew) btnNew.style.display = 'none';
         
-        const textarea = document.getElementById('announcement-textarea');
+        if (!this.quillAnnouncementEditor) {
+            this.quillAnnouncementEditor = new Quill('#announcement-quill-editor', {
+                theme: 'snow',
+                placeholder: 'Digite o recado aqui...',
+                modules: {
+                    toolbar: [
+                        ['bold', 'italic', 'underline', 'strike'],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        [{ 'color': [] }, { 'background': [] }],
+                        ['clean']
+                    ]
+                }
+            });
+        }
+        
         const checkbox = document.getElementById('announcement-active-checkbox');
+        const idHidden = document.getElementById('announcement-id-hidden');
+        const title = document.getElementById('announcement-edit-title');
         
-        if (this.currentAnnouncement) {
-            textarea.value = this.currentAnnouncement.message || '';
-            checkbox.checked = this.currentAnnouncement.active !== false; // default true
+        if (id) {
+            const aviso = this.announcements.find(a => a.id === id);
+            if (aviso) {
+                this.quillAnnouncementEditor.root.innerHTML = aviso.message || '';
+                checkbox.checked = aviso.active !== false;
+                idHidden.value = id;
+                title.innerText = 'Editar Aviso';
+            }
         } else {
-            textarea.value = '';
+            this.quillAnnouncementEditor.root.innerHTML = '';
             checkbox.checked = true;
+            idHidden.value = '';
+            title.innerText = 'Criar Novo Aviso';
         }
     },
 
     cancelEditAnnouncement() {
-        document.getElementById('announcement-read-view').style.display = 'block';
-        document.getElementById('announcement-edit-view').style.display = 'none';
+        const readView = document.getElementById('announcement-read-view');
+        const editView = document.getElementById('announcement-edit-view');
+        if (readView) readView.style.display = 'flex';
+        if (editView) editView.style.display = 'none';
+        const isAdmin = this.currentUserProfile && (this.currentUserProfile.role === 'admin' || this.currentUserProfile.role === 'manager');
+        if (isAdmin) {
+            const btnNew = document.getElementById('btn-new-announcement');
+            if (btnNew) btnNew.style.display = 'inline-block';
+        }
     },
 
     async saveAnnouncement() {
         if (!this.currentUserProfile || (this.currentUserProfile.role !== 'admin' && this.currentUserProfile.role !== 'manager')) return;
         
-        const textarea = document.getElementById('announcement-textarea');
+        if (!this.quillAnnouncementEditor) return;
+
         const checkbox = document.getElementById('announcement-active-checkbox');
-        const message = textarea.value.trim();
+        const idHidden = document.getElementById('announcement-id-hidden').value;
+        const message = this.quillAnnouncementEditor.root.innerHTML;
+        const textContent = this.quillAnnouncementEditor.getText().trim();
         let active = checkbox.checked;
         
-        if (!message) {
-            // Se apagou todo o texto, força a desativação para não ficar pulando vazio
-            active = false;
+        if (!textContent && message === '<p><br></p>') {
+            this.showToast('Digite uma mensagem para o aviso.', 'error');
+            return;
         }
         
-        const updateData = {
-            message: message,
-            active: active,
-            updatedAt: new Date().toISOString()
-        };
-        
         try {
-            await db.collection('settings').doc('announcement').set(updateData, { merge: true });
-            this.showToast('Aviso atualizado com sucesso!');
-            this.currentAnnouncement = updateData;
-            // set local storage so the admin doesn't get annoyed by their own popup on next refresh
-            const storageKey = this.user ? 'lastSeenAnnouncement_' + this.user.uid : 'lastSeenAnnouncement';
-            localStorage.setItem(storageKey, updateData.updatedAt);
+            if (idHidden) {
+                // Update
+                const updateData = {
+                    message: message,
+                    active: active,
+                    updatedAt: new Date().toISOString()
+                };
+                await db.collection('announcements').doc(idHidden).update(updateData);
+                this.showToast('Aviso atualizado com sucesso!');
+            } else {
+                // Create
+                const createData = {
+                    message: message,
+                    active: active,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+                await db.collection('announcements').add(createData);
+                this.showToast('Novo aviso criado com sucesso!');
+            }
             
-            const badge = document.getElementById('announcement-badge');
-            if (badge) badge.style.display = 'none';
-            
+            await this.fetchAnnouncement(); // Reload list
             this.cancelEditAnnouncement();
-            this.openAnnouncementModal(); // re-render read view
-            
-            const btn = document.getElementById('btn-announcement');
-            if (btn) btn.style.display = 'block';
+            this.renderAnnouncements();
             
         } catch(e) {
             console.error(e);
             this.showToast('Erro ao salvar aviso.', 'error');
+        }
+    },
+
+    async deleteAnnouncement(id) {
+        if (!confirm("Tem certeza que deseja excluir este aviso?")) return;
+        
+        try {
+            await db.collection('announcements').doc(id).delete();
+            this.showToast('Aviso excluído!');
+            await this.fetchAnnouncement();
+            this.renderAnnouncements();
+        } catch(e) {
+            console.error(e);
+            this.showToast('Erro ao excluir aviso.', 'error');
         }
     },
 
