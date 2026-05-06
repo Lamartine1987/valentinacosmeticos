@@ -10,6 +10,7 @@ import { reportsModule } from './ui/reports.js';
 import { utilsModule } from './ui/utils.js';
 import { funnelModule } from './ui/funnel.js';
 import { financeModule } from './ui/finance.js';
+import { reconciliationModule } from './ui/reconciliation.js';
 
 // App State
 const app = {
@@ -548,6 +549,7 @@ const app = {
         if (document.getElementById('page-birthdays') && document.getElementById('page-birthdays').classList.contains('active')) this.renderBirthdays();
         if (document.getElementById('page-finance') && document.getElementById('page-finance').classList.contains('active') && this.renderFinanceDashboard) this.renderFinanceDashboard();
         if (document.getElementById('page-funnel') && document.getElementById('page-funnel').classList.contains('active')) this.renderFunnelBoard();
+        if (document.getElementById('page-reconciliation') && document.getElementById('page-reconciliation').classList.contains('active') && typeof this.renderReconciliationDashboard === 'function') this.renderReconciliationDashboard();
         const historyModal = document.getElementById('history-overlay');
         if (historyModal && historyModal.classList.contains('active')) this.renderClientHistory();
     },
@@ -669,6 +671,9 @@ const app = {
 
         const form = document.getElementById('form-sale');
         if (form) form.reset();
+        
+        const instCont = document.getElementById('r-installments-container');
+        if (instCont) instCont.style.display = 'none';
         
         const dateInput = document.getElementById('r-date');
         if (dateInput) {
@@ -1077,6 +1082,7 @@ const app = {
             }
 
             const productNames = items.map(i => i.product).join(', ');
+            const paymentMethodEl = document.getElementById('r-payment-method');
             const newSale = {
                 name: document.getElementById('r-name').value,
                 overrideShortName: document.getElementById('r-shortName') ? document.getElementById('r-shortName').value.trim() : '',
@@ -1087,6 +1093,10 @@ const app = {
                 value: parseFloat(document.getElementById('r-value').value) || 0,
                 discount: parseFloat(document.getElementById('r-discount') ? document.getElementById('r-discount').value : 0) || 0,
                 date: document.getElementById('r-date').value,
+                paymentMethod: paymentMethodEl ? paymentMethodEl.value : 'pix',
+                installments: (paymentMethodEl && paymentMethodEl.value === 'credit_card' && document.getElementById('r-installments')) ? parseInt(document.getElementById('r-installments').value) || 1 : 1,
+                nsu: document.getElementById('r-nsu') ? document.getElementById('r-nsu').value.trim() : '',
+                cardBrand: document.getElementById('r-card-brand') ? document.getElementById('r-card-brand').value : '',
             };
 
             const storeSelect = document.getElementById('r-store-assigned');
@@ -1994,7 +2004,8 @@ const app = {
     ...reportsModule,
     ...utilsModule,
     ...funnelModule,
-    ...financeModule
+    ...financeModule,
+    ...reconciliationModule
 };
 
 window.app = app; // Manda pro window pro HTML (onclick) conseguir achar
