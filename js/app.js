@@ -707,6 +707,19 @@ const app = {
                 this.originLeadWonId = null; 
             }
         }
+        
+        const btnCancelEdit = document.getElementById('btn-cancel-edit-sale');
+        if (btnCancelEdit) btnCancelEdit.style.display = 'none';
+        
+        if(document.getElementById('sale-form-title')) document.getElementById('sale-form-title').innerText = "Registrar Nova Venda";
+        if(document.getElementById('sale-form-desc')) document.getElementById('sale-form-desc').innerText = "Preencha os detalhes para registrar no histórico.";
+        if(document.getElementById('sale-submit-btn')) document.getElementById('sale-submit-btn').innerHTML = '<i class="fas fa-save"></i> Registrar Venda';
+        this.editingSaleId = null;
+    },
+
+    cancelEditSale() {
+        this.clearSaleForm();
+        this.navigateTo('sales');
     },
 
     editSale(id) {
@@ -722,6 +735,9 @@ const app = {
         if(document.getElementById('sale-form-title')) document.getElementById('sale-form-title').innerText = "Editar Venda";
         if(document.getElementById('sale-form-desc')) document.getElementById('sale-form-desc').innerText = "Atualizando histórico (pode afetar comissões e relatórios).";
         if(document.getElementById('sale-submit-btn')) document.getElementById('sale-submit-btn').innerHTML = '<i class="fas fa-save"></i> Salvar Alterações';
+        
+        const btnCancelEdit = document.getElementById('btn-cancel-edit-sale');
+        if (btnCancelEdit) btnCancelEdit.style.display = 'flex';
 
         document.getElementById('r-name').value = sale.name || '';
         if(document.getElementById('r-shortName')) document.getElementById('r-shortName').value = sale.overrideShortName || sale.shortName || '';
@@ -735,6 +751,27 @@ const app = {
 
         const sellerAssigned = document.getElementById('r-seller-assigned');
         if (sellerAssigned && sale.sellerId) sellerAssigned.value = sale.sellerId;
+
+        const paymentsCont = document.getElementById('sale-payments-container');
+        if (paymentsCont) {
+            paymentsCont.innerHTML = '';
+            if (sale.payments && sale.payments.length > 0) {
+                sale.payments.forEach(p => {
+                    if (typeof this.addSalePayment === 'function') this.addSalePayment(p);
+                });
+            } else {
+                // Fallback para vendas antigas sem array de pagamentos
+                if (typeof this.addSalePayment === 'function') {
+                    this.addSalePayment({
+                        method: sale.paymentMethod || 'pix',
+                        value: sale.value || 0,
+                        installments: sale.installments || 1,
+                        nsu: sale.nsu || '',
+                        cardBrand: sale.cardBrand || ''
+                    });
+                }
+            }
+        }
 
         const cont = document.getElementById('sale-items-container');
         if (cont) {
@@ -1027,8 +1064,12 @@ const app = {
             });
         }
 
-        // Inicializar o formulário de venda com uma linha de produto
+        // Inicializar o formulário de venda com uma linha de produto e de pagamento
         this.addSaleItem();
+        if (typeof this.addSalePayment === 'function') {
+            document.getElementById('sale-payments-container').innerHTML = '';
+            this.addSalePayment();
+        }
 
         document.getElementById('form-sale').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -1082,7 +1123,43 @@ const app = {
             }
 
             const productNames = items.map(i => i.product).join(', ');
-            const paymentMethodEl = document.getElementById('r-payment-method');
+            
+            // Coletar array de pagamentos dinâmico
+            const paymentRows = document.querySelectorAll('.sale-payment-row');
+            const payments = [];
+            paymentRows.forEach(row => {
+                const pMethod = row.querySelector('.sale-payment-method').value;
+                const pValue = parseFloat(row.querySelector('.sale-payment-value').value) || 0;
+                const pInst = parseInt(row.querySelector('.sale-payment-installments').value) || 1;
+                const pBrand = row.querySelector('.sale-payment-brand').value;
+                const pNsu = row.querySelector('.sale-payment-nsu').value.trim();
+
+                if (pValue > 0) {
+                    payments.push({
+                        method: pMethod,
+                        value: pValue,
+                        installments: (pMethod === 'credit_card') ? pInst : 1,
+                        nsu: pNsu,
+                        cardBrand: (pMethod === 'credit_card' || pMethod === 'debit_card') ? pBrand : ''
+                    });
+                }
+            });
+
+            // Fallback roots for legacy
+            let rootPaymentMethod = 'pix';
+            let rootInstallments = 1;
+            let rootNsu = '';
+            let rootCardBrand = '';
+
+            if (payments.length > 0) {
+                // Seleciona o pagamento de maior valor como principal para as raízes antigas
+                let mainPayment = payments.reduce((prev, current) => (prev.value > current.value) ? prev : current);
+                rootPaymentMethod = mainPayment.method;
+                rootInstallments = mainPayment.installments;
+                rootNsu = mainPayment.nsu;
+                rootCardBrand = mainPayment.cardBrand;
+            }
+
             const newSale = {
                 name: document.getElementById('r-name').value,
                 overrideShortName: document.getElementById('r-shortName') ? document.getElementById('r-shortName').value.trim() : '',
@@ -1090,13 +1167,14 @@ const app = {
                 product: productNames,
                 quantity: totalQty,
                 items: items,
+                payments: payments, // NOVO ARRAY
                 value: parseFloat(document.getElementById('r-value').value) || 0,
                 discount: parseFloat(document.getElementById('r-discount') ? document.getElementById('r-discount').value : 0) || 0,
                 date: document.getElementById('r-date').value,
-                paymentMethod: paymentMethodEl ? paymentMethodEl.value : 'pix',
-                installments: (paymentMethodEl && paymentMethodEl.value === 'credit_card' && document.getElementById('r-installments')) ? parseInt(document.getElementById('r-installments').value) || 1 : 1,
-                nsu: document.getElementById('r-nsu') ? document.getElementById('r-nsu').value.trim() : '',
-                cardBrand: document.getElementById('r-card-brand') ? document.getElementById('r-card-brand').value : '',
+                paymentMethod: rootPaymentMethod,
+                installments: rootInstallments,
+                nsu: rootNsu,
+                cardBrand: rootCardBrand,
             };
 
             const storeSelect = document.getElementById('r-store-assigned');
@@ -1205,6 +1283,10 @@ const app = {
             // Depois do registro finalizar com sucesso, limpamos a tela e o histórico de Funil.
             this.originLeadWonId = null;
             this.clearSaleForm();
+            if (typeof this.addSalePayment === 'function') {
+                document.getElementById('sale-payments-container').innerHTML = '';
+                this.addSalePayment();
+            }
             this.navigateTo('dashboard');
         });
 

@@ -23,7 +23,8 @@ export const reconciliationModule = {
 
         const filterName = (document.getElementById('rec-filter-name')?.value || '').toLowerCase();
         const filterStatus = document.getElementById('rec-filter-status')?.value || 'pending';
-        const filterMonth = document.getElementById('rec-filter-month')?.value;
+        const filterStartDate = document.getElementById('rec-filter-start-date')?.value;
+        const filterEndDate = document.getElementById('rec-filter-end-date')?.value;
         const filterStore = document.getElementById('rec-filter-store')?.value || 'all';
 
         let pendingTotal = 0;
@@ -32,8 +33,15 @@ export const reconciliationModule = {
 
         // Vendas que não são em dinheiro (potencialmente conciliáveis), respeitando o mês e a loja
         let targetSales = this.sales.filter(s => {
-            if (s.paymentMethod === 'money' || parseFloat(s.value || 0) <= 0) return false;
-            if (filterMonth && s.date && !s.date.startsWith(filterMonth)) return false;
+            let hasCard = false;
+            if (s.payments && s.payments.length > 0) {
+                hasCard = s.payments.some(p => p.method === 'credit_card' || p.method === 'debit_card');
+            } else {
+                hasCard = s.paymentMethod === 'credit_card' || s.paymentMethod === 'debit_card';
+            }
+            if (!hasCard) return false;
+            if (filterStartDate && s.date && s.date < filterStartDate) return false;
+            if (filterEndDate && s.date && s.date > filterEndDate) return false;
             if (filterStore !== 'all' && s.storeId !== filterStore) return false;
             return true;
         });
@@ -43,10 +51,17 @@ export const reconciliationModule = {
             return true;
         });
 
-        // Calculate global stats (ignoring name filter, but we could respect it if we want stats of current view)
-        // Let's make stats reflect the WHOLE business, not just the filtered view.
         targetSales.forEach(sale => {
-            const saleValue = parseFloat(sale.value || 0);
+            let saleCardValue = 0;
+            if (sale.payments && sale.payments.length > 0) {
+                sale.payments.forEach(p => {
+                    if (p.method === 'credit_card' || p.method === 'debit_card') {
+                        saleCardValue += parseFloat(p.value || 0);
+                    }
+                });
+            } else {
+                saleCardValue = parseFloat(sale.value || 0);
+            }
             
             let paidGross = 0;
             if (sale.paidInstallments) {
@@ -55,7 +70,7 @@ export const reconciliationModule = {
                 });
             }
 
-            let pendingGross = Math.max(0, saleValue - paidGross);
+            let pendingGross = Math.max(0, saleCardValue - paidGross);
 
             if (sale.reconciled) {
                 paidTotal += parseFloat(sale.netValue || 0);
@@ -121,8 +136,18 @@ export const reconciliationModule = {
                 actionBtn = `<button class="btn-icon" style="color: #64748B; opacity: 0.5;" title="Nenhuma ação" disabled><i class="fas fa-minus"></i></button>`;
             }
 
-            const saleTotal = parseFloat(sale.value || 0);
-            const saleValue = saleTotal.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            let saleCardValue = 0;
+            if (sale.payments && sale.payments.length > 0) {
+                sale.payments.forEach(p => {
+                    if (p.method === 'credit_card' || p.method === 'debit_card') {
+                        saleCardValue += parseFloat(p.value || 0);
+                    }
+                });
+            } else {
+                saleCardValue = parseFloat(sale.value || 0);
+            }
+
+            const saleValueStr = saleCardValue.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
             
             let paidGross = 0;
             if (sale.paidInstallments) {
@@ -131,20 +156,31 @@ export const reconciliationModule = {
                 });
             }
             
-            let paidValueDisplay = sale.reconciled ? saleValue : paidGross.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            let paidValueDisplay = sale.reconciled ? saleValueStr : paidGross.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
             
-            let pendingValueAmount = sale.reconciled ? 0 : (saleTotal - paidGross);
+            let pendingValueAmount = sale.reconciled ? 0 : (saleCardValue - paidGross);
             if (pendingValueAmount < 0) pendingValueAmount = 0;
             let pendingValueDisplay = pendingValueAmount.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 
-            let paymentModeText = (sale.paymentMethod === 'pix' ? 'Pix' : (sale.paymentMethod === 'debit_card' ? 'Débito' : 'À vista'));
-            if (sale.paymentMethod === 'credit_card' && sale.installments > 1) {
-                paymentModeText = `${sale.installments}x`;
-            }
-            
-            let instHtml = paymentModeText;
-            if (sale.cardBrand && (sale.paymentMethod === 'credit_card' || sale.paymentMethod === 'debit_card')) {
-                instHtml = `<span style="font-size: 11px; display: block; color: var(--text-muted);">${sale.cardBrand}</span>${paymentModeText}`;
+            let instHtml = '';
+            if (sale.payments && sale.payments.length > 0) {
+                const cardPayments = sale.payments.filter(p => p.method === 'credit_card' || p.method === 'debit_card');
+                instHtml = cardPayments.map(p => {
+                    let text = 'À vista';
+                    if (p.method === 'debit_card') text = 'Débito';
+                    else if (p.method === 'credit_card' && p.installments > 1) text = `${p.installments}x`;
+                    let brand = p.cardBrand ? `<span style="font-size: 11px; display: block; color: var(--text-muted);">${p.cardBrand}</span>` : '';
+                    return `<div>${brand}${text}</div>`;
+                }).join('<hr style="margin:4px 0; border:0; border-top:1px solid #E2E8F0;">');
+            } else {
+                let paymentModeText = (sale.paymentMethod === 'pix' ? 'Pix' : (sale.paymentMethod === 'debit_card' ? 'Débito' : 'À vista'));
+                if (sale.paymentMethod === 'credit_card' && sale.installments > 1) {
+                    paymentModeText = `${sale.installments}x`;
+                }
+                instHtml = paymentModeText;
+                if (sale.cardBrand && (sale.paymentMethod === 'credit_card' || sale.paymentMethod === 'debit_card')) {
+                    instHtml = `<span style="font-size: 11px; display: block; color: var(--text-muted);">${sale.cardBrand}</span>${paymentModeText}`;
+                }
             }
 
             html += `
@@ -153,7 +189,7 @@ export const reconciliationModule = {
                     <td>${displayDate}</td>
                     <td><div style="max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${productsHtml}">${productsHtml}</div></td>
                     <td style="text-align: center;">${instHtml}</td>
-                    <td><strong style="color:var(--text-main);">R$ ${saleValue}</strong></td>
+                    <td><strong style="color:var(--text-main);">R$ ${saleValueStr}</strong></td>
                     <td><strong style="color:#10B981;">R$ ${paidValueDisplay}</strong></td>
                     <td><strong style="color:#F59E0B;">R$ ${pendingValueDisplay}</strong></td>
                     <td>${statusHtml}</td>
@@ -384,7 +420,12 @@ export const reconciliationModule = {
 
             // 1. Tenta match exato por NSU
             if (item.nsu && item.nsu.length > 3) {
-                match = pendingSales.find(s => s.nsu === item.nsu);
+                match = pendingSales.find(s => {
+                    if (s.payments && s.payments.length > 0) {
+                        return s.payments.some(p => p.nsu === item.nsu);
+                    }
+                    return s.nsu === item.nsu;
+                });
             }
 
             let allMatches = [];
@@ -392,7 +433,15 @@ export const reconciliationModule = {
             if (!match) {
                 const possibleMatches = pendingSales.filter(s => {
                     const sameDate = s.date === item.date;
-                    let expectedValue = parseFloat(s.value) || 0;
+                    let expectedValue = 0;
+                    if (s.payments && s.payments.length > 0) {
+                        s.payments.forEach(p => {
+                            if (p.method === 'credit_card' || p.method === 'debit_card') expectedValue += parseFloat(p.value || 0);
+                        });
+                    } else {
+                        expectedValue = parseFloat(s.value) || 0;
+                    }
+                    
                     if (item.installments > 1) {
                         expectedValue = expectedValue / item.installments;
                     }
@@ -663,14 +712,32 @@ export const reconciliationModule = {
                 const ref = db.collection('sales').doc(item.crmSale.id);
                 
                 let paidInstallments = item.crmSale.paidInstallments || {};
-                paidInstallments[item.extrato.installmentNo] = {
+                // Como uma venda pode ter múltiplos cartões com a mesma parcela "1", usamos um prefixo NSU se possível para evitar sobrescrita
+                let instKey = item.extrato.installmentNo;
+                if (item.crmSale.payments && item.crmSale.payments.length > 1) {
+                    instKey = `${item.extrato.nsu || 'card'}_${item.extrato.installmentNo}`;
+                }
+                
+                paidInstallments[instKey] = {
                     date: item.extrato.date,
                     grossValue: item.extrato.grossValue,
                     netValue: item.extrato.netValue,
-                    fees: item.extrato.fees > 0 ? item.extrato.fees : (item.extrato.grossValue - item.extrato.netValue)
+                    fees: item.extrato.fees > 0 ? item.extrato.fees : (item.extrato.grossValue - item.extrato.netValue),
+                    nsu: item.extrato.nsu
                 };
 
+                // Cálculo totalInst atualizado para lidar com array
                 let totalInstallments = item.crmSale.installments || item.extrato.installments;
+                if (item.crmSale.payments && item.crmSale.payments.length > 0) {
+                    let totalInstCalc = 0;
+                    item.crmSale.payments.forEach(p => {
+                        if (p.method === 'credit_card' || p.method === 'debit_card') {
+                            totalInstCalc += parseInt(p.installments || 1);
+                        }
+                    });
+                    if (totalInstCalc > 0) totalInstallments = totalInstCalc;
+                }
+
                 let isFullyReconciled = Object.keys(paidInstallments).length >= totalInstallments;
 
                 let totalNetValue = Object.values(paidInstallments).reduce((acc, curr) => acc + curr.netValue, 0);

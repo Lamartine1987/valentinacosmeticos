@@ -575,42 +575,19 @@
                                     <input type="number" id="r-value" required placeholder="149.90" step="0.01" readonly
                                         style="background: #F1F5F9; font-weight: bold; border-color: #CBD5E1;">
                                 </div>
-                                <div class="form-group">
-                                    <label>Forma de Pagamento</label>
-                                    <select id="r-payment-method" required
-                                        style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer;"
-                                        onchange="
-                                            const isCard = this.value === 'credit_card' || this.value === 'debit_card';
-                                            document.getElementById('r-installments-container').style.display = this.value === 'credit_card' ? 'block' : 'none';
-                                            document.getElementById('r-card-brand-container').style.display = isCard ? 'block' : 'none';
-                                        ">
-                                        <option value="pix">PIX</option>
-                                        <option value="credit_card">Cartão de Crédito</option>
-                                        <option value="debit_card">Cartão de Débito</option>
-                                        <option value="cash">Dinheiro</option>
-                                        <option value="other">Outro</option>
-                                    </select>
-                                </div>
-                                <div class="form-group" id="r-installments-container" style="display: none;">
-                                    <label>Número de Parcelas</label>
-                                    <input type="number" id="r-installments" placeholder="Ex: 6" min="1" max="24" value="1">
-                                </div>
-                                <div class="form-group">
-                                    <label>NSU / Cód. Transação (Opcional) <small style="color:var(--text-muted); font-weight: normal;">(Para Conciliação)</small></label>
-                                    <input type="text" id="r-nsu" placeholder="Ex: 175161380">
-                                </div>
-                                <div class="form-group" id="r-card-brand-container" style="display: none;">
-                                    <label>Bandeira do Cartão <small style="color:var(--text-muted); font-weight: normal;">(Opcional)</small></label>
-                                    <select id="r-card-brand"
-                                        style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer;">
-                                        <option value="">Selecione...</option>
-                                        <option value="Visa">Visa</option>
-                                        <option value="MasterCard">MasterCard</option>
-                                        <option value="Elo">Elo</option>
-                                        <option value="Hipercard">Hipercard</option>
-                                        <option value="Amex">American Express</option>
-                                        <option value="Outra">Outra Bandeira</option>
-                                    </select>
+                                <div class="form-group" style="grid-column: span 2; background: #F8FAFC; padding: 16px; border-radius: 8px; border: 1px dashed #CBD5E1;">
+                                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                                        <label style="margin:0;"><i class="fas fa-wallet" style="color: #10B981; margin-right: 6px;"></i> Formas de Pagamento</label>
+                                        <button type="button" onclick="app.addSalePayment()" class="btn-primary"
+                                            style="padding:5px 14px; font-size:13px; box-shadow:none; background: #10B981;">
+                                            <i class="fas fa-plus"></i> Adicionar Pagamento
+                                        </button>
+                                    </div>
+                                    <div id="sale-payments-container" style="display:flex; flex-direction:column; gap:16px;"></div>
+                                    <div style="display:flex; justify-content:flex-end; padding: 16px 0 0 0; font-size:14px; color:var(--text-main); border-top: 1px solid #E2E8F0; margin-top: 16px;">
+                                        <strong>Total Pago: </strong> <span id="r-total-paid-display" style="margin-left:8px; font-weight:bold; color:var(--primary); font-size:15px;">R$ 0.00</span>
+                                    </div>
+                                    <div id="payment-critical-warning" style="display:none; margin-top: 12px; padding: 12px; background: #FEF3C7; border: 1px solid #F59E0B; border-radius: 8px; color: #92400E; font-size: 14px;"><i class="fas fa-exclamation-triangle"></i> O valor pago é diferente do valor faturado!</div>
                                 </div>
                                 <div class="form-group" style="grid-column: span 2;">
                                     <label>Data da Compra</label>
@@ -658,6 +635,11 @@
                                     style="background: #FFF1F2; color: #E11D48; border: 1px solid #FECDD3; box-shadow: none; justify-content: center; flex: 1; min-width: 150px; font-size: 15px; display: none;"
                                     onclick="app.cancelSaleProcess()">
                                     <i class="fas fa-undo"></i> Cancelar Ganho
+                                </button>
+                                <button type="button" id="btn-cancel-edit-sale" class="btn-primary"
+                                    style="background: #FFF1F2; color: #E11D48; border: 1px solid #FECDD3; box-shadow: none; justify-content: center; flex: 1; min-width: 150px; font-size: 15px; display: none;"
+                                    onclick="app.cancelEditSale()">
+                                    <i class="fas fa-times"></i> Cancelar Edição
                                 </button>
                                 <button type="submit" id="sale-submit-btn" class="btn-primary"
                                     style="flex: 2; min-width: 250px; padding: 14px; font-size: 16px; justify-content: center;">
@@ -1179,7 +1161,11 @@
                                 <option value="loja_1">Loja 1</option>
                                 <option value="loja_2">Loja 2</option>
                             </select>
-                            <input type="month" id="rec-filter-month" style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer; transition: border-color 0.2s;" onchange="app.renderReconciliationDashboard()" title="Filtrar por Mês/Ano">
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                                <input type="date" id="rec-filter-start-date" style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer; transition: border-color 0.2s;" onchange="app.renderReconciliationDashboard()" title="Data Inicial">
+                                <span style="color: var(--text-muted); font-size: 14px;">até</span>
+                                <input type="date" id="rec-filter-end-date" style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer; transition: border-color 0.2s;" onchange="app.renderReconciliationDashboard()" title="Data Final">
+                            </div>
                             <select id="rec-filter-status" style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer; transition: border-color 0.2s;" onchange="app.renderReconciliationDashboard()">
                                 <option value="pending">Apenas Pendentes (A Receber)</option>
                                 <option value="all">Todas as Vendas</option>
