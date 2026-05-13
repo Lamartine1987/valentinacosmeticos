@@ -31,8 +31,8 @@ export const reconciliationModule = {
         let paidTotal = 0;
         let feesTotal = 0;
 
-        // Vendas que não são em dinheiro (potencialmente conciliáveis), respeitando o mês e a loja
-        let targetSales = this.sales.filter(s => {
+        // 1. Encontrar todas as vendas com cartão (sem filtrar data ainda)
+        let cardSales = this.sales.filter(s => {
             let hasCard = false;
             if (s.payments && s.payments.length > 0) {
                 hasCard = s.payments.some(p => p.method === 'credit_card' || p.method === 'debit_card');
@@ -40,59 +40,101 @@ export const reconciliationModule = {
                 hasCard = s.paymentMethod === 'credit_card' || s.paymentMethod === 'debit_card';
             }
             if (!hasCard) return false;
-            if (filterStartDate && s.date && s.date < filterStartDate) return false;
-            if (filterEndDate && s.date && s.date > filterEndDate) return false;
             if (filterStore !== 'all' && s.storeId !== filterStore) return false;
+            if (filterName && (!s.name || !s.name.toLowerCase().includes(filterName))) return false;
             return true;
         });
 
-        let filteredSales = targetSales.filter(sale => {
-            if (filterName && (!sale.name || !sale.name.toLowerCase().includes(filterName))) return false;
-            return true;
-        });
+        // 2. Desmembrar em parcelas
+        let virtualInstallments = [];
 
-        targetSales.forEach(sale => {
-            let saleCardValue = 0;
+        cardSales.forEach(sale => {
+            let saleDate = new Date(sale.date + 'T12:00:00'); // Evita timezone issues
+
+            // Se for múltiplos pagamentos (ex: split card)
+            let paymentsToProcess = [];
             if (sale.payments && sale.payments.length > 0) {
-                sale.payments.forEach(p => {
-                    if (p.method === 'credit_card' || p.method === 'debit_card') {
-                        saleCardValue += parseFloat(p.value || 0);
+                paymentsToProcess = sale.payments.filter(p => p.method === 'credit_card' || p.method === 'debit_card');
+            } else {
+                paymentsToProcess = [{
+                    method: sale.paymentMethod,
+                    installments: sale.installments || 1,
+                    value: parseFloat(sale.value || 0),
+                    cardBrand: sale.cardBrand,
+                    nsu: sale.nsu,
+                    id: 'card'
+                }];
+            }
+
+            paymentsToProcess.forEach(p => {
+                let totalInst = parseInt(p.installments || 1);
+                let instValue = parseFloat(p.value || 0) / totalInst;
+
+                for (let i = 1; i <= totalInst; i++) {
+                    let projectedDate = new Date(saleDate.getTime());
+                    
+                    if (p.method === 'debit_card') {
+                        projectedDate.setDate(projectedDate.getDate() + 1); // D+1 para débito
+                    } else if (totalInst === 1) {
+                        projectedDate.setDate(projectedDate.getDate() + 30); // D+30 para crédito à vista
+                    } else {
+                        // Parcelado: D + 30*i
+                        projectedDate.setDate(projectedDate.getDate() + (30 * i));
                     }
-                });
-            } else {
-                saleCardValue = parseFloat(sale.value || 0);
-            }
-            
-            let paidGross = 0;
-            if (sale.paidInstallments) {
-                Object.values(sale.paidInstallments).forEach(inst => {
-                    paidGross += parseFloat(inst.grossValue || 0);
-                });
-            }
 
-            let pendingGross = Math.max(0, saleCardValue - paidGross);
+                    let projectedDateStr = projectedDate.toISOString().split('T')[0];
+                    
+                    let instKey = String(i);
+                    if (sale.payments && sale.payments.length > 1) {
+                        instKey = `${p.nsu || p.id || 'card'}_${i}`;
+                    }
 
-            if (sale.reconciled) {
-                paidTotal += parseFloat(sale.netValue || 0);
-                feesTotal += parseFloat(sale.feeValue || 0);
-            } else {
-                if (sale.paidInstallments) {
-                    paidTotal += parseFloat(sale.netValue || 0);
-                    feesTotal += parseFloat(sale.feeValue || 0);
+                    let paidInfo = null;
+                    if (sale.paidInstallments && sale.paidInstallments[instKey]) {
+                        paidInfo = sale.paidInstallments[instKey];
+                    } else if (sale.paidInstallments && sale.paidInstallments[i] && !sale.payments) {
+                        paidInfo = sale.paidInstallments[i]; // fallback
+                    }
+
+                    let isPaid = !!paidInfo;
+
+                    virtualInstallments.push({
+                        sale: sale,
+                        payment: p,
+                        installmentNumber: i,
+                        totalInstallments: totalInst,
+                        projectedDate: projectedDateStr,
+                        originalDate: sale.date,
+                        grossValue: instValue,
+                        isPaid: isPaid,
+                        paidInfo: paidInfo,
+                        instKey: instKey
+                    });
                 }
-                pendingTotal += pendingGross;
-            }
+            });
         });
 
-        // Apply Status Filter
-        filteredSales = filteredSales.filter(sale => {
-            let paidCount = sale.paidInstallments ? Object.keys(sale.paidInstallments).length : 0;
-            if (filterStatus === 'pending') return !sale.reconciled;
-            if (filterStatus === 'reconciled') return sale.reconciled || paidCount > 0;
+        // 3. Filtrar as parcelas pela data (filterStartDate, filterEndDate) e pelo status
+        let filteredInstallments = virtualInstallments.filter(inst => {
+            if (filterStartDate && inst.projectedDate < filterStartDate) return false;
+            if (filterEndDate && inst.projectedDate > filterEndDate) return false;
+            
+            if (filterStatus === 'pending' && inst.isPaid) return false;
+            if (filterStatus === 'reconciled' && !inst.isPaid) return false;
+            
             return true;
         });
 
-        // Update KPIs
+        // 4. Calcular KPIs baseados NAS PARCELAS filtradas
+        filteredInstallments.forEach(inst => {
+            if (inst.isPaid) {
+                paidTotal += parseFloat(inst.paidInfo.netValue || 0);
+                feesTotal += parseFloat(inst.paidInfo.fees || 0);
+            } else {
+                pendingTotal += inst.grossValue;
+            }
+        });
+
         const elPending = document.getElementById('stat-rec-pending');
         const elPaid = document.getElementById('stat-rec-paid');
         const elFees = document.getElementById('stat-rec-fees');
@@ -100,17 +142,23 @@ export const reconciliationModule = {
         if(elPaid) elPaid.innerText = `R$ ${paidTotal.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
         if(elFees) elFees.innerText = `R$ ${feesTotal.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
 
-        if (filteredSales.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 32px;">Nenhuma venda encontrada com os filtros atuais.</td></tr>`;
+        if (filteredInstallments.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 32px;">Nenhuma parcela encontrada com os filtros atuais.</td></tr>`;
             return;
         }
 
-        filteredSales.sort((a, b) => new Date(b.date) - new Date(a.date));
+        // Ordenar por Data Prevista crescente (o mais próximo a receber primeiro)
+        filteredInstallments.sort((a, b) => new Date(a.projectedDate) - new Date(b.projectedDate));
 
         let html = '';
-        filteredSales.forEach(sale => {
-            const saleDateParts = sale.date ? sale.date.split('-') : [];
-            const displayDate = saleDateParts.length === 3 ? `${saleDateParts[2]}/${saleDateParts[1]}/${saleDateParts[0]}` : sale.date;
+        filteredInstallments.forEach(inst => {
+            const sale = inst.sale;
+            
+            const pDateParts = inst.projectedDate.split('-');
+            const displayDate = `${pDateParts[2]}/${pDateParts[1]}/${pDateParts[0]}`;
+            
+            const origDateParts = inst.originalDate.split('-');
+            const displayOrigDate = `${origDateParts[2]}/${origDateParts[1]}/${origDateParts[0]}`;
 
             let productsHtml = '';
             if (sale.items && sale.items.length > 0) {
@@ -122,71 +170,30 @@ export const reconciliationModule = {
             let statusHtml = '';
             let actionBtn = '';
             
-            let paidCount = sale.paidInstallments ? Object.keys(sale.paidInstallments).length : 0;
-            let totalInst = sale.installments || paidCount || 1;
-
-            if (sale.reconciled) {
-                statusHtml = `<span style="background:#10B981; color:white; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:600;"><i class="fas fa-check-double"></i> Conciliada</span>`;
-                actionBtn = `<button class="btn-icon" style="color: #F59E0B;" onclick="app.unreconcileSale('${sale.id}')" title="Desfazer Conciliação Bancária"><i class="fas fa-undo"></i></button>`;
-            } else if (paidCount > 0) {
-                statusHtml = `<span style="background:#F59E0B; color:white; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:600;"><i class="fas fa-hourglass-half"></i> Parcial (${paidCount}/${totalInst})</span>`;
-                actionBtn = `<button class="btn-icon" style="color: #F59E0B;" onclick="app.unreconcileSale('${sale.id}')" title="Desfazer Conciliação Bancária"><i class="fas fa-undo"></i></button>`;
+            if (inst.isPaid) {
+                statusHtml = `<span style="background:#10B981; color:white; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:600;"><i class="fas fa-check-double"></i> Recebida</span>`;
+                actionBtn = `<button class="btn-icon" style="color: #F59E0B;" onclick="app.unreconcileInstallment('${sale.id}', '${inst.instKey}')" title="Desfazer Baixa Desta Parcela"><i class="fas fa-undo"></i></button>`;
             } else {
                 statusHtml = `<span style="background:#EF4444; color:white; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:600;"><i class="fas fa-clock"></i> Pendente</span>`;
                 actionBtn = `<button class="btn-icon" style="color: #64748B; opacity: 0.5;" title="Nenhuma ação" disabled><i class="fas fa-minus"></i></button>`;
             }
 
-            let saleCardValue = 0;
-            if (sale.payments && sale.payments.length > 0) {
-                sale.payments.forEach(p => {
-                    if (p.method === 'credit_card' || p.method === 'debit_card') {
-                        saleCardValue += parseFloat(p.value || 0);
-                    }
-                });
-            } else {
-                saleCardValue = parseFloat(sale.value || 0);
-            }
+            const saleValueStr = inst.grossValue.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            
+            let paidValueDisplay = inst.isPaid ? parseFloat(inst.paidInfo.grossValue || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0,00';
+            let pendingValueDisplay = inst.isPaid ? '0,00' : saleValueStr;
 
-            const saleValueStr = saleCardValue.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-            
-            let paidGross = 0;
-            if (sale.paidInstallments) {
-                Object.values(sale.paidInstallments).forEach(inst => {
-                    paidGross += parseFloat(inst.grossValue || 0);
-                });
-            }
-            
-            let paidValueDisplay = sale.reconciled ? saleValueStr : paidGross.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-            
-            let pendingValueAmount = sale.reconciled ? 0 : (saleCardValue - paidGross);
-            if (pendingValueAmount < 0) pendingValueAmount = 0;
-            let pendingValueDisplay = pendingValueAmount.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-
-            let instHtml = '';
-            if (sale.payments && sale.payments.length > 0) {
-                const cardPayments = sale.payments.filter(p => p.method === 'credit_card' || p.method === 'debit_card');
-                instHtml = cardPayments.map(p => {
-                    let text = 'À vista';
-                    if (p.method === 'debit_card') text = 'Débito';
-                    else if (p.method === 'credit_card' && p.installments > 1) text = `${p.installments}x`;
-                    let brand = p.cardBrand ? `<span style="font-size: 11px; display: block; color: var(--text-muted);">${p.cardBrand}</span>` : '';
-                    return `<div>${brand}${text}</div>`;
-                }).join('<hr style="margin:4px 0; border:0; border-top:1px solid #E2E8F0;">');
-            } else {
-                let paymentModeText = (sale.paymentMethod === 'pix' ? 'Pix' : (sale.paymentMethod === 'debit_card' ? 'Débito' : 'À vista'));
-                if (sale.paymentMethod === 'credit_card' && sale.installments > 1) {
-                    paymentModeText = `${sale.installments}x`;
-                }
-                instHtml = paymentModeText;
-                if (sale.cardBrand && (sale.paymentMethod === 'credit_card' || sale.paymentMethod === 'debit_card')) {
-                    instHtml = `<span style="font-size: 11px; display: block; color: var(--text-muted);">${sale.cardBrand}</span>${paymentModeText}`;
-                }
-            }
+            let textMode = inst.payment.method === 'debit_card' ? 'Débito' : 'Crédito';
+            let brand = inst.payment.cardBrand ? `<span style="font-size: 11px; display: block; color: var(--text-muted);">${inst.payment.cardBrand}</span>` : '';
+            let instHtml = `<div>${brand}${textMode}<br><strong style="color:var(--primary);">Parcela ${inst.installmentNumber}/${inst.totalInstallments}</strong></div>`;
 
             html += `
                 <tr>
                     <td><strong>${sale.name}</strong><br><small style="color:var(--text-muted);">${sale.phone}</small></td>
-                    <td>${displayDate}</td>
+                    <td>
+                        <strong style="color: var(--primary);">${displayDate}</strong><br>
+                        <small style="color: var(--text-muted); font-size: 10px;">Venda: ${displayOrigDate}</small>
+                    </td>
                     <td><div style="max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${productsHtml}">${productsHtml}</div></td>
                     <td style="text-align: center;">${instHtml}</td>
                     <td><strong style="color:var(--text-main);">R$ ${saleValueStr}</strong></td>
@@ -817,6 +824,57 @@ export const reconciliationModule = {
                 } catch(e) {
                     console.error("Erro ao desfazer conciliação:", e);
                     if (typeof this.showToast === 'function') this.showToast('Erro ao desfazer conciliação.', 'error');
+                }
+            }
+        );
+    },
+
+    async unreconcileInstallment(saleId, instKey) {
+        if (this.currentUserProfile && this.currentUserProfile.role !== 'admin') {
+            if (typeof this.showToast === 'function') this.showToast('Apenas administradores podem desfazer conciliações.', 'error');
+            return;
+        }
+
+        const sale = this.sales.find(s => s.id === saleId);
+        if (!sale || !sale.paidInstallments || !sale.paidInstallments[instKey]) return;
+
+        this.confirmAction(
+            'Desfazer Baixa da Parcela',
+            `Tem certeza que deseja desfazer a baixa bancária apenas desta parcela?`,
+            async () => {
+                try {
+                    let newPaidInstallments = { ...sale.paidInstallments };
+                    delete newPaidInstallments[instKey];
+                    
+                    let totalNetValue = Object.values(newPaidInstallments).reduce((acc, curr) => acc + (parseFloat(curr.netValue) || 0), 0);
+                    let totalFeeValue = Object.values(newPaidInstallments).reduce((acc, curr) => acc + (parseFloat(curr.fees) || 0), 0);
+                    
+                    let totalInstallments = sale.installments || 1;
+                    if (sale.payments && sale.payments.length > 0) {
+                        let totalInstCalc = 0;
+                        sale.payments.forEach(p => {
+                            if (p.method === 'credit_card' || p.method === 'debit_card') {
+                                totalInstCalc += parseInt(p.installments || 1);
+                            }
+                        });
+                        if (totalInstCalc > 0) totalInstallments = totalInstCalc;
+                    }
+
+                    let isFullyReconciled = Object.keys(newPaidInstallments).length >= totalInstallments;
+
+                    const updateData = {
+                        reconciled: isFullyReconciled,
+                        paidInstallments: newPaidInstallments,
+                        netValue: totalNetValue,
+                        feeValue: totalFeeValue
+                    };
+
+                    await db.collection('sales').doc(saleId).update(updateData);
+                    this.showToast('Baixa da parcela desfeita com sucesso.', 'success');
+                    if (typeof this.renderReconciliationDashboard === 'function') this.renderReconciliationDashboard();
+                } catch (error) {
+                    console.error("Erro ao desfazer baixa:", error);
+                    this.showToast('Erro ao desfazer baixa.', 'error');
                 }
             }
         );

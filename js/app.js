@@ -342,6 +342,14 @@ const app = {
             if (financeNav) financeNav.style.display = 'flex';
             const btnAddExpense = document.getElementById('btn-add-expense');
             if (btnAddExpense) btnAddExpense.style.display = 'inline-flex';
+            
+            // Gerentes podem filtrar e ver todos os vendedores nos relatórios
+            const sellerFilter = document.getElementById('report-filter-seller');
+            if (sellerFilter && sellerFilter.parentElement) {
+                sellerFilter.parentElement.style.display = 'flex';
+                sellerFilter.parentElement.classList.remove('admin-only');
+            }
+
             // Gestores também usam visões agregadas (filtros de dashboard limitados à sua loja via query)
             this.loadSellerStoreFilters();
         } else {
@@ -442,10 +450,8 @@ const app = {
         if(!db || !this.user || !this.currentUserProfile) return;
         let salesQuery = db.collection("sales");
         
-        // Multi-Tenant: Gerentes veem a loja, Vendedores veem APENAS suas próprias vendas
-        if (this.currentUserProfile.role === 'manager') {
-            salesQuery = salesQuery.where('storeId', '==', this.currentUserProfile.storeId);
-        } else if (this.currentUserProfile.role === 'seller') {
+        // Multi-Tenant: Vendedores veem APENAS suas próprias vendas. Gerentes veem todas as lojas.
+        if (this.currentUserProfile.role === 'seller') {
             salesQuery = salesQuery.where('sellerId', '==', this.user.uid);
         }
 
@@ -487,7 +493,7 @@ const app = {
             this.clients = [];
             snapshot.forEach((doc) => {
                 const data = doc.data();
-                if ((this.currentUserProfile.role === 'manager' || this.currentUserProfile.role === 'seller') && data.storeId !== this.currentUserProfile.storeId && !data.isGlobal) return;
+                if (this.currentUserProfile.role === 'seller' && data.storeId !== this.currentUserProfile.storeId && !data.isGlobal) return;
                 this.clients.push({ id: doc.id, ...data });
             });
             this.updateActiveViews();
@@ -512,9 +518,6 @@ const app = {
         
         if (this.currentUserProfile.role === 'admin' || this.currentUserProfile.role === 'manager') {
             let expensesQuery = db.collection("expenses");
-            if (this.currentUserProfile.role === 'manager') {
-                 expensesQuery = expensesQuery.where('storeId', '==', this.currentUserProfile.storeId);
-            }
             this.unsubExpenses = expensesQuery.orderBy("createdAt", "desc").limit(100).onSnapshot((snapshot) => {
                 this.expenses = [];
                 snapshot.forEach((doc) => {

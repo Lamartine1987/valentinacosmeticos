@@ -614,10 +614,7 @@ export const settingsModule = {
                 const user = doc.data();
                 user.id = doc.id;
                 
-                // Manager only sees users from their own store
-                if (window.app && window.app.currentUserProfile && window.app.currentUserProfile.role === 'manager') {
-                    if (user.storeId !== window.app.currentUserProfile.storeId) return;
-                }
+                // Manager can see users from all stores just like admin
 
                 window.app.teamUsersList.push(user);
 

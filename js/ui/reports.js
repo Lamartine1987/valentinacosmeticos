@@ -575,7 +575,7 @@ export const reportsModule = {
                 });
             }
             
-            if (window.app && window.app.currentUserProfile && window.app.currentUserProfile.role === 'admin') {
+            if (window.app && window.app.currentUserProfile && (window.app.currentUserProfile.role === 'admin' || window.app.currentUserProfile.role === 'manager')) {
                 commissionTableContainer.style.display = 'block';
             } else {
                 commissionTableContainer.style.display = 'none';
