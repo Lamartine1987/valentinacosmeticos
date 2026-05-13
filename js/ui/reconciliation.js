@@ -194,7 +194,7 @@ export const reconciliationModule = {
                         <strong style="color: var(--primary);">${displayDate}</strong><br>
                         <small style="color: var(--text-muted); font-size: 10px;">Venda: ${displayOrigDate}</small>
                     </td>
-                    <td><div style="max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${productsHtml}">${productsHtml}</div></td>
+                    <td>${inst.payment.nsu || '-'}</td>
                     <td style="text-align: center;">${instHtml}</td>
                     <td><strong style="color:var(--text-main);">R$ ${saleValueStr}</strong></td>
                     <td><strong style="color:#10B981;">R$ ${paidValueDisplay}</strong></td>
@@ -525,10 +525,18 @@ export const reconciliationModule = {
                 `;
             } else if (item.crmSale) {
                 let statusText = item.crmSale.paidInstallments ? `(${Object.keys(item.crmSale.paidInstallments).length}/${item.crmSale.installments || item.extrato.installments} pagas)` : '';
+                
+                let crmNsu = item.crmSale.nsu;
+                if (item.crmSale.payments && item.crmSale.payments.length > 0) {
+                    const crmPayment = item.crmSale.payments.find(p => p.nsu === item.extrato.nsu) || item.crmSale.payments[0];
+                    crmNsu = crmPayment.nsu || crmNsu;
+                }
+
                 crmInfo = `
                     <div style="font-size: 13px;">
                         <strong>${item.crmSale.name}</strong> <span style="font-size: 11px; color: var(--primary);">${statusText}</span><br>
-                        <span style="color: var(--text-muted);">${item.crmSale.product}</span>
+                        <span style="color: var(--text-muted);">${item.crmSale.product}</span><br>
+                        <span style="color: var(--text-muted); font-size: 11px;">NSU CRM: <strong>${crmNsu || 'Não inf.'}</strong></span>
                     </div>
                 `;
             }
@@ -544,7 +552,16 @@ export const reconciliationModule = {
             } else if (item.status === 'already_paid') {
                  actionBtn = `<span style="font-size: 12px; color: #64748B; font-weight: 500;">Parcela já paga</span>`;
             } else {
-                 actionBtn = `<button class="btn-secondary" style="padding: 4px 8px; font-size: 11px;" onclick="app.manualMatch(${index})"><i class="fas fa-link"></i> Vincular</button>`;
+                 actionBtn = `
+                    <div style="display: flex; gap: 4px; justify-content: center; flex-direction: column;">
+                        <button class="btn-secondary" style="padding: 4px 8px; font-size: 11px;" onclick="app.manualMatch(${index})" title="Vincular à venda existente"><i class="fas fa-link"></i> Vincular</button>
+                 `;
+                 if (window.app && window.app.user && window.app.user.email === 'teste@teste.com') {
+                     actionBtn += `
+                        <button class="btn-primary" style="padding: 4px 8px; font-size: 11px; background: #8B5CF6;" onclick="const d = app.reconciliationData[${index}]; app.openRetroactiveSaleModal(d.extrato)" title="Criar Venda a partir do Extrato"><i class="fas fa-plus"></i> Criar Venda</button>
+                     `;
+                 }
+                 actionBtn += `</div>`;
             }
             
             let safeDate = item.extrato.date || '';
@@ -563,7 +580,7 @@ export const reconciliationModule = {
                     <td style="text-align: center; font-size: 18px;">${statusBadge}</td>
                     <td>${displayDate}</td>
                     <td>${item.extrato.nsu || '-'}</td>
-                    <td><div style="font-size: 12px; font-weight: 500;">${item.extrato.brand}</div><div style="font-size: 11px; color: var(--text-muted);">${item.extrato.product}</div></td>
+                    <td><div style="font-size: 12px; font-weight: 500;">${item.extrato.brand}</div></td>
                     <td style="text-align: center; font-weight: 500;">${item.extrato.installmentsDisplay || (item.extrato.installments + 'x')}</td>
                     <td style="font-weight: 500;">R$ ${item.extrato.grossValue.toFixed(2)}</td>
                     <td style="color: #EF4444; font-size: 13px;">R$ ${item.extrato.fees.toFixed(2)}</td>
@@ -878,5 +895,109 @@ export const reconciliationModule = {
                 }
             }
         );
+    },
+
+    openRetroactiveSaleModal(extratoItem = null) {
+        const form = document.getElementById('form-retroactive-sale');
+        if (form) form.reset();
+
+        if (extratoItem) {
+            let safeDate = extratoItem.date || '';
+            if (safeDate.includes('/')) {
+                document.getElementById('rs-date').value = safeDate.split('/').reverse().join('-');
+            } else if (safeDate.includes('-')) {
+                document.getElementById('rs-date').value = safeDate;
+            }
+            document.getElementById('rs-value').value = extratoItem.grossValue;
+            document.getElementById('rs-payment-method').value = (extratoItem.type === 'debit') ? 'debit_card' : 'credit_card';
+            
+            // Try matching brand
+            const brandSelect = document.getElementById('rs-brand');
+            const exBrand = (extratoItem.brand || '').toLowerCase();
+            let foundMatch = false;
+            for (let i = 0; i < brandSelect.options.length; i++) {
+                if (brandSelect.options[i].value.toLowerCase() === exBrand) {
+                    brandSelect.selectedIndex = i;
+                    foundMatch = true;
+                    break;
+                }
+            }
+            if (!foundMatch) brandSelect.value = 'Outros';
+
+            document.getElementById('rs-installments').value = extratoItem.installments || 1;
+            document.getElementById('rs-nsu').value = extratoItem.nsu || '';
+            
+            this._currentRetroactiveExtratoId = extratoItem.nsu || String(Date.now());
+        } else {
+            this._currentRetroactiveExtratoId = null;
+        }
+        
+        document.getElementById('retroactive-sale-overlay').style.display = 'flex';
+    },
+
+    closeRetroactiveSaleModal() {
+        document.getElementById('retroactive-sale-overlay').style.display = 'none';
+        this._currentRetroactiveExtratoId = null;
+    },
+
+    async submitRetroactiveSale(e) {
+        e.preventDefault();
+        const btn = document.getElementById('rs-submit-btn');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+        btn.disabled = true;
+
+        try {
+            const val = parseFloat(document.getElementById('rs-value').value) || 0;
+            const payMethod = document.getElementById('rs-payment-method').value;
+            const inst = parseInt(document.getElementById('rs-installments').value) || 1;
+            const brand = document.getElementById('rs-brand').value;
+            const nsuVal = document.getElementById('rs-nsu').value;
+
+            const saleData = {
+                name: document.getElementById('rs-client').value || 'Cliente Avulso',
+                phone: document.getElementById('rs-phone').value || '',
+                date: document.getElementById('rs-date').value,
+                product: 'Venda Retroativa',
+                value: val,
+                paymentMethod: payMethod,
+                installments: inst,
+                cardBrand: brand,
+                nsu: nsuVal,
+                payments: [{
+                    method: payMethod,
+                    installments: inst,
+                    value: val,
+                    cardBrand: brand,
+                    nsu: nsuVal,
+                    id: 'card'
+                }],
+                items: [{
+                    product: 'Venda Retroativa',
+                    quantity: 1,
+                    price: val
+                }],
+                quantity: 1
+            };
+
+            await this.saveSale(saleData);
+            
+            this.closeRetroactiveSaleModal();
+            
+            if (this._currentRetroactiveExtratoId) {
+                // Return to reconciliation upload view and re-process matches if needed
+                if (typeof this.processMatches === 'function') {
+                    this.processMatches();
+                }
+            } else {
+                this.renderReconciliationDashboard();
+            }
+        } catch(error) {
+            console.error("Erro ao salvar venda retroativa:", error);
+            if (typeof this.showToast === 'function') this.showToast('Erro ao salvar venda retroativa.', 'error');
+        } finally {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
     }
 };

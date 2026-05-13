@@ -63,7 +63,7 @@ export const authModule = {
                 btn.disabled = true;
                 errDiv.style.display = 'none';
 
-                const email = document.getElementById('login-email').value;
+                const email = document.getElementById('login-email').value.trim();
                 const pass = document.getElementById('login-password').value;
 
                 try {
@@ -77,6 +77,7 @@ export const authModule = {
                         case 'auth/user-not-found':
                         case 'auth/wrong-password':
                         case 'auth/invalid-credential':
+                        case 'auth/invalid-login-credentials':
                             errDiv.innerText = "E-mail ou senha incorretos."; break;
                         default:
                             errDiv.innerText = "Falha no login. Verifique seus dados."; break;

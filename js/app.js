@@ -317,6 +317,17 @@ const app = {
                 }
             }
         }
+        
+        // Venda Avulsa restrita
+        const btnVendaAvulsa = document.getElementById('btn-retroactive-sale-header');
+        if (btnVendaAvulsa) {
+            if (this.user && this.user.email === 'teste@teste.com') {
+                btnVendaAvulsa.style.display = 'flex';
+            } else {
+                btnVendaAvulsa.style.display = 'none';
+            }
+        }
+
         // Auto-selecionar no form de venda e despesa
         const storeAssigned = document.getElementById('r-store-assigned');
         const expenseStoreAssigned = document.getElementById('e-store');
