@@ -350,6 +350,13 @@ const app = {
                 sellerFilter.parentElement.classList.remove('admin-only');
             }
 
+            // Gerentes também podem reatribuir vendas para outros vendedores
+            const rSellerAssigned = document.getElementById('r-seller-assigned');
+            if (rSellerAssigned && rSellerAssigned.parentElement) {
+                rSellerAssigned.parentElement.style.display = '';
+                rSellerAssigned.parentElement.classList.remove('admin-only');
+            }
+
             // Gestores também usam visões agregadas (filtros de dashboard limitados à sua loja via query)
             this.loadSellerStoreFilters();
         } else {
@@ -380,14 +387,42 @@ const app = {
             }
         });
         
-        // Also fix the assigned seller in the sales and clients form so they can assign to themselves, but for any store.
         const assignSelect = document.getElementById('r-seller-assigned');
         const clientAssignSelect = document.getElementById('c-seller-assigned');
-        const sellerOption = `<option value="${this.currentUserProfile.id || this.user.uid}" data-name="${this.currentUserProfile.name}" data-store="${this.currentUserProfile.storeId}">Minha Venda (${this.currentUserProfile.name})</option>`;
-        const clientSellerOption = `<option value="${this.currentUserProfile.id || this.user.uid}" data-name="${this.currentUserProfile.name}" data-store="${this.currentUserProfile.storeId}">Minha Carteira (${this.currentUserProfile.name})</option>`;
-        
-        if (assignSelect) assignSelect.innerHTML = sellerOption;
-        if (clientAssignSelect) clientAssignSelect.innerHTML = clientSellerOption;
+
+        if (this.currentUserProfile && this.currentUserProfile.role === 'manager') {
+            if (!db) return;
+            db.collection('users').get().then(snapshot => {
+                const sellers = [];
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (data.role === 'seller' || data.role === 'manager' || data.role === 'admin') {
+                        sellers.push({ id: doc.id, ...data });
+                    }
+                });
+
+                let assignHtml = '<option value="me">Deixar Comigo (Minha Autoria)</option>';
+                sellers.forEach(s => {
+                    if (s.name !== 'Administrador Principal') {
+                        let sId = s.storeId;
+                        if (sId === 'matriz') sId = 'loja_1';
+                        if (sId === 'filial_1') sId = 'loja_2';
+                        const storeName = sId === 'loja_1' ? 'Loja 1' : (sId === 'loja_2' ? 'Loja 2' : 'Global');
+                        assignHtml += `<option value="${s.id}" data-name="${s.name}" data-store="${s.storeId}">${storeName} - ${s.name}</option>`;
+                    }
+                });
+
+                if (assignSelect) assignSelect.innerHTML = assignHtml;
+                if (clientAssignSelect) clientAssignSelect.innerHTML = assignHtml;
+            }).catch(err => console.error("Erro ao carregar vendedores manager:", err));
+        } else {
+            // Fix the assigned seller in the sales and clients form so they can assign to themselves, but for any store.
+            const sellerOption = `<option value="${this.currentUserProfile.id || this.user.uid}" data-name="${this.currentUserProfile.name}" data-store="${this.currentUserProfile.storeId}">Minha Venda (${this.currentUserProfile.name})</option>`;
+            const clientSellerOption = `<option value="${this.currentUserProfile.id || this.user.uid}" data-name="${this.currentUserProfile.name}" data-store="${this.currentUserProfile.storeId}">Minha Carteira (${this.currentUserProfile.name})</option>`;
+            
+            if (assignSelect) assignSelect.innerHTML = sellerOption;
+            if (clientAssignSelect) clientAssignSelect.innerHTML = clientSellerOption;
+        }
     },
 
     loadAdminFilters() {
