@@ -285,24 +285,12 @@ const app = {
             if (settingsMenuBtn) settingsMenuBtn.style.display = 'flex';
         }
 
-        // 1.5. Restringir abas de configurações para o Gerente (apenas Equipe visível)
-        if (role === 'manager') {
-            const tabsToHide = ['funnel', 'promo', 'api', 'pix', 'commission'];
-            tabsToHide.forEach(t => {
-                const btn = document.getElementById('tab-btn-' + t);
-                if (btn) btn.style.display = 'none';
-            });
-            // Auto open team tab for manager
-            if (window.app && typeof window.app.switchSettingsTab === 'function') {
-                setTimeout(() => window.app.switchSettingsTab('team'), 100);
-            }
-        } else {
-            const tabsToShow = ['funnel', 'promo', 'api'];
-            tabsToShow.forEach(t => {
-                const btn = document.getElementById('tab-btn-' + t);
-                if (btn) btn.style.display = 'inline-block';
-            });
-        }
+        // 1.5. Mostrar todas as abas de configurações
+        const tabsToShow = ['funnel', 'promo', 'api', 'pix', 'commission', 'webhook', 'team'];
+        tabsToShow.forEach(t => {
+            const btn = document.getElementById('tab-btn-' + t);
+            if (btn) btn.style.display = 'inline-block';
+        });
         
         // 2. Atualizar Avatar e Identidade no Rodapé do Menu Lateral
         const userInfoContainer = document.querySelector('.user-info');
@@ -715,6 +703,76 @@ const app = {
         if(document.getElementById('sale-form-desc')) document.getElementById('sale-form-desc').innerText = "Preencha os detalhes para registrar no histórico.";
         if(document.getElementById('sale-submit-btn')) document.getElementById('sale-submit-btn').innerHTML = '<i class="fas fa-save"></i> Registrar Venda';
         this.editingSaleId = null;
+    },
+
+    printQuote() {
+        // Obter os dados do formulário de registro
+        const clientName = document.getElementById('r-name').value;
+        const clientPhone = document.getElementById('r-phone').value;
+        
+        // Coletar itens
+        const items = [];
+        const container = document.getElementById('sale-items-container');
+        if (container) {
+            container.querySelectorAll('.sale-item-row').forEach(row => {
+                const product = row.querySelector('.sale-item-product').value;
+                const qty = parseFloat(row.querySelector('.sale-item-qty').value) || 0;
+                const price = parseFloat(row.querySelector('.sale-item-price').value) || 0;
+                if (product && qty > 0) {
+                    items.push({ product, qty, price, subtotal: qty * price });
+                }
+            });
+        }
+        
+        if (items.length === 0) {
+            if (typeof this.showToast === 'function') this.showToast('Adicione itens antes de gerar o orçamento.', 'error');
+            else alert('Adicione itens antes de gerar o orçamento.');
+            return;
+        }
+
+        // Totais
+        const subtotalText = document.getElementById('r-subtotal-display').innerText;
+        const discountValue = parseFloat(document.getElementById('r-discount').value) || 0;
+        const totalValue = parseFloat(document.getElementById('r-value').value) || 0;
+
+        // Preencher o layout de impressão
+        document.getElementById('print-quote-date').innerText = "Data: " + new Date().toLocaleDateString('pt-BR') + " às " + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute:'2-digit' });
+        document.getElementById('print-quote-name').innerText = clientName || "Cliente Padrão";
+        document.getElementById('print-quote-phone').innerText = clientPhone || "Não informado";
+
+        let sellerName = this.currentUserProfile ? this.currentUserProfile.name : "Vendedor";
+        const sellerAssigned = document.getElementById('r-seller-assigned');
+        if (sellerAssigned && sellerAssigned.value !== 'me' && sellerAssigned.options[sellerAssigned.selectedIndex]) {
+            const optName = sellerAssigned.options[sellerAssigned.selectedIndex].getAttribute('data-name');
+            if (optName) sellerName = optName;
+        }
+        document.getElementById('print-quote-seller').innerText = sellerName;
+
+        const tbody = document.getElementById('print-quote-items');
+        tbody.innerHTML = '';
+        items.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="padding: 12px 8px; border-bottom: 1px solid #E2E8F0; color: #0F172A;">${item.product}</td>
+                <td style="text-align: center; padding: 12px 8px; border-bottom: 1px solid #E2E8F0; color: #0F172A;">${item.qty}</td>
+                <td style="text-align: right; padding: 12px 8px; border-bottom: 1px solid #E2E8F0; color: #0F172A;">R$ ${item.price.toFixed(2).replace('.', ',')}</td>
+                <td style="text-align: right; padding: 12px 8px; border-bottom: 1px solid #E2E8F0; color: #0F172A; font-weight: 500;">R$ ${item.subtotal.toFixed(2).replace('.', ',')}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        document.getElementById('print-quote-subtotal').innerText = subtotalText;
+        document.getElementById('print-quote-discount').innerText = "R$ " + discountValue.toFixed(2).replace('.', ',');
+        document.getElementById('print-quote-total').innerText = "R$ " + totalValue.toFixed(2).replace('.', ',');
+
+        // Ativar modo impressão de orçamento
+        document.body.classList.add('print-quote-mode');
+        
+        setTimeout(() => {
+            window.print();
+            // Remover a classe após a impressão fechar
+            document.body.classList.remove('print-quote-mode');
+        }, 300);
     },
 
     cancelEditSale() {

@@ -641,6 +641,11 @@
                                     onclick="app.cancelEditSale()">
                                     <i class="fas fa-times"></i> Cancelar Edição
                                 </button>
+                                <button type="button" id="btn-print-quote" class="btn-primary"
+                                    style="background: #3B82F6; color: white; border: 1px solid #2563EB; box-shadow: none; justify-content: center; flex: 1; min-width: 180px; font-size: 15px;"
+                                    onclick="if(window.app && app.printQuote) app.printQuote()">
+                                    <i class="fas fa-print"></i> Imprimir Orçamento
+                                </button>
                                 <button type="submit" id="sale-submit-btn" class="btn-primary"
                                     style="flex: 2; min-width: 250px; padding: 14px; font-size: 16px; justify-content: center;">
                                     <i class="fas fa-save"></i> Registrar Venda
@@ -1303,17 +1308,17 @@
                             style="background: none; border: none; padding: 12px 4px; font-size: 15px; font-weight: 500; color: var(--text-muted); border-bottom: 2px solid transparent; cursor: pointer; margin-bottom: -2px;">
                             <i class="fas fa-users-cog"></i> Gestão de Equipe
                         </button>
-                        <button type="button" class="tab-btn admin-only" id="tab-btn-pix"
+                        <button type="button" class="tab-btn" id="tab-btn-pix"
                             onclick="app.switchSettingsTab('pix')"
                             style="background: none; border: none; padding: 12px 4px; font-size: 15px; font-weight: 500; color: var(--text-muted); border-bottom: 2px solid transparent; cursor: pointer; margin-bottom: -2px;">
                             <i class="fab fa-pix"></i> Gateway de Pagamento
                         </button>
-                        <button type="button" class="tab-btn admin-only" id="tab-btn-commission"
+                        <button type="button" class="tab-btn" id="tab-btn-commission"
                             onclick="app.switchSettingsTab('commission')"
                             style="background: none; border: none; padding: 12px 4px; font-size: 15px; font-weight: 500; color: var(--text-muted); border-bottom: 2px solid transparent; cursor: pointer; margin-bottom: -2px;">
                             <i class="fas fa-percent"></i> Comissionamento
                         </button>
-                        <button type="button" class="tab-btn admin-only" id="tab-btn-webhook"
+                        <button type="button" class="tab-btn" id="tab-btn-webhook"
                             onclick="app.switchSettingsTab('webhook')"
                             style="background: none; border: none; padding: 12px 4px; font-size: 15px; font-weight: 500; color: var(--text-muted); border-bottom: 2px solid transparent; cursor: pointer; margin-bottom: -2px;">
                             <i class="fas fa-satellite-dish"></i> Webhooks Externos
@@ -2820,6 +2825,55 @@
             <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 12px; padding-top: 16px; margin-top: 16px; border-top: 1px solid var(--border);">
                 <button class="btn-primary" style="background: #E2E8F0; color: var(--text-main); box-shadow: none; padding: 8px 24px;" onclick="app.closeManualMatchModal()">Cancelar</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Print Quote Template -->
+    <div id="print-quote-area" class="print-quote-only" style="display: none; padding: 40px; font-family: 'Inter', sans-serif;">
+        <div style="text-align: center; margin-bottom: 32px;">
+            <img src="assets/img/logo.png" alt="Valentina Cosméticos" style="width: 200px; margin-bottom: 16px;">
+            <h1 style="font-size: 24px; color: #1E293B; margin-bottom: 8px;">Orçamento</h1>
+            <p style="font-size: 14px; color: #64748B;" id="print-quote-date"></p>
+        </div>
+        <div style="margin-bottom: 32px; padding-bottom: 16px; border-bottom: 1px solid #E2E8F0;">
+            <h3 style="font-size: 16px; color: #334155; margin-bottom: 8px;">Dados do Cliente</h3>
+            <p style="margin: 4px 0;"><strong>Nome:</strong> <span id="print-quote-name"></span></p>
+            <p style="margin: 4px 0;"><strong>WhatsApp:</strong> <span id="print-quote-phone"></span></p>
+            <p style="margin: 4px 0;"><strong>Vendedor:</strong> <span id="print-quote-seller"></span></p>
+        </div>
+        <div style="margin-bottom: 32px;">
+            <h3 style="font-size: 16px; color: #334155; margin-bottom: 16px;">Itens do Orçamento</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr>
+                        <th style="text-align: left; padding: 12px 8px; border-bottom: 2px solid #E2E8F0; color: #475569; font-size: 14px;">Produto</th>
+                        <th style="text-align: center; padding: 12px 8px; border-bottom: 2px solid #E2E8F0; color: #475569; font-size: 14px;">Qtd</th>
+                        <th style="text-align: right; padding: 12px 8px; border-bottom: 2px solid #E2E8F0; color: #475569; font-size: 14px;">V. Unitário</th>
+                        <th style="text-align: right; padding: 12px 8px; border-bottom: 2px solid #E2E8F0; color: #475569; font-size: 14px;">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody id="print-quote-items">
+                </tbody>
+            </table>
+        </div>
+        <div style="display: flex; justify-content: flex-end; margin-bottom: 48px;">
+            <div style="width: 300px; padding: 16px; background: #F8FAFC; border-radius: 8px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <span style="color: #64748B;">Subtotal:</span>
+                    <span id="print-quote-subtotal" style="font-weight: 600;">R$ 0,00</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <span style="color: #64748B;">Desconto:</span>
+                    <span id="print-quote-discount" style="font-weight: 600;">R$ 0,00</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding-top: 8px; border-top: 1px solid #E2E8F0; margin-top: 8px;">
+                    <span style="color: #0F172A; font-weight: bold; font-size: 18px;">Total:</span>
+                    <span id="print-quote-total" style="color: #ef2889; font-weight: bold; font-size: 18px;">R$ 0,00</span>
+                </div>
+            </div>
+        </div>
+        <div style="text-align: center; color: #64748B; font-size: 13px;">
+            <p>Esse documento é apenas um orçamento sem valor fiscal, os valores podem ser alterados sem aviso prévio.</p>
         </div>
     </div>
 
