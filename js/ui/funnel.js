@@ -57,7 +57,7 @@ export const funnelModule = {
         
         let query = db.collection('leads');
         
-        if (this.currentUserProfile.role === 'seller') {
+        if (this.currentUserProfile.role === 'seller' || this.currentUserProfile.role === 'manager') {
             const storeId = this.currentUserProfile.storeId || 'loja_1';
             query = query.where('storeId', '==', storeId);
         }
