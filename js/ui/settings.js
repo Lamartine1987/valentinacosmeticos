@@ -265,6 +265,7 @@ export const settingsModule = {
 
             const providerInput = row.querySelector('.api-v-provider')?.value;
             const isMeuMotor = providerInput === 'meumotor';
+            const storeInput = row.querySelector('.api-v-store')?.value || 'loja_1';
             
             const statusText = document.getElementById(`qr-status-text-${index}`);
             const qrContainer = document.getElementById(`qr-code-container-${index}`);
@@ -275,7 +276,6 @@ export const settingsModule = {
             let instanceName = '';
 
             if (isMeuMotor) {
-                const storeInput = row.querySelector('.api-v-store')?.value || 'loja_1';
                 instanceName = storeInput.replace('_', '');
                 baseUrl = 'https://apiz.com.br';
                 tokenInput = 'minha_chave_super_secreta_123';
@@ -357,7 +357,7 @@ export const settingsModule = {
 
             const fetchStatus = () => executeApiFetch(`/instance/status/${instanceName}`);
 
-            const webhookUrl = "https://us-central1-valentinacosmeticos-5f239.cloudfunctions.net/whatsappWebhook";
+            const webhookUrl = `https://us-central1-valentinacosmeticos-5f239.cloudfunctions.net/whatsappWebhook?storeId=${storeInput}`;
 
             let data;
             try {
