@@ -313,9 +313,43 @@ export const reconciliationModule = {
     parseExcel(binaryStr, operator) {
         if (typeof XLSX !== 'undefined') {
             const workbook = XLSX.read(binaryStr, { type: 'binary' });
-            const firstSheetName = workbook.SheetNames[0];
-            const worksheet = workbook.Sheets[firstSheetName];
-            const json = XLSX.utils.sheet_to_json(worksheet);
+            let sheetName = workbook.SheetNames[0];
+            
+            if (operator === 'rede') {
+                const targetSheet = workbook.SheetNames.find(s => s.toLowerCase().includes('pagamentos'));
+                if (targetSheet) sheetName = targetSheet;
+            }
+            
+            const worksheet = workbook.Sheets[sheetName];
+            
+            // Lógica para encontrar o cabeçalho real (pular linhas de título)
+            const rawData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+            let headerRowIndex = 0;
+            
+            for (let i = 0; i < Math.min(20, rawData.length); i++) {
+                const row = rawData[i];
+                if (!row) continue;
+                
+                const isHeader = row.some(c => {
+                    if (typeof c !== 'string') return false;
+                    const str = c.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                    return str === 'data original da venda' || 
+                           str === 'data da venda' || 
+                           str === 'data de venda' || 
+                           str === 'data' ||
+                           str === 'nsu/cv' || 
+                           str === 'nsu' || 
+                           str === 'stone id' || 
+                           str === 'documento';
+                });
+                
+                if (isHeader) {
+                    headerRowIndex = i;
+                    break;
+                }
+            }
+            
+            const json = XLSX.utils.sheet_to_json(worksheet, { range: headerRowIndex });
             this.normalizeAndMatchExtrato(json, operator);
         } else {
             this.showToast('Erro interno: Biblioteca Excel não carregada.', 'error');
@@ -388,6 +422,28 @@ export const reconciliationModule = {
                 // O desconto total geralmente é a soma (em módulo)
                 fees = Math.abs(mdr) + Math.abs(antecip) + Math.abs(uni);
                 if (fees === 0 && grossValue && netValue) {
+                    fees = cleanNum(grossValue) - cleanNum(netValue);
+                }
+            } else if (operator === 'rede') {
+                const getExact = (possibleKeys) => {
+                    for (const key of Object.keys(row)) {
+                        const cleanKey = key.toLowerCase().trim();
+                        const noAccent = cleanKey.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                        if (possibleKeys.includes(cleanKey) || possibleKeys.includes(noAccent)) return row[key];
+                    }
+                    return null;
+                };
+                
+                date = getExact(['data original da venda']);
+                nsu = getExact(['nsu/cv', 'numero da autorizacao', 'número da autorização']);
+                brand = getExact(['bandeira']);
+                product = getExact(['modalidade']);
+                installments = getExact(['numero de parcelas', 'número de parcelas']);
+                installmentNo = getExact(['parcela']);
+                grossValue = getExact(['valor bruto da parcela original']);
+                netValue = getExact(['valor liquido da parcela', 'valor líquido da parcela']);
+                
+                if (grossValue !== null && netValue !== null) {
                     fees = cleanNum(grossValue) - cleanNum(netValue);
                 }
             } else {
