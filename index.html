@@ -1163,7 +1163,7 @@
                         </div>
 
                         <div class="filters-bar" style="display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; align-items: center;">
-                            <input type="text" id="rec-filter-name" placeholder="Buscar por cliente..." style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; flex: 1; min-width: 200px; outline: none; font-size: 14px; transition: border-color 0.2s;" oninput="app.renderReconciliationDashboard()">
+                            <input type="text" id="rec-filter-name" placeholder="Buscar cliente ou NSU..." style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; flex: 1; min-width: 200px; outline: none; font-size: 14px; transition: border-color 0.2s;" oninput="app.renderReconciliationDashboard()">
                             <select id="rec-filter-store" style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer; transition: border-color 0.2s;" onchange="app.renderReconciliationDashboard()">
                                 <option value="all">Todas as Lojas</option>
                                 <option value="loja_1">Loja 1</option>
@@ -1174,6 +1174,11 @@
                                 <span style="color: var(--text-muted); font-size: 14px;">até</span>
                                 <input type="date" id="rec-filter-end-date" style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer; transition: border-color 0.2s;" onchange="app.renderReconciliationDashboard()" title="Data Final">
                             </div>
+                            <select id="rec-filter-type" style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer; transition: border-color 0.2s;" onchange="app.renderReconciliationDashboard()">
+                                <option value="all">Crédito e Débito</option>
+                                <option value="credit">Apenas Crédito</option>
+                                <option value="debit">Apenas Débito</option>
+                            </select>
                             <select id="rec-filter-status" style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer; transition: border-color 0.2s;" onchange="app.renderReconciliationDashboard()">
                                 <option value="pending">Apenas Pendentes (A Receber)</option>
                                 <option value="all">Todas as Vendas</option>

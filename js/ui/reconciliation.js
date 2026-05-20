@@ -26,6 +26,7 @@ export const reconciliationModule = {
         const filterStartDate = document.getElementById('rec-filter-start-date')?.value;
         const filterEndDate = document.getElementById('rec-filter-end-date')?.value;
         const filterStore = document.getElementById('rec-filter-store')?.value || 'all';
+        const filterType = document.getElementById('rec-filter-type')?.value || 'all';
 
         let pendingTotal = 0;
         let paidTotal = 0;
@@ -41,7 +42,21 @@ export const reconciliationModule = {
             }
             if (!hasCard) return false;
             if (filterStore !== 'all' && s.storeId !== filterStore) return false;
-            if (filterName && (!s.name || !s.name.toLowerCase().includes(filterName))) return false;
+            
+            if (filterName) {
+                let matchName = s.name && s.name.toLowerCase().includes(filterName);
+                let matchNsu = false;
+                
+                if (s.payments && s.payments.length > 0) {
+                    matchNsu = s.payments.some(p => p.nsu && String(p.nsu).toLowerCase().includes(filterName));
+                }
+                if (!matchNsu && s.nsu) {
+                    matchNsu = String(s.nsu).toLowerCase().includes(filterName);
+                }
+                
+                if (!matchName && !matchNsu) return false;
+            }
+
             return true;
         });
 
@@ -122,6 +137,9 @@ export const reconciliationModule = {
             if (filterStatus === 'pending' && inst.isPaid) return false;
             if (filterStatus === 'reconciled' && !inst.isPaid) return false;
             
+            if (filterType === 'credit' && inst.payment.method !== 'credit_card') return false;
+            if (filterType === 'debit' && inst.payment.method !== 'debit_card') return false;
+
             return true;
         });
 
