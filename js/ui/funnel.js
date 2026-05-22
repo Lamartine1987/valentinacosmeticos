@@ -603,9 +603,17 @@ ${groupSenderHtml}${displayHtml}
             
             // Rola novamente após a animação de fadeIn (300ms) terminar
             setTimeout(() => {
-                console.log(`[Chat Scroll] After Animation - scrollTop: ${chatArea.scrollTop}, scrollHeight: ${chatArea.scrollHeight}, clientHeight: ${chatArea.clientHeight}`);
                 chatArea.scrollTop = chatArea.scrollHeight + 1000;
+                // Garantia para iOS / iPad
+                if (chatArea.lastElementChild) {
+                    chatArea.lastElementChild.scrollIntoView({ behavior: 'auto', block: 'end' });
+                }
             }, 350);
+
+            // Garantia extra caso o teclado atrase o redimensionamento ou mídia carregue
+            setTimeout(() => {
+                chatArea.scrollTop = chatArea.scrollHeight + 1000;
+            }, 800);
         });
         
         document.getElementById('inbox-no-selection').style.display = 'none';
