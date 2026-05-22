@@ -659,11 +659,21 @@ ${groupSenderHtml}${displayHtml}
         
         const searchInput = document.getElementById('inbox-search');
         const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
+        const storeFilterEl = document.getElementById('inbox-filter-store');
+        const filterStore = storeFilterEl ? storeFilterEl.value : 'all';
 
-        // Filtrar leads da aba ativa e também buscar
+        // Filtrar leads da aba ativa e também buscar/loja
         const filteredLeads = this.leadsList.filter(lead => {
             if ((lead.status || 'inbox') !== this.inboxActiveTab) return false;
             
+            if (filterStore !== 'all') {
+                let sId = lead.storeId || 'loja_1';
+                if (sId === 'matriz') sId = 'loja_1';
+                if (sId === 'filial_1') sId = 'loja_2';
+                
+                if (sId !== filterStore && lead.sellerId !== filterStore && lead.storeId !== filterStore) return false;
+            }
+
             if (searchTerm) {
                 const nameStr = (lead.name || '').toLowerCase();
                 const phoneStr = (lead.phone || '').replace(/\D/g, '');
@@ -705,6 +715,12 @@ ${groupSenderHtml}${displayHtml}
             const unreadDot = lead.unread ? `<div style="position: absolute; right: 16px; top: 16px; width: 10px; height: 10px; background: #EF4444; border-radius: 50%; box-shadow: 0 0 0 2px white;"></div>` : '';
             const avatarUrl = lead.profilePicUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(lead.name || 'U')}&background=random&color=fff`;
 
+            let storeBadgeId = lead.storeId || 'loja_1';
+            if (storeBadgeId === 'matriz') storeBadgeId = 'loja_1';
+            if (storeBadgeId === 'filial_1') storeBadgeId = 'loja_2';
+            let storeBadgeLabel = storeBadgeId === 'loja_1' ? 'Loja 1' : (storeBadgeId === 'loja_2' ? 'Loja 2' : 'Global');
+            let storeTagHtml = `<span style="font-size: 9px; padding: 2px 5px; border-radius: 4px; background: #F3F4F6; border: 1px solid #E5E7EB; color: #4B5563; font-weight: bold; margin-right: 4px;"><i class="fas fa-store" style="font-size: 9px; margin-right: 3px;"></i>${storeBadgeLabel}</span>`;
+
             item.innerHTML = `
                 ${unreadDot}
                 <div style="display: flex; gap: 12px; align-items: center;">
@@ -715,7 +731,7 @@ ${groupSenderHtml}${displayHtml}
                             <span style="font-size: 11px; color: var(--text-muted); flex-shrink: 0;">${timeStr}</span>
                         </div>
                         <div style="font-size: 13px; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center; margin-top: 2px;">
-                            <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><i class="fab fa-whatsapp" style="color: #25D366; margin-right: 4px;"></i> ${lead.phone || ''}</span>
+                            <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center;">${storeTagHtml}<i class="fab fa-whatsapp" style="color: #25D366; margin-right: 4px;"></i> ${lead.phone || ''}</span>
                             <strong style="color: #10B981; flex-shrink: 0;">${lead.value ? Number(lead.value).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'}) : ''}</strong>
                         </div>
                     </div>
