@@ -598,22 +598,18 @@ ${groupSenderHtml}${displayHtml}
             });
             chatArea.innerHTML = htmlBuffer;
             
-            // Tenta rolar imediatamente
-            chatArea.scrollTop = chatArea.scrollHeight + 1000;
-            
-            // Rola novamente após a animação de fadeIn (300ms) terminar
-            setTimeout(() => {
-                chatArea.scrollTop = chatArea.scrollHeight + 1000;
-                // Garantia para iOS / iPad
+            // Função agressiva de rolagem para iOS/iPad
+            const forceScroll = () => {
+                chatArea.scrollTop = chatArea.scrollHeight + 2000;
                 if (chatArea.lastElementChild) {
                     chatArea.lastElementChild.scrollIntoView({ behavior: 'auto', block: 'end' });
                 }
-            }, 350);
-
-            // Garantia extra caso o teclado atrase o redimensionamento ou mídia carregue
-            setTimeout(() => {
-                chatArea.scrollTop = chatArea.scrollHeight + 1000;
-            }, 800);
+            };
+            
+            forceScroll();
+            // Dispara a rolagem em vários intervalos para vencer os delays de renderização/teclado do iOS Safari
+            const scrollDelays = [50, 200, 400, 800, 1500];
+            scrollDelays.forEach(delay => setTimeout(forceScroll, delay));
         });
         
         document.getElementById('inbox-no-selection').style.display = 'none';

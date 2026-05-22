@@ -271,6 +271,52 @@ export const reportsModule = {
             
             document.getElementById('report-ticket-avg').innerText = realTicketAvg.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
         }
+
+        // Funnel conversion calculation
+        if (document.getElementById('report-funnel-conversion')) {
+            let filteredLeads = this.leadsList ? [...this.leadsList] : [];
+            
+            if (fStore !== 'all') {
+                filteredLeads = filteredLeads.filter(lead => lead.storeId === fStore);
+            }
+            if (fSeller !== 'all') {
+                // Not all leads have sellerName, some use sellerId. We use both or whichever is available
+                filteredLeads = filteredLeads.filter(lead => lead.sellerName === fSeller || lead.sellerId === fSeller);
+            }
+
+            if (fStart || fEnd) {
+                const filterDatesLeads = (item) => {
+                    let ts = 0;
+                    if (item.createdAt) {
+                        if (typeof item.createdAt.toDate === 'function') ts = item.createdAt.toDate().getTime();
+                        else if (item.createdAt.seconds) ts = item.createdAt.seconds * 1000;
+                        else ts = new Date(item.createdAt).getTime();
+                    } else {
+                        return true;
+                    }
+                    const itemDate = new Date(ts);
+                    itemDate.setHours(0,0,0,0);
+                    
+                    if (fStart) {
+                        const [sy, sm, sd] = fStart.split('-');
+                        if (itemDate < new Date(sy, sm-1, sd)) return false;
+                    }
+                    if (fEnd) {
+                        const [ey, em, ed] = fEnd.split('-');
+                        if (itemDate > new Date(ey, em-1, ed)) return false;
+                    }
+                    return true;
+                };
+                filteredLeads = filteredLeads.filter(filterDatesLeads);
+            }
+
+            const totalLeads = filteredLeads.length;
+            const wonLeads = filteredLeads.filter(l => l.status === 'won').length;
+            const conversionRate = totalLeads > 0 ? Math.round((wonLeads / totalLeads) * 100) : 0;
+
+            document.getElementById('report-funnel-conversion').innerText = `${conversionRate}%`;
+            document.getElementById('report-funnel-details').innerText = `${wonLeads} / ${totalLeads} convertidos`;
+        }
         
         if (document.getElementById('stat-total-commissions')) {
             document.getElementById('stat-total-commissions').innerText = `R$ ${totalCommissions.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
