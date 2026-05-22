@@ -586,6 +586,7 @@ const app = {
         if (document.getElementById('page-birthdays') && document.getElementById('page-birthdays').classList.contains('active')) this.renderBirthdays();
         if (document.getElementById('page-finance') && document.getElementById('page-finance').classList.contains('active') && this.renderFinanceDashboard) this.renderFinanceDashboard();
         if (document.getElementById('page-funnel') && document.getElementById('page-funnel').classList.contains('active')) this.renderFunnelBoard();
+        if (document.getElementById('page-inbox') && document.getElementById('page-inbox').classList.contains('active') && this.renderInboxList) this.renderInboxList();
         if (document.getElementById('page-reconciliation') && document.getElementById('page-reconciliation').classList.contains('active') && typeof this.renderReconciliationDashboard === 'function') this.renderReconciliationDashboard();
         const historyModal = document.getElementById('history-overlay');
         if (historyModal && historyModal.classList.contains('active')) this.renderClientHistory();

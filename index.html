@@ -58,6 +58,10 @@
                     <i class="fas fa-home"></i>
                     <span>Visão Geral</span>
                 </a>
+                <a href="#" class="nav-item" data-page="inbox">
+                    <i class="fas fa-inbox"></i>
+                    <span>Caixa de Entrada</span>
+                </a>
                 <a href="#" class="nav-item" data-page="funnel">
                     <i class="fas fa-filter"></i>
                     <span>Funil de Vendas</span>
@@ -1919,8 +1923,101 @@
                     </div>
                 </section>
 
+                <!-- Caixa de Entrada Page -->
+                <section class="page" id="page-inbox" style="height: calc(100vh - 136px);">
+                    <div style="height: 100%; display: flex; flex-direction: column;">
+                        <div class="page-header" style="margin-bottom: 12px; display: flex; flex-direction: column;">
+                            <h2 style="margin-bottom: 8px;"><i class="fas fa-inbox"></i> Caixa de Entrada</h2>
+                            <!-- Tabs -->
+                            <div class="inbox-tabs" style="display: flex !important; flex-direction: row !important; gap: 8px; overflow-x: auto; padding-bottom: 4px;">
+                                <button class="inbox-tab active" data-tab="inbox" onclick="app.setInboxTab('inbox')" style="padding: 8px 16px; border: none; background: var(--primary); color: white; border-radius: 8px; cursor: pointer; font-weight: 500; white-space: nowrap; width: auto !important; flex-shrink: 0;">Caixa de Entrada</button>
+                                <button class="inbox-tab" data-tab="negotiation" onclick="app.setInboxTab('negotiation')" style="padding: 8px 16px; border: none; background: #E2E8F0; color: #475569; border-radius: 8px; cursor: pointer; font-weight: 500; white-space: nowrap; width: auto !important; flex-shrink: 0;">Em Atendimento</button>
+                                <button class="inbox-tab" data-tab="waiting" onclick="app.setInboxTab('waiting')" style="padding: 8px 16px; border: none; background: #E2E8F0; color: #475569; border-radius: 8px; cursor: pointer; font-weight: 500; white-space: nowrap; width: auto !important; flex-shrink: 0;">Aguardando Pagamento</button>
+                                <button class="inbox-tab" data-tab="won" onclick="app.setInboxTab('won')" style="padding: 8px 16px; border: none; background: #E2E8F0; color: #475569; border-radius: 8px; cursor: pointer; font-weight: 500; white-space: nowrap; width: auto !important; flex-shrink: 0;">Fechado Ganho</button>
+                                <button class="inbox-tab" data-tab="lost" onclick="app.setInboxTab('lost')" style="padding: 8px 16px; border: none; background: #E2E8F0; color: #475569; border-radius: 8px; cursor: pointer; font-weight: 500; white-space: nowrap; width: auto !important; flex-shrink: 0;">Perdido</button>
+                            </div>
+                        </div>
+                        
+                        <div id="inbox-layout" style="flex: 1; display: flex; background: white; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); position: relative;">
+                            <!-- Left Sidebar: Leads List -->
+                            <div id="inbox-list-col" style="width: 320px; flex-shrink: 0; display: flex; flex-direction: column; border-right: 1px solid var(--border); background: #F8FAFC;">
+                                <div style="padding: 12px; border-bottom: 1px solid var(--border); background: white;">
+                                    <input type="text" id="inbox-search" placeholder="Buscar na aba atual..." style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); outline: none; font-size: 13px;" oninput="app.renderInboxList()">
+                                </div>
+                                <div id="inbox-leads-list" style="flex: 1; overflow-y: auto;">
+                                    <!-- JS Populates -->
+                                </div>
+                            </div>
+
+                            <!-- Right Content: Chat Area -->
+                            <div id="inbox-chat-col" style="flex: 1; display: flex; flex-direction: column; position: relative;">
+                                <!-- Placeholder when no lead selected -->
+                                <div id="inbox-no-selection" style="position: absolute; top:0; left:0; right:0; bottom:0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #F0F2F5; z-index: 10;">
+                                    <i class="fab fa-whatsapp" style="font-size: 64px; color: #cbd5e1; margin-bottom: 16px;"></i>
+                                    <h3 style="color: var(--text-muted);">Selecione uma conversa</h3>
+                                    <p style="color: #94a3b8; font-size: 14px;">Clique em um contato na barra lateral para começar.</p>
+                                </div>
+
+                                <!-- Chat Header -->
+                                <div style="background: var(--surface); z-index: 5; padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px;">
+                                    <div style="display: flex; align-items: center; gap: 12px;">
+                                        <button class="btn-icon mobile-only" id="inbox-back-btn" onclick="app.closeInboxLead()" style="display: none; font-size: 18px; color: var(--text-main); margin-right: 4px;">
+                                            <i class="fas fa-arrow-left"></i>
+                                        </button>
+                                        <img id="lead-sb-avatar" src="https://ui-avatars.com/api/?name=U&background=random&color=fff" style="width: 44px; height: 44px; border-radius: 50%; object-fit: cover; flex-shrink: 0;">
+                                        <div style="min-width: 0; flex: 1;">
+                                            <h2 id="lead-sb-name" style="margin: 0; font-size: 16px; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">...</h2>
+                                            <span id="lead-sb-status" style="font-size: 11px; background: #E2E8F0; padding: 2px 6px; border-radius: 4px; font-weight: 600;">...</span>
+                                        </div>
+                                    </div>
+                                    <div style="font-size: 13px; color: var(--text-muted); display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                                        <span id="lead-sb-phone" style="white-space: nowrap;"><i class="fab fa-whatsapp" style="color:#25D366;"></i> </span>
+                                        <span id="lead-sb-value" style="color: #10B981; font-weight: bold; white-space: nowrap;"></span>
+                                        <button id="btn-save-lead-client" onclick="app.saveLeadAsClient()" style="margin-left: auto; background: #E2E8F0; color: #475569; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; white-space: nowrap; display: flex; align-items: center; gap: 4px;"><i class="fas fa-save"></i> Salvar Base</button>
+                                    </div>
+                                </div>
+
+                                <!-- Chat Messages -->
+                                <div id="lead-sb-chat" class="wa-chat-area" style="flex: 1; padding: 16px; overflow-y: auto; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-size: cover; display: flex; flex-direction: column; gap: 8px;">
+                                    <div style="text-align: center; font-size: 12px; color: #667781; background: rgba(255,255,255,0.8); margin: 0 auto; padding: 4px 10px; border-radius: 8px; margin-bottom: 8px;">Esta é uma prévia do Chat Integrado via Webhook</div>
+                                </div>
+                                
+                                <!-- Botão Flutuante de Ganho -->
+                                <button id="inbox-floating-won" onclick="app.updateLeadStatus(app.activeLeadId, 'won')" style="position: absolute; top: 120px; right: 24px; border-radius: 30px; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.4); background: #10B981; color: white; border: none; padding: 12px 20px; font-size: 14px; font-weight: bold; z-index: 9; cursor: pointer; display: flex; align-items: center; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'" title="Marcar como Fechado Ganho">
+                                    <i class="fas fa-check-circle" style="margin-right: 6px; font-size: 16px;"></i> Ganho!
+                                </button>
+
+                                <div id="lead-sb-reply-preview" style="display: none; padding: 10px 16px; background: white; border-top: 1px solid var(--border); border-left: 4px solid var(--primary); align-items: center; justify-content: space-between;">
+                                    <div style="font-size: 13px; color: var(--text-muted); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 90%;" id="lead-sb-reply-text"></div>
+                                    <button class="btn-icon" onclick="app.cancelReply()" style="font-size: 16px; width: 24px; height: 24px; padding:0; display:flex; align-items:center; justify-content:center;">&times;</button>
+                                </div>
+
+                                <div id="emoji-picker-container" style="display: none; position: absolute; bottom: 80px; left: 16px; z-index: 100; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden;">
+                                    <emoji-picker></emoji-picker>
+                                </div>
+
+                                <div id="lead-sb-upload-preview" style="display: none; padding: 10px 16px; background: white; border-top: 1px solid var(--border); align-items: center; justify-content: space-between;">
+                                    <div style="display: flex; align-items: center; gap: 12px;">
+                                        <i class="fas fa-image" style="color: var(--primary); font-size: 24px;"></i>
+                                        <div style="font-size: 13px; color: var(--text-main); font-weight: 500;" id="lead-sb-upload-name">imagem.jpg</div>
+                                    </div>
+                                    <button class="btn-icon" onclick="app.cancelUpload()" style="font-size: 16px; width: 24px; height: 24px; padding:0; display:flex; align-items:center; justify-content:center; color: #EF4444;">&times;</button>
+                                </div>
+
+                                <div style="padding: 16px; background: #F0F2F5; border-top: 1px solid var(--border); display: flex; gap: 8px; align-items: center;">
+                                    <button class="btn-icon" onclick="app.toggleEmojiPicker()" title="Adicionar Emoji" style="font-size: 20px;"><i class="far fa-smile"></i></button>
+                                    <input type="file" id="chat-file-upload" style="display:none;" accept="image/*,video/*,application/pdf" onchange="app.handleChatFileUpload(event)">
+                                    <button class="btn-icon" onclick="document.getElementById('chat-file-upload').click()" title="Anexar Arquivo" style="font-size: 20px;"><i class="fas fa-paperclip"></i></button>
+                                    <input type="text" id="lead-sb-input" placeholder="Digite uma mensagem..." onkeydown="if(event.key === 'Enter') app.sendLeadMessage()" style="flex: 1; padding: 12px 16px; border: none; border-radius: 20px; outline: none; font-size: 14px; box-shadow: 0 1px 1px rgba(0,0,0,0.05);">
+                                    <button class="btn-primary" style="border-radius: 50%; width: 44px; height: 44px; padding: 0; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1);" onclick="app.sendLeadMessage()"><i class="fas fa-paper-plane" style="margin-right:2px;"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
                 <!-- Funil de Vendas Page -->
-                <section class="page" id="page-funnel" style="height: calc(100vh - 100px);">
+                <section class="page" id="page-funnel" style="height: calc(100vh - 136px);">
                     <div class="page-header"
                         style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px;">
                         <div>
@@ -2591,82 +2688,7 @@
         </div>
     </div>
 
-    <!-- Kanban Lead Modal -->
-    <div id="lead-sidebar-overlay" class="login-overlay" style="justify-content: center; align-items: center;">
-        <div class="login-card"
-            style="position: relative; width: 700px; max-width: 95%; height: 85vh; border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; padding: 0; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);">
-            <div class="card-header" style="background: var(--surface); z-index: 10; padding: 20px;">
-                <div
-                    style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
-                    <div>
-                        <h2 id="lead-sb-name" style="margin: 0; font-size: 18px; color: var(--text-main);">...</h2>
-                        <span id="lead-sb-status"
-                            style="font-size: 11px; background: #E2E8F0; padding: 2px 6px; border-radius: 4px; font-weight: 600;">...</span>
-                    </div>
-                    <div style="display: flex; gap: 12px; align-items: center;">
-                        <button class="btn-icon" onclick="app.closeLeadSidebar()"
-                            style="font-size: 24px;">&times;</button>
-                    </div>
-                </div>
-                <div
-                    style="font-size: 13px; color: var(--text-muted); display: flex; gap: 12px; margin-top: 8px; align-items: center;">
-                    <span id="lead-sb-phone"><i class="fab fa-whatsapp" style="color:#25D366;"></i> </span>
-                    <span id="lead-sb-value" style="color: #10B981; font-weight: bold;"></span>
-                    <button id="btn-save-lead-client" onclick="app.saveLeadAsClient()"
-                        style="margin-left: auto; background: #E2E8F0; color: #475569; border: none; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; transition: 0.2s;"><i
-                            class="fas fa-save" style="margin-right: 4px;"></i> Salvar na Base</button>
-                </div>
-            </div>
-
-            <div id="lead-sb-chat"
-                style="flex: 1; background: #E5DBD5; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-size: cover; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px;">
-                <!-- Mensagens Renderizadas Aqui -->
-                <div
-                    style="text-align: center; font-size: 12px; color: #667781; background: rgba(255,255,255,0.8); margin: 0 auto; padding: 4px 10px; border-radius: 8px; margin-bottom: 8px;">
-                    Esta é uma prévia do Chat Integrado via Webhook</div>
-            </div>
-            <div id="lead-sb-reply-preview"
-                style="display: none; padding: 10px 16px; background: white; border-top: 1px solid var(--border); border-left: 4px solid var(--primary); align-items: center; justify-content: space-between;">
-                <div style="font-size: 13px; color: var(--text-muted); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 90%;"
-                    id="lead-sb-reply-text"></div>
-                <button class="btn-icon" onclick="app.cancelReply()"
-                    style="font-size: 16px; width: 24px; height: 24px; padding:0; display:flex; align-items:center; justify-content:center;">&times;</button>
-            </div>
-
-            <div id="emoji-picker-container"
-                style="display: none; position: absolute; bottom: 80px; left: 16px; z-index: 100; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden;">
-                <emoji-picker></emoji-picker>
-            </div>
-
-            <div id="lead-sb-upload-preview"
-                style="display: none; padding: 10px 16px; background: white; border-top: 1px solid var(--border); align-items: center; justify-content: space-between;">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <i class="fas fa-image" style="color: var(--primary); font-size: 24px;"></i>
-                    <div style="font-size: 13px; color: var(--text-main); font-weight: 500;" id="lead-sb-upload-name">
-                        imagem.jpg</div>
-                </div>
-                <button class="btn-icon" onclick="app.cancelUpload()"
-                    style="font-size: 16px; width: 24px; height: 24px; padding:0; display:flex; align-items:center; justify-content:center; color: #EF4444;">&times;</button>
-            </div>
-
-            <div
-                style="padding: 16px; background: #F0F2F5; border-top: 1px solid var(--border); display: flex; gap: 8px; align-items: center;">
-                <button class="btn-icon" onclick="app.toggleEmojiPicker()" title="Adicionar Emoji"
-                    style="font-size: 20px;"><i class="far fa-smile"></i></button>
-                <input type="file" id="chat-file-upload" style="display:none;" accept="image/*,video/*,application/pdf"
-                    onchange="app.handleChatFileUpload(event)">
-                <button class="btn-icon" onclick="document.getElementById('chat-file-upload').click()"
-                    title="Anexar Arquivo" style="font-size: 20px;"><i class="fas fa-paperclip"></i></button>
-                <input type="text" id="lead-sb-input" placeholder="Digite uma mensagem..."
-                    onkeydown="if(event.key === 'Enter') app.sendLeadMessage()"
-                    style="flex: 1; padding: 12px 16px; border: none; border-radius: 20px; outline: none; font-size: 14px; box-shadow: 0 1px 1px rgba(0,0,0,0.05);">
-                <button class="btn-primary"
-                    style="border-radius: 50%; width: 44px; height: 44px; padding: 0; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1);"
-                    onclick="app.sendLeadMessage()"><i class="fas fa-paper-plane"
-                        style="margin-right:2px;"></i></button>
-            </div>
-        </div>
-    </div>
+    <!-- Kanban Lead Modal removido e migrado para Inbox -->
 
     <!-- Agenda Modal -->
     <div id="agenda-modal-overlay" class="login-overlay">

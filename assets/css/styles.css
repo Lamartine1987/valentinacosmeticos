@@ -520,6 +520,14 @@ body { background: var(--bg-color); color: var(--text-main); font-size: 15px; }
     .chat-sidebar.open { right: 0; }
 }
 
+@media (max-width: 767px) {
+    /* Inbox Mobile Layout */
+    #inbox-list-col { width: 100% !important; border-right: none !important; }
+    #inbox-chat-col { display: none !important; position: absolute !important; top: 0; left: 0; right: 0; bottom: 0; background: white; z-index: 20; }
+    body.inbox-chat-active #inbox-chat-col { display: flex !important; }
+    #inbox-back-btn { display: block !important; }
+}
+
 
 .print-only { display: none !important; }
 .scrollable-list { overflow-y: auto; padding-right: 4px; }

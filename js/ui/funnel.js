@@ -49,6 +49,17 @@ export const funnelModule = {
                     pickerEl.style.display = 'none';
                 }
             });
+
+            document.addEventListener('keydown', e => {
+                if (e.key === 'Escape') {
+                    const pickerEl = document.getElementById('emoji-picker-container');
+                    if (pickerEl && pickerEl.style.display !== 'none') {
+                        pickerEl.style.display = 'none';
+                    } else if (that.activeLeadId) {
+                        that.closeInboxLead();
+                    }
+                }
+            });
         }, 1000);
     },
 
@@ -184,11 +195,6 @@ export const funnelModule = {
             let isDragging = false;
             card.addEventListener('mousedown', () => isDragging = false);
             card.addEventListener('mousemove', () => isDragging = true);
-            card.addEventListener('click', (e) => {
-                if(!isDragging) {
-                    this.openLeadSidebar(lead);
-                }
-            });
 
             const valStr = lead.value ? Number(lead.value).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'}) : 'R$ 0,00';
             const phoneStr = lead.phone || 'Sem número';
@@ -228,9 +234,14 @@ export const funnelModule = {
                         ${storeTagHtml}
                     </span>
                 </div>
-                <div class="k-card-meta">
-                    <span class="k-card-value">${valStr}</span>
-                    ${tagHtml}
+                <div class="k-card-meta" style="align-items: center; justify-content: space-between;">
+                    <div>
+                        <span class="k-card-value">${valStr}</span>
+                        ${tagHtml}
+                    </div>
+                    <button class="btn-primary" style="padding: 4px 10px; font-size: 11px; background: #25D366; box-shadow: none;" onclick="event.stopPropagation(); app.navigateToInbox('${lead.id}', '${status}')">
+                        <i class="fab fa-whatsapp"></i> Chat
+                    </button>
                 </div>
             `;
             listContainers[status].appendChild(card);
@@ -433,6 +444,10 @@ export const funnelModule = {
         }
         
         document.getElementById('lead-sb-name').textContent = lead.name || 'Desconhecido';
+        const avatarUrl = lead.profilePicUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(lead.name || 'U')}&background=random&color=fff`;
+        const avatarEl = document.getElementById('lead-sb-avatar');
+        if (avatarEl) avatarEl.src = avatarUrl;
+        
         document.getElementById('lead-sb-phone').innerHTML = `<i class="fab fa-whatsapp" style="color:#25D366;"></i> ${lead.phone || 'Sem número'}`;
         document.getElementById('lead-sb-value').textContent = lead.value ? Number(lead.value).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'}) : 'R$ 0,00';
         
@@ -583,10 +598,18 @@ ${groupSenderHtml}${displayHtml}
             });
             chatArea.innerHTML = htmlBuffer;
             
-            chatArea.scrollTop = chatArea.scrollHeight;
+            // Tenta rolar imediatamente
+            chatArea.scrollTop = chatArea.scrollHeight + 1000;
+            
+            // Rola novamente após a animação de fadeIn (300ms) terminar
+            setTimeout(() => {
+                console.log(`[Chat Scroll] After Animation - scrollTop: ${chatArea.scrollTop}, scrollHeight: ${chatArea.scrollHeight}, clientHeight: ${chatArea.clientHeight}`);
+                chatArea.scrollTop = chatArea.scrollHeight + 1000;
+            }, 350);
         });
         
-        document.getElementById('lead-sidebar-overlay').classList.add('active');
+        document.getElementById('inbox-no-selection').style.display = 'none';
+        document.body.classList.add('inbox-chat-active');
     },
 
     closeLeadSidebar() {
@@ -597,7 +620,121 @@ ${groupSenderHtml}${displayHtml}
         this.cancelReply();
         this.activeLeadId = null;
         this.activeLeadPhone = null;
-        document.getElementById('lead-sidebar-overlay').classList.remove('active');
+        const noSel = document.getElementById('inbox-no-selection');
+        if (noSel) noSel.style.display = 'flex';
+        document.body.classList.remove('inbox-chat-active');
+    },
+
+    closeInboxLead() {
+        this.closeLeadSidebar();
+    },
+
+    inboxActiveTab: 'inbox',
+
+    setInboxTab(tab) {
+        this.inboxActiveTab = tab;
+        document.querySelectorAll('.inbox-tab').forEach(el => {
+            el.classList.remove('active');
+            el.style.background = '#E2E8F0';
+            el.style.color = '#475569';
+        });
+        const activeEl = document.querySelector(`.inbox-tab[data-tab="${tab}"]`);
+        if (activeEl) {
+            activeEl.classList.add('active');
+            activeEl.style.background = 'var(--primary)';
+            activeEl.style.color = 'white';
+        }
+        this.renderInboxList();
+    },
+
+    renderInboxList() {
+        const listContainer = document.getElementById('inbox-leads-list');
+        if (!listContainer) return;
+        
+        listContainer.innerHTML = '';
+        
+        const searchInput = document.getElementById('inbox-search');
+        const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
+        // Filtrar leads da aba ativa e também buscar
+        const filteredLeads = this.leadsList.filter(lead => {
+            if ((lead.status || 'inbox') !== this.inboxActiveTab) return false;
+            
+            if (searchTerm) {
+                const nameStr = (lead.name || '').toLowerCase();
+                const phoneStr = (lead.phone || '').replace(/\D/g, '');
+                const searchPhone = searchTerm.replace(/\D/g, '');
+                const nameMatch = nameStr.includes(searchTerm);
+                const phoneMatch = searchPhone && phoneStr.includes(searchPhone);
+                if (!nameMatch && !phoneMatch) return false;
+            }
+            return true;
+        });
+
+        // Ordenar do mais recente
+        const getTime = (val) => {
+            if (!val) return 0;
+            if (typeof val.toDate === 'function') return val.toDate().getTime();
+            if (val.seconds) return val.seconds * 1000;
+            return new Date(val).getTime() || 0;
+        };
+        filteredLeads.sort((a, b) => getTime(b.updatedAt) - getTime(a.updatedAt));
+
+        if (filteredLeads.length === 0) {
+            listContainer.innerHTML = `<div style="padding: 24px; text-align: center; color: var(--text-muted); font-size: 13px;">Nenhuma conversa encontrada nesta etapa.</div>`;
+            return;
+        }
+
+        filteredLeads.forEach(lead => {
+            const item = document.createElement('div');
+            item.style.cssText = `padding: 12px 16px; border-bottom: 1px solid var(--border); cursor: pointer; transition: 0.2s; background: ${this.activeLeadId === lead.id ? '#F1F5F9' : 'white'}; display: flex; flex-direction: column; gap: 4px; position: relative;`;
+            item.onclick = () => {
+                this.openLeadSidebar(lead);
+                this.renderInboxList(); // re-render to highlight active
+            };
+            
+            // Hover effect
+            item.onmouseover = () => { if(this.activeLeadId !== lead.id) item.style.background = '#F8FAFC'; };
+            item.onmouseout = () => { if(this.activeLeadId !== lead.id) item.style.background = 'white'; };
+
+            const timeStr = lead.updatedAt ? new Date(getTime(lead.updatedAt)).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}) : '';
+            const unreadDot = lead.unread ? `<div style="position: absolute; right: 16px; top: 16px; width: 10px; height: 10px; background: #EF4444; border-radius: 50%; box-shadow: 0 0 0 2px white;"></div>` : '';
+            const avatarUrl = lead.profilePicUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(lead.name || 'U')}&background=random&color=fff`;
+
+            item.innerHTML = `
+                ${unreadDot}
+                <div style="display: flex; gap: 12px; align-items: center;">
+                    <img src="${avatarUrl}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0;">
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                            <strong style="font-size: 14px; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">${lead.name || 'Desconhecido'}</strong>
+                            <span style="font-size: 11px; color: var(--text-muted); flex-shrink: 0;">${timeStr}</span>
+                        </div>
+                        <div style="font-size: 13px; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center; margin-top: 2px;">
+                            <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><i class="fab fa-whatsapp" style="color: #25D366; margin-right: 4px;"></i> ${lead.phone || ''}</span>
+                            <strong style="color: #10B981; flex-shrink: 0;">${lead.value ? Number(lead.value).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'}) : ''}</strong>
+                        </div>
+                    </div>
+                </div>
+            `;
+            listContainer.appendChild(item);
+        });
+    },
+
+    navigateToInbox(leadId, status) {
+        if(typeof window.app !== 'undefined' && typeof window.app.navigateTo === 'function') {
+            window.app.navigateTo('inbox');
+        } else if(typeof this.navigateTo === 'function') {
+            this.navigateTo('inbox');
+        }
+        this.setInboxTab(status || 'inbox');
+        if (leadId) {
+            const lead = this.leadsList.find(l => l.id === leadId);
+            if (lead) {
+                this.openLeadSidebar(lead);
+                this.renderInboxList();
+            }
+        }
     },
 
     async deleteLeadCard(id) {
