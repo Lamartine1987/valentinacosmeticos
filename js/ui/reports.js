@@ -318,6 +318,41 @@ export const reportsModule = {
             document.getElementById('report-funnel-details').innerText = `${wonLeads} / ${totalLeads} convertidos`;
         }
         
+        // --- Cálculo de Estatísticas de Mensagens ---
+        let repSent = 0;
+        let repReceived = 0;
+        if (this.messageStats && this.messageStats.length > 0) {
+            this.messageStats.forEach(stat => {
+                // Filtro de Loja
+                if (fStore !== 'all' && stat.storeId !== fStore) return;
+                
+                // Filtro de Data
+                if (fStart || fEnd) {
+                    const [y, m, d] = stat.date.split('-');
+                    const statDate = new Date(y, m-1, d);
+                    statDate.setHours(0,0,0,0);
+                    if (fStart) {
+                        const [sy, sm, sd] = fStart.split('-');
+                        if (statDate < new Date(sy, sm-1, sd)) return;
+                    }
+                    if (fEnd) {
+                        const [ey, em, ed] = fEnd.split('-');
+                        if (statDate > new Date(ey, em-1, ed)) return;
+                    }
+                }
+                
+                repSent += (stat.sent || 0);
+                repReceived += (stat.received || 0);
+            });
+        }
+        
+        if (document.getElementById('report-messages-sent')) {
+            document.getElementById('report-messages-sent').innerText = repSent;
+            document.getElementById('report-messages-received').innerText = repReceived;
+        }
+        // ---------------------------------------------
+
+        
         if (document.getElementById('stat-total-commissions')) {
             document.getElementById('stat-total-commissions').innerText = `R$ ${totalCommissions.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
         }

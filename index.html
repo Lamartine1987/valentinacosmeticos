@@ -436,7 +436,25 @@
                             </div>
                             <div class="stat-info">
                                 <h3>Minhas Comissões</h3>
-                                <div class="stat-value" id="stat-total-commissions" style="color: #10B981;">R$ 0,00
+                                <div class="stat-value" id="stat-total-commissions" style="color: #10B981;">R$ 0,00</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon" style="background: rgba(59, 130, 246, 0.1); color: #3B82F6;">
+                                <i class="fas fa-comments"></i>
+                            </div>
+                            <div class="stat-info" style="width: 100%;">
+                                <h3>Total de Mensagens</h3>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px; gap: 16px;">
+                                    <div>
+                                        <div style="font-size: 11px; color: var(--text-muted);"><i class="fas fa-paper-plane" style="color: #3B82F6;"></i> Enviadas</div>
+                                        <div class="stat-value" id="report-messages-sent" style="color: #3B82F6; font-size: 20px; line-height: 1.2;">0</div>
+                                    </div>
+                                    <div style="width: 1px; height: 24px; background: var(--border);"></div>
+                                    <div>
+                                        <div style="font-size: 11px; color: var(--text-muted);"><i class="fas fa-inbox" style="color: #10B981;"></i> Recebidas</div>
+                                        <div class="stat-value" id="report-messages-received" style="color: #10B981; font-size: 20px; line-height: 1.2;">0</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1958,6 +1976,10 @@
                                         <option value="loja_1">Loja 1</option>
                                         <option value="loja_2">Loja 2</option>
                                     </select>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 600; color: var(--text-muted); padding: 0 4px; margin-top: 4px;">
+                                        <span title="Total de Mensagens Enviadas Hoje (24h)"><i class="fas fa-paper-plane" style="color: #3B82F6;"></i> Enviadas (Hoje): <span id="inbox-count-sent">0</span></span>
+                                        <span title="Total de Mensagens Recebidas Hoje (24h)"><i class="fas fa-inbox" style="color: #10B981;"></i> Recebidas (Hoje): <span id="inbox-count-received">0</span></span>
+                                    </div>
                                 </div>
                                 <div id="inbox-leads-list" style="flex: 1; overflow-y: auto;">
                                     <!-- JS Populates -->

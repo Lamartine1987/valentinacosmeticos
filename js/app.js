@@ -573,6 +573,18 @@ const app = {
             }, (error) => console.log(error));
         }
 
+        const dCutoffStats = new Date();
+        dCutoffStats.setMonth(dCutoffStats.getMonth() - 4);
+        const cutoffStatsStr = `${dCutoffStats.getFullYear()}-${String(dCutoffStats.getMonth()+1).padStart(2,'0')}-01`;
+        
+        this.unsubMessageStats = db.collection("message_stats").where('date', '>=', cutoffStatsStr).onSnapshot((snapshot) => {
+            this.messageStats = [];
+            snapshot.forEach((doc) => {
+                this.messageStats.push({ id: doc.id, ...doc.data() });
+            });
+            this.updateActiveViews();
+        }, (error) => console.log("Erro Message Stats:", error));
+
         this.listenToLeads();
     },
 
@@ -1765,7 +1777,12 @@ const app = {
                                 createdAt: new Date().toISOString()
                             });
                         }
-                        await new Promise(resolve => setTimeout(resolve, delayInterval));
+                        let currentDelay = delayInterval;
+                        if (hasApi) {
+                            // Jitter / Fator Humano: Tempo aleatório entre 8s (8000ms) e 25s (25000ms)
+                            currentDelay = Math.floor(Math.random() * (25000 - 8000 + 1)) + 8000;
+                        }
+                        await new Promise(resolve => setTimeout(resolve, currentDelay));
                     }
                 }
                 

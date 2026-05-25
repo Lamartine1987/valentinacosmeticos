@@ -662,6 +662,27 @@ ${groupSenderHtml}${displayHtml}
         const storeFilterEl = document.getElementById('inbox-filter-store');
         const filterStore = storeFilterEl ? storeFilterEl.value : 'all';
 
+        let globalTotalSent = 0;
+        let globalTotalReceived = 0;
+
+        const todayDateKey = new Date(Date.now() - 3 * 3600 * 1000).toISOString().split('T')[0];
+
+        // Calcular estatísticas diárias por loja usando messageStats (Zera a cada 24h)
+        if (this.messageStats && this.messageStats.length > 0) {
+            this.messageStats.forEach(stat => {
+                if (stat.date === todayDateKey) {
+                    if (filterStore !== 'all') {
+                        let sId = stat.storeId || 'loja_1';
+                        if (sId === 'matriz') sId = 'loja_1';
+                        if (sId === 'filial_1') sId = 'loja_2';
+                        if (sId !== filterStore) return;
+                    }
+                    globalTotalSent += (stat.sent || 0);
+                    globalTotalReceived += (stat.received || 0);
+                }
+            });
+        }
+
         // Filtrar leads da aba ativa e também buscar/loja
         const filteredLeads = this.leadsList.filter(lead => {
             if ((lead.status || 'inbox') !== this.inboxActiveTab) return false;
@@ -696,11 +717,9 @@ ${groupSenderHtml}${displayHtml}
 
         if (filteredLeads.length === 0) {
             listContainer.innerHTML = `<div style="padding: 24px; text-align: center; color: var(--text-muted); font-size: 13px;">Nenhuma conversa encontrada nesta etapa.</div>`;
-            return;
-        }
-
-        filteredLeads.forEach(lead => {
-            const item = document.createElement('div');
+        } else {
+            filteredLeads.forEach(lead => {
+                const item = document.createElement('div');
             item.style.cssText = `padding: 12px 16px; border-bottom: 1px solid var(--border); cursor: pointer; transition: 0.2s; background: ${this.activeLeadId === lead.id ? '#F1F5F9' : 'white'}; display: flex; flex-direction: column; gap: 4px; position: relative;`;
             item.onclick = () => {
                 this.openLeadSidebar(lead);
@@ -738,7 +757,13 @@ ${groupSenderHtml}${displayHtml}
                 </div>
             `;
             listContainer.appendChild(item);
-        });
+            });
+        }
+
+        const cSent = document.getElementById('inbox-count-sent');
+        const cReceived = document.getElementById('inbox-count-received');
+        if (cSent) cSent.innerText = globalTotalSent;
+        if (cReceived) cReceived.innerText = globalTotalReceived;
     },
 
     navigateToInbox(leadId, status) {
@@ -880,12 +905,23 @@ ${groupSenderHtml}${displayHtml}
 
             // Automação 4.2: Envio de mensagem move o cliente para 'Em Atendimento'
             const curLead = this.leadsList.find(l => l.id === this.activeLeadId);
+            const updatePayload = {
+                messagesSent: firebase.firestore.FieldValue.increment(1)
+            };
             if (curLead && curLead.status === 'inbox') {
-                await db.collection('leads').doc(this.activeLeadId).update({
-                    status: 'negotiation',
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
+                updatePayload.status = 'negotiation';
+                updatePayload.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
             }
+            await db.collection('leads').doc(this.activeLeadId).update(updatePayload);
+
+            // Gravar estatística global
+            const dateKey = new Date(Date.now() - 3 * 3600 * 1000).toISOString().split('T')[0];
+            await db.collection('message_stats').doc(`${dateKey}_${sourceStore}`).set({
+                date: dateKey,
+                storeId: sourceStore,
+                sent: firebase.firestore.FieldValue.increment(1)
+            }, { merge: true });
+
         } catch(e) {
             console.error("Erro ao salvar mensagem otimista no banco:", e);
         }

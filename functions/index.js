@@ -220,8 +220,16 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
                     
                     await leadsRef.doc(leadId).collection('messages').add(msgObj);
                     await leadsRef.doc(leadId).update({
-                        lastMessage: "Você: " + textBody.substring(0, 45) + "..."
+                        lastMessage: "Você: " + textBody.substring(0, 45) + "...",
+                        messagesSent: admin.firestore.FieldValue.increment(1)
                     });
+                    
+                    const dateKey = new Date(Date.now() - 3 * 3600 * 1000).toISOString().split('T')[0];
+                    await db.collection('message_stats').doc(`${dateKey}_${storeId}`).set({
+                        date: dateKey,
+                        storeId: storeId,
+                        sent: admin.firestore.FieldValue.increment(1)
+                    }, { merge: true });
                 }
             } else {
                 // Criar o lead se você iniciou a conversa
@@ -237,7 +245,9 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
                     storeId: storeId,
                     createdAt: admin.firestore.FieldValue.serverTimestamp(),
                     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-                    lastMessage: "Você: " + textBody.substring(0, 45) + "..."
+                    lastMessage: "Você: " + textBody.substring(0, 45) + "...",
+                    messagesSent: 1,
+                    messagesReceived: 0
                 }, { merge: true });
                 
                 const msgObj = {
@@ -250,6 +260,13 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
                 if(videoUrl) msgObj.videoUrl = videoUrl;
                 
                 await newLeadRef.collection('messages').add(msgObj);
+                
+                const dateKey = new Date(Date.now() - 3 * 3600 * 1000).toISOString().split('T')[0];
+                await db.collection('message_stats').doc(`${dateKey}_${storeId}`).set({
+                    date: dateKey,
+                    storeId: storeId,
+                    sent: admin.firestore.FieldValue.increment(1)
+                }, { merge: true });
             }
             return;
         }
@@ -270,7 +287,9 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
                 storeId: storeId,
                 createdAt: admin.firestore.FieldValue.serverTimestamp(),
                 updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-                lastMessage: textBody.substring(0, 50) + "..."
+                lastMessage: textBody.substring(0, 50) + "...",
+                messagesReceived: 1,
+                messagesSent: 0
             }, { merge: true });
         } else {
             // ATUALIZAR CARD EXISTENTE
@@ -281,7 +300,8 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
                 updatedAt: admin.firestore.FieldValue.serverTimestamp(),
                 lastMessage: textBody.substring(0, 50) + "...",
                 unread: true,
-                storeId: storeId // Atualiza a pátria do Lead para a loja que está respondendo
+                storeId: storeId, // Atualiza a pátria do Lead para a loja que está respondendo
+                messagesReceived: admin.firestore.FieldValue.increment(1)
             };
 
             // Se o card ainda está com nome "fantasma" (número) e temos o nome real agora, atualize!
@@ -317,6 +337,13 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
         if(videoUrl) msgObj.videoUrl = videoUrl;
 
         await leadsRef.doc(leadId).collection('messages').add(msgObj);
+
+        const dateKey = new Date(Date.now() - 3 * 3600 * 1000).toISOString().split('T')[0];
+        await db.collection('message_stats').doc(`${dateKey}_${storeId}`).set({
+            date: dateKey,
+            storeId: storeId,
+            received: admin.firestore.FieldValue.increment(1)
+        }, { merge: true });
 
     } catch (error) {
         console.error("Erro ao processar webhook no Firestore:", error);
