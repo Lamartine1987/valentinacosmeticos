@@ -437,24 +437,43 @@ exports.triggerDailyFunnels = functions.https.onRequest((req, res) => {
                     }
 
                     // 5. Dispara
-                    let finalUrl = apiConfig.url.trim();
+                    let provider = apiConfig.provider;
+                    let finalUrl = apiConfig.url ? apiConfig.url.trim() : '';
+                    let finalToken = apiConfig.token;
+                    
+                    const targetStoreId = saleData.storeId || 'loja_1';
+                    
+                    if (apiConfig.instances && Array.isArray(apiConfig.instances) && apiConfig.instances.length > 0) {
+                        let inst = apiConfig.instances.find(i => i.storeId === targetStoreId);
+                        if (!inst || !inst.active) {
+                            inst = apiConfig.instances.find(i => i.storeId === 'loja_1');
+                        }
+                        if (inst && inst.active) {
+                            provider = inst.provider || provider;
+                            finalUrl = inst.url ? inst.url.trim() : finalUrl;
+                            finalToken = inst.token || finalToken;
+                        }
+                    }
+
+                    if (!finalUrl) continue;
+
                     let headers = { "Content-Type": "application/json" };
                     let body = {};
 
                     const formattedPhone = phone.startsWith("55") ? phone : "55" + phone;
 
-                    if (finalUrl.includes('z-api')) {
-                        if(apiConfig.token) headers['Client-Token'] = apiConfig.token;
+                    if (provider === 'zapi' || finalUrl.includes('z-api')) {
+                        if(finalToken) headers['Client-Token'] = finalToken;
                         if(target.img && target.img.trim() !== '') {
                             finalUrl = finalUrl.replace('/send-text', '/send-image');
                             body = { phone: formattedPhone, image: target.img, caption: target.text.replace(/\{nome\}/g, saleData.name).replace(/\{produto\}/g, saleData.product) };
                         } else {
                             body = { phone: formattedPhone, message: target.text.replace(/\{nome\}/g, saleData.name).replace(/\{produto\}/g, saleData.product) };
                         }
-                    } else if (apiConfig.provider === 'meumotor' || finalUrl.includes('187.127.4.145')) {
-                        if(apiConfig.token) {
-                            headers['Client-Token'] = apiConfig.token;
-                            headers['apikey'] = apiConfig.token;
+                    } else if (provider === 'meumotor' || finalUrl.includes('187.127.4.145')) {
+                        if(finalToken) {
+                            headers['Client-Token'] = finalToken;
+                            headers['apikey'] = finalToken;
                         }
                         if(target.img && target.img.trim() !== '') {
                             finalUrl = finalUrl.replace('/send-text', '').replace(/\/$/, '') + '/send-image';
@@ -466,7 +485,7 @@ exports.triggerDailyFunnels = functions.https.onRequest((req, res) => {
                             }
                         }
                     } else { // Evolution
-                        if(apiConfig.token) headers['apikey'] = apiConfig.token;
+                        if(finalToken) headers['apikey'] = finalToken;
                         if(target.img && target.img.trim() !== '') {
                             finalUrl = finalUrl.endsWith('/messages/sendMedia') ? finalUrl : finalUrl.replace('/messages/sendText', '/messages/sendMedia');
                             body = {
@@ -512,25 +531,44 @@ exports.triggerDailyFunnels = functions.https.onRequest((req, res) => {
                         const phone = clientData.phone;
                         if (!phone) continue;
                         
-                        let finalUrl = apiConfig.url.trim();
+                        let provider = apiConfig.provider;
+                        let finalUrl = apiConfig.url ? apiConfig.url.trim() : '';
+                        let finalToken = apiConfig.token;
+                        
+                        const targetStoreId = clientData.storeId || 'loja_1';
+                        
+                        if (apiConfig.instances && Array.isArray(apiConfig.instances) && apiConfig.instances.length > 0) {
+                            let inst = apiConfig.instances.find(i => i.storeId === targetStoreId);
+                            if (!inst || !inst.active) {
+                                inst = apiConfig.instances.find(i => i.storeId === 'loja_1');
+                            }
+                            if (inst && inst.active) {
+                                provider = inst.provider || provider;
+                                finalUrl = inst.url ? inst.url.trim() : finalUrl;
+                                finalToken = inst.token || finalToken;
+                            }
+                        }
+
+                        if (!finalUrl) continue;
+
                         let headers = { "Content-Type": "application/json" };
                         let body = {};
                         
                         const formattedPhone = phone.startsWith("55") ? phone : "55" + phone;
                         const msgText = templates.birthday.replace(/\{nome\}/g, clientData.name || '');
                         
-                        if (finalUrl.includes('z-api')) {
-                            if(apiConfig.token) headers['Client-Token'] = apiConfig.token;
+                        if (provider === 'zapi' || finalUrl.includes('z-api')) {
+                            if(finalToken) headers['Client-Token'] = finalToken;
                             if(templates.birthdayImg && templates.birthdayImg.trim() !== '') {
                                 finalUrl = finalUrl.replace('/send-text', '/send-image');
                                 body = { phone: formattedPhone, image: templates.birthdayImg, caption: msgText };
                             } else {
                                 body = { phone: formattedPhone, message: msgText };
                             }
-                        } else if (apiConfig.provider === 'meumotor' || finalUrl.includes('187.127.4.145')) {
-                            if(apiConfig.token) {
-                                headers['Client-Token'] = apiConfig.token;
-                                headers['apikey'] = apiConfig.token;
+                        } else if (provider === 'meumotor' || finalUrl.includes('187.127.4.145')) {
+                            if(finalToken) {
+                                headers['Client-Token'] = finalToken;
+                                headers['apikey'] = finalToken;
                             }
                             if(templates.birthdayImg && templates.birthdayImg.trim() !== '') {
                                 finalUrl = finalUrl.replace('/send-text', '').replace(/\/$/, '') + '/send-image';
@@ -541,8 +579,8 @@ exports.triggerDailyFunnels = functions.https.onRequest((req, res) => {
                                     finalUrl = finalUrl.replace(/\/$/, '') + '/send-text';
                                 }
                             }
-                        } else {
-                            if(apiConfig.token) headers['apikey'] = apiConfig.token;
+                        } else { // Evolution
+                            if(finalToken) headers['apikey'] = finalToken;
                             if(templates.birthdayImg && templates.birthdayImg.trim() !== '') {
                                 finalUrl = finalUrl.endsWith('/messages/sendMedia') ? finalUrl : finalUrl.replace('/messages/sendText', '/messages/sendMedia');
                                 body = {
