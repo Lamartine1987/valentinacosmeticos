@@ -831,9 +831,17 @@ const app = {
         document.body.classList.add('print-quote-mode');
         
         setTimeout(() => {
+            const afterPrint = () => {
+                document.body.classList.remove('print-quote-mode');
+                window.removeEventListener('afterprint', afterPrint);
+            };
+            window.addEventListener('afterprint', afterPrint);
+            
             window.print();
-            // Remover a classe após a impressão fechar
-            document.body.classList.remove('print-quote-mode');
+            
+            // Note: iOS Safari and Android Chrome might require a manual close if the print dialog is cancelled
+            // in some older versions, but afterprint is generally supported.
+            // We also provide a "Voltar" button in the HTML just in case.
         }, 300);
     },
 
