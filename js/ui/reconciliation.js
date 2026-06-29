@@ -406,7 +406,7 @@ export const reconciliationModule = {
 
             if (operator === 'stone') {
                 date = getVal(['data da venda', 'data de venda', 'data transacao']);
-                nsu = getVal(['stone id', 'documento']);
+                nsu = getVal(['stone id']) || getVal(['documento']);
                 brand = getVal(['bandeira']);
                 product = getVal(['produto']);
                 installments = getVal(['qtd de parcelas', 'parcelas']);
