@@ -1201,6 +1201,10 @@
                                 <option value="loja_1">Loja 1</option>
                                 <option value="loja_2">Loja 2</option>
                             </select>
+                            <select id="rec-filter-date-type" style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer; transition: border-color 0.2s;" onchange="app.renderReconciliationDashboard()" title="Tipo de Data">
+                                <option value="projected">Data Prevista (A Receber)</option>
+                                <option value="sale">Data da Venda (Original)</option>
+                            </select>
                             <div style="display: flex; gap: 8px; align-items: center;">
                                 <input type="date" id="rec-filter-start-date" style="padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: white; font-size: 14px; color: var(--text-main); cursor: pointer; transition: border-color 0.2s;" onchange="app.renderReconciliationDashboard()" title="Data Inicial">
                                 <span style="color: var(--text-muted); font-size: 14px;">até</span>

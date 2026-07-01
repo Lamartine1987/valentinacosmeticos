@@ -25,6 +25,7 @@ export const reconciliationModule = {
         const filterStatus = document.getElementById('rec-filter-status')?.value || 'pending';
         const filterStartDate = document.getElementById('rec-filter-start-date')?.value;
         const filterEndDate = document.getElementById('rec-filter-end-date')?.value;
+        const filterDateType = document.getElementById('rec-filter-date-type')?.value || 'projected';
         const filterStore = document.getElementById('rec-filter-store')?.value || 'all';
         const filterType = document.getElementById('rec-filter-type')?.value || 'all';
 
@@ -131,8 +132,9 @@ export const reconciliationModule = {
 
         // 3. Filtrar as parcelas pela data (filterStartDate, filterEndDate) e pelo status
         let filteredInstallments = virtualInstallments.filter(inst => {
-            if (filterStartDate && inst.projectedDate < filterStartDate) return false;
-            if (filterEndDate && inst.projectedDate > filterEndDate) return false;
+            const dateToCompare = filterDateType === 'sale' ? inst.originalDate : inst.projectedDate;
+            if (filterStartDate && dateToCompare < filterStartDate) return false;
+            if (filterEndDate && dateToCompare > filterEndDate) return false;
             
             if (filterStatus === 'pending' && inst.isPaid) return false;
             if (filterStatus === 'reconciled' && !inst.isPaid) return false;
@@ -165,11 +167,47 @@ export const reconciliationModule = {
             return;
         }
 
-        // Ordenar por Data Prevista crescente (o mais próximo a receber primeiro)
-        filteredInstallments.sort((a, b) => new Date(a.projectedDate) - new Date(b.projectedDate));
+        let renderInstallments = filteredInstallments;
+
+        if (filterDateType === 'sale') {
+            const grouped = {};
+            filteredInstallments.forEach(inst => {
+                const groupId = `${inst.sale.id}_${inst.payment.id || inst.payment.nsu || 'card'}`;
+                if (!grouped[groupId]) {
+                    grouped[groupId] = {
+                        sale: inst.sale,
+                        payment: inst.payment,
+                        originalDate: inst.originalDate,
+                        projectedDate: inst.originalDate, 
+                        totalInstallments: inst.totalInstallments,
+                        grossValue: 0,
+                        paidValue: 0,
+                        pendingValue: 0,
+                        allPaid: true,
+                        anyPaid: false,
+                        isGrouped: true,
+                        paidCount: 0
+                    };
+                }
+                grouped[groupId].grossValue += inst.grossValue;
+                if (inst.isPaid) {
+                    grouped[groupId].paidValue += parseFloat(inst.paidInfo.grossValue || 0);
+                    grouped[groupId].anyPaid = true;
+                    grouped[groupId].paidCount++;
+                } else {
+                    grouped[groupId].pendingValue += inst.grossValue;
+                    grouped[groupId].allPaid = false;
+                }
+            });
+            
+            renderInstallments = Object.values(grouped);
+            renderInstallments.sort((a, b) => new Date(a.originalDate) - new Date(b.originalDate));
+        } else {
+            renderInstallments.sort((a, b) => new Date(a.projectedDate) - new Date(b.projectedDate));
+        }
 
         let html = '';
-        filteredInstallments.forEach(inst => {
+        renderInstallments.forEach(inst => {
             const sale = inst.sale;
             
             const pDateParts = inst.projectedDate.split('-');
@@ -178,39 +216,57 @@ export const reconciliationModule = {
             const origDateParts = inst.originalDate.split('-');
             const displayOrigDate = `${origDateParts[2]}/${origDateParts[1]}/${origDateParts[0]}`;
 
-            let productsHtml = '';
-            if (sale.items && sale.items.length > 0) {
-                productsHtml = sale.items.map(i => i.product).join(', ');
-            } else {
-                productsHtml = sale.product || '-';
-            }
-
             let statusHtml = '';
             let actionBtn = '';
-            
-            if (inst.isPaid) {
-                statusHtml = `<span style="background:#10B981; color:white; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:600;"><i class="fas fa-check-double"></i> Recebida</span>`;
-                actionBtn = `<button class="btn-icon" style="color: #F59E0B;" onclick="app.unreconcileInstallment('${sale.id}', '${inst.instKey}')" title="Desfazer Baixa Desta Parcela"><i class="fas fa-undo"></i></button>`;
-            } else {
-                statusHtml = `<span style="background:#EF4444; color:white; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:600;"><i class="fas fa-clock"></i> Pendente</span>`;
-                actionBtn = `<button class="btn-icon" style="color: #64748B; opacity: 0.5;" title="Nenhuma ação" disabled><i class="fas fa-minus"></i></button>`;
-            }
-
+            let instHtml = '';
             const saleValueStr = inst.grossValue.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-            
-            let paidValueDisplay = inst.isPaid ? parseFloat(inst.paidInfo.grossValue || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0,00';
-            let pendingValueDisplay = inst.isPaid ? '0,00' : saleValueStr;
+            let paidValueDisplay = '';
+            let pendingValueDisplay = '';
 
             let textMode = inst.payment.method === 'debit_card' ? 'Débito' : 'Crédito';
             let brand = inst.payment.cardBrand ? `<span style="font-size: 11px; display: block; color: var(--text-muted);">${inst.payment.cardBrand}</span>` : '';
-            let instHtml = `<div>${brand}${textMode}<br><strong style="color:var(--primary);">Parcela ${inst.installmentNumber}/${inst.totalInstallments}</strong></div>`;
+
+            if (inst.isGrouped) {
+                paidValueDisplay = inst.paidValue.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                pendingValueDisplay = inst.pendingValue.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                instHtml = `<div>${brand}${textMode}<br><strong style="color:var(--primary);">Total em ${inst.totalInstallments}x</strong></div>`;
+
+                if (inst.allPaid) {
+                    statusHtml = `<span style="background:#10B981; color:white; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:600;"><i class="fas fa-check-double"></i> Recebida</span>`;
+                } else if (inst.anyPaid) {
+                    statusHtml = `<span style="background:#F59E0B; color:white; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:600;"><i class="fas fa-adjust"></i> Parcial (${inst.paidCount}/${inst.totalInstallments})</span>`;
+                } else {
+                    statusHtml = `<span style="background:#EF4444; color:white; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:600;"><i class="fas fa-clock"></i> Pendente</span>`;
+                }
+                actionBtn = `<button class="btn-icon" style="color: #64748B; opacity: 0.5;" title="Filtre por Data Prevista para baixar/desfazer parcelas" disabled><i class="fas fa-layer-group"></i></button>`;
+            } else {
+                paidValueDisplay = inst.isPaid ? parseFloat(inst.paidInfo.grossValue || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0,00';
+                pendingValueDisplay = inst.isPaid ? '0,00' : saleValueStr;
+                instHtml = `<div>${brand}${textMode}<br><strong style="color:var(--primary);">Parcela ${inst.installmentNumber}/${inst.totalInstallments}</strong></div>`;
+
+                if (inst.isPaid) {
+                    statusHtml = `<span style="background:#10B981; color:white; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:600;"><i class="fas fa-check-double"></i> Recebida</span>`;
+                    actionBtn = `<button class="btn-icon" style="color: #F59E0B;" onclick="app.unreconcileInstallment('${sale.id}', '${inst.instKey}')" title="Desfazer Baixa Desta Parcela"><i class="fas fa-undo"></i></button>`;
+                } else {
+                    statusHtml = `<span style="background:#EF4444; color:white; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:600;"><i class="fas fa-clock"></i> Pendente</span>`;
+                    actionBtn = `<button class="btn-icon" style="color: #64748B; opacity: 0.5;" title="Nenhuma ação" disabled><i class="fas fa-minus"></i></button>`;
+                }
+            }
+
+            const sellerName = sale.sellerName || 'Sistema';
 
             html += `
                 <tr>
-                    <td><strong>${sale.name}</strong><br><small style="color:var(--text-muted);">${sale.phone}</small></td>
                     <td>
-                        <strong style="color: var(--primary);">${displayDate}</strong><br>
-                        <small style="color: var(--text-muted); font-size: 10px;">Venda: ${displayOrigDate}</small>
+                        <div style="font-weight: 500;">${sale.name || 'Cliente Diverso'}</div>
+                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                            ${sale.phone ? `<span>${sale.phone}</span><br>` : ''}
+                            Vendedor: <strong>${sellerName}</strong>
+                        </div>
+                    </td>
+                    <td>
+                        <strong style="color: var(--primary);">${displayDate}</strong>
+                        <div style="font-size: 11px; color: var(--text-muted);">Venda: ${displayOrigDate}</div>
                     </td>
                     <td>${inst.payment.nsu || '-'}</td>
                     <td style="text-align: center;">${instHtml}</td>
