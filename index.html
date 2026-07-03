@@ -2568,6 +2568,43 @@
         </div>
     </div>
 
+    <!-- Manual Reconcile Modal -->
+    <div id="manual-reconcile-overlay" class="login-overlay">
+        <div class="login-card" style="max-width: 450px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h2 style="margin: 0; font-size: 18px;"><i class="fas fa-hand-holding-usd" style="color: var(--primary); margin-right: 8px;"></i> Baixa Manual</h2>
+                <button class="btn-icon" onclick="app.closeManualReconciliation()" style="font-size: 24px;">&times;</button>
+            </div>
+            
+            <div style="background: #F8FAFC; padding: 12px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
+                <div style="font-size: 12px; color: var(--text-muted);">Valor Bruto da Parcela</div>
+                <div id="manual-reconcile-gross" style="font-size: 20px; font-weight: 700; color: var(--text-main);">R$ 0,00</div>
+            </div>
+
+            <div class="form-group">
+                <label>NSU / Código de Autorização</label>
+                <input type="text" id="manual-reconcile-nsu" class="input-field" placeholder="Ex: 000000000">
+                <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Você pode corrigir o NSU para coincidir com o impresso na maquineta.</div>
+            </div>
+            
+            <div class="form-group" style="margin-top: 16px;">
+                <label>Data de Recebimento</label>
+                <input type="date" id="manual-reconcile-date" class="input-field">
+            </div>
+
+            <div class="form-group" style="margin-top: 16px;">
+                <label>Valor Líquido Recebido (R$)</label>
+                <input type="text" id="manual-reconcile-net" class="input-field" placeholder="0,00" oninput="app.maskCurrency(this)">
+                <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">As taxas serão calculadas automaticamente com base neste valor.</div>
+            </div>
+
+            <div style="display: flex; gap: 12px; margin-top: 24px;">
+                <button class="btn-primary" style="flex: 1; background: #E2E8F0; color: var(--text-main); justify-content: center; box-shadow: none;" onclick="app.closeManualReconciliation()">Cancelar</button>
+                <button class="btn-primary" style="flex: 2; justify-content: center; background: #10B981;" onclick="app.confirmManualReconciliation()"><i class="fas fa-check"></i> Confirmar Baixa</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Team Add Modal -->
     <div id="team-overlay" class="login-overlay">
         <div class="login-card"

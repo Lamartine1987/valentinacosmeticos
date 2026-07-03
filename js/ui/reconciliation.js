@@ -245,11 +245,15 @@ export const reconciliationModule = {
                 instHtml = `<div>${brand}${textMode}<br><strong style="color:var(--primary);">Parcela ${inst.installmentNumber}/${inst.totalInstallments}</strong></div>`;
 
                 if (inst.isPaid) {
-                    statusHtml = `<span style="background:#10B981; color:white; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:600;"><i class="fas fa-check-double"></i> Recebida</span>`;
+                    if (inst.paidInfo && inst.paidInfo.manual) {
+                        statusHtml = `<span style="background:#10B981; color:white; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:600;" title="Baixa Manual"><i class="fas fa-hand-holding-usd"></i> Recebida</span>`;
+                    } else {
+                        statusHtml = `<span style="background:#10B981; color:white; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:600;"><i class="fas fa-check-double"></i> Recebida</span>`;
+                    }
                     actionBtn = `<button class="btn-icon" style="color: #F59E0B;" onclick="app.unreconcileInstallment('${sale.id}', '${inst.instKey}')" title="Desfazer Baixa Desta Parcela"><i class="fas fa-undo"></i></button>`;
                 } else {
                     statusHtml = `<span style="background:#EF4444; color:white; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:600;"><i class="fas fa-clock"></i> Pendente</span>`;
-                    actionBtn = `<button class="btn-icon" style="color: #64748B; opacity: 0.5;" title="Nenhuma ação" disabled><i class="fas fa-minus"></i></button>`;
+                    actionBtn = `<button class="btn-icon" style="color: #10B981;" onclick="app.openManualReconciliation('${sale.id}', '${inst.instKey}')" title="Dar Baixa Manual"><i class="fas fa-check"></i></button>`;
                 }
             }
 
@@ -1062,6 +1066,149 @@ export const reconciliationModule = {
                 }
             }
         );
+    },
+
+    openManualReconciliation(saleId, instKey) {
+        this.currentManualReconcile = { saleId, instKey };
+        const sale = this.sales.find(s => s.id === saleId);
+        if (!sale) return;
+
+        let instData = null;
+        let pIndex = 0;
+        let installmentNumber = 1;
+        for (let i = 0; i < (sale.payments || []).length; i++) {
+            let p = sale.payments[i];
+            if (p.method === 'credit_card' || p.method === 'debit_card') {
+                let instCount = parseInt(p.installments || 1);
+                for (let j = 1; j <= instCount; j++) {
+                    if (`${i}-${j}` === instKey) {
+                        instData = p;
+                        installmentNumber = j;
+                        break;
+                    }
+                }
+            }
+            if (instData) break;
+        }
+
+        if (!instData) return;
+
+        const grossValue = (parseFloat(instData.value || 0) / parseInt(instData.installments || 1));
+        document.getElementById('manual-reconcile-gross').textContent = `R$ ${grossValue.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        document.getElementById('manual-reconcile-nsu').value = instData.nsu || '';
+        
+        // Find expected date
+        let expectedDate = sale.date;
+        const parts = sale.date.split('-');
+        if (parts.length === 3) {
+            let d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+            if (instData.method === 'credit_card') {
+                d.setDate(d.getDate() + (30 * installmentNumber));
+            } else {
+                d.setDate(d.getDate() + 1);
+            }
+            expectedDate = d.toISOString().split('T')[0];
+        }
+        document.getElementById('manual-reconcile-date').value = expectedDate;
+        document.getElementById('manual-reconcile-net').value = '';
+
+        document.getElementById('manual-reconcile-overlay').style.display = 'flex';
+    },
+
+    closeManualReconciliation() {
+        document.getElementById('manual-reconcile-overlay').style.display = 'none';
+        this.currentManualReconcile = null;
+    },
+
+    async confirmManualReconciliation() {
+        if (!this.currentManualReconcile) return;
+        const { saleId, instKey } = this.currentManualReconcile;
+        
+        const sale = this.sales.find(s => s.id === saleId);
+        if (!sale) return;
+
+        const nsu = document.getElementById('manual-reconcile-nsu').value.trim();
+        const date = document.getElementById('manual-reconcile-date').value;
+        const netValueStr = document.getElementById('manual-reconcile-net').value;
+        
+        if (!date) {
+            if (typeof this.showToast === 'function') this.showToast('Preencha a data do recebimento', 'error');
+            return;
+        }
+        if (!netValueStr) {
+            if (typeof this.showToast === 'function') this.showToast('Preencha o valor líquido', 'error');
+            return;
+        }
+
+        const netValue = parseFloat(netValueStr.replace(/\./g, '').replace(',', '.'));
+
+        let instData = null;
+        let paymentIndex = -1;
+        for (let i = 0; i < (sale.payments || []).length; i++) {
+            let p = sale.payments[i];
+            if (p.method === 'credit_card' || p.method === 'debit_card') {
+                let instCount = parseInt(p.installments || 1);
+                for (let j = 1; j <= instCount; j++) {
+                    if (`${i}-${j}` === instKey) {
+                        instData = p;
+                        paymentIndex = i;
+                        break;
+                    }
+                }
+            }
+            if (instData) break;
+        }
+
+        if (!instData) return;
+        const grossValue = (parseFloat(instData.value || 0) / parseInt(instData.installments || 1));
+        const fees = grossValue - netValue;
+
+        if (nsu && instData.nsu !== nsu) {
+            sale.payments[paymentIndex].nsu = nsu;
+        }
+
+        if (!sale.paidInstallments) sale.paidInstallments = {};
+        
+        sale.paidInstallments[instKey] = {
+            date: date,
+            grossValue: grossValue,
+            netValue: netValue,
+            fees: fees,
+            manual: true,
+            nsu: nsu || instData.nsu
+        };
+
+        // Check if fully reconciled
+        let totalInstallments = sale.installments || 1;
+        if (sale.payments && sale.payments.length > 0) {
+            let totalInstCalc = 0;
+            sale.payments.forEach(p => {
+                if (p.method === 'credit_card' || p.method === 'debit_card') {
+                    totalInstCalc += parseInt(p.installments || 1);
+                }
+            });
+            if (totalInstCalc > 0) totalInstallments = totalInstCalc;
+        }
+        sale.reconciled = Object.keys(sale.paidInstallments).length >= totalInstallments;
+        
+        let totalNetValue = Object.values(sale.paidInstallments).reduce((acc, curr) => acc + (parseFloat(curr.netValue) || 0), 0);
+        let totalFeeValue = Object.values(sale.paidInstallments).reduce((acc, curr) => acc + (parseFloat(curr.fees) || 0), 0);
+
+        try {
+            await db.collection('sales').doc(saleId).update({
+                reconciled: sale.reconciled,
+                paidInstallments: sale.paidInstallments,
+                netValue: totalNetValue,
+                feeValue: totalFeeValue,
+                payments: sale.payments
+            });
+            if (typeof this.showToast === 'function') this.showToast('Baixa manual realizada com sucesso!', 'success');
+            this.closeManualReconciliation();
+            if (typeof this.renderReconciliationDashboard === 'function') this.renderReconciliationDashboard();
+        } catch (error) {
+            console.error('Erro ao salvar baixa manual', error);
+            if (typeof this.showToast === 'function') this.showToast('Erro ao salvar', 'error');
+        }
     },
 
     openRetroactiveSaleModal(extratoItem = null) {
