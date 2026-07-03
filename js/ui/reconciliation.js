@@ -191,7 +191,7 @@ export const reconciliationModule = {
                 }
                 grouped[groupId].grossValue += inst.grossValue;
                 if (inst.isPaid) {
-                    grouped[groupId].paidValue += parseFloat(inst.paidInfo.grossValue || 0);
+                    grouped[groupId].paidValue += parseFloat(inst.paidInfo.netValue || 0);
                     grouped[groupId].anyPaid = true;
                     grouped[groupId].paidCount++;
                 } else {
@@ -240,7 +240,7 @@ export const reconciliationModule = {
                 }
                 actionBtn = `<button class="btn-icon" style="color: #64748B; opacity: 0.5;" title="Filtre por Data Prevista para baixar/desfazer parcelas" disabled><i class="fas fa-layer-group"></i></button>`;
             } else {
-                paidValueDisplay = inst.isPaid ? parseFloat(inst.paidInfo.grossValue || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0,00';
+                paidValueDisplay = inst.isPaid ? parseFloat(inst.paidInfo.netValue || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0,00';
                 pendingValueDisplay = inst.isPaid ? '0,00' : saleValueStr;
                 instHtml = `<div>${brand}${textMode}<br><strong style="color:var(--primary);">Parcela ${inst.installmentNumber}/${inst.totalInstallments}</strong></div>`;
 
@@ -374,14 +374,19 @@ export const reconciliationModule = {
             if (operator === 'rede') {
                 const targetSheet = workbook.SheetNames.find(s => s.toLowerCase().includes('pagamentos'));
                 if (targetSheet) sheetName = targetSheet;
+            } else if (operator === 'getnet') {
+                const targetSheet = workbook.SheetNames.find(s => s.toLowerCase().includes('detalhado'));
+                if (targetSheet) sheetName = targetSheet;
             }
             
             const worksheet = workbook.Sheets[sheetName];
+            console.log(`[Reconciliação] Planilha carregada. Aba selecionada: ${sheetName}`);
             
             // Lógica para encontrar o cabeçalho real (pular linhas de título)
             const rawData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
             let headerRowIndex = 0;
-            
+            console.log(`[Reconciliação] Linhas brutas da aba:`, rawData.length);
+
             for (let i = 0; i < Math.min(20, rawData.length); i++) {
                 const row = rawData[i];
                 if (!row) continue;
@@ -393,19 +398,27 @@ export const reconciliationModule = {
                            str === 'data da venda' || 
                            str === 'data de venda' || 
                            str === 'data' ||
+                           str === 'data de recebimento' ||
                            str === 'nsu/cv' || 
                            str === 'nsu' || 
                            str === 'stone id' || 
-                           str === 'documento';
+                           str === 'documento' ||
+                           str === 'numero comprovante de venda (nsu)';
                 });
                 
                 if (isHeader) {
                     headerRowIndex = i;
+                    console.log(`[Reconciliação] Cabeçalho detectado na linha índice ${i}:`, row);
                     break;
                 }
             }
             
+            if (headerRowIndex === 0) {
+                console.log(`[Reconciliação] AVISO: Nenhum cabeçalho reconhecido nas primeiras 20 linhas. Usando linha 0.`);
+            }
+
             const json = XLSX.utils.sheet_to_json(worksheet, { range: headerRowIndex });
+            console.log(`[Reconciliação] Dados JSON extraídos:`, json.length, `linhas.`);
             this.normalizeAndMatchExtrato(json, operator);
         } else {
             this.showToast('Erro interno: Biblioteca Excel não carregada.', 'error');
@@ -502,6 +515,30 @@ export const reconciliationModule = {
                 if (grossValue !== null && netValue !== null) {
                     fees = cleanNum(grossValue) - cleanNum(netValue);
                 }
+            } else if (operator === 'getnet') {
+                date = getVal(['data da venda', 'data de venda', 'data original da venda']);
+                nsu = getVal(['número comprovante de venda (nsu)', 'numero comprovante de venda (nsu)', 'comprovante de venda (nsu)', 'nsu']);
+                brand = getVal(['bandeira / modalidade', 'bandeira']);
+                product = getVal(['lançamento', 'lancamento', 'tipo de lançamento']);
+                grossValue = getVal(['valor bruto', 'valor da venda']);
+                netValue = getVal(['valor líquido', 'valor liquido', 'valor da parcela']);
+                
+                let discount = cleanNum(getVal(['desconto', 'taxa']) || 0);
+                fees = Math.abs(discount);
+                if (fees === 0 && grossValue && netValue) {
+                    fees = cleanNum(grossValue) - cleanNum(netValue);
+                }
+                
+                let parcelasStr = getVal(['parcelas']);
+                if (parcelasStr && typeof parcelasStr === 'string' && parcelasStr.includes(' de ')) {
+                    const parts = parcelasStr.split(' de ');
+                    installmentNo = parseInt(parts[0].trim());
+                    installments = parseInt(parts[1].trim());
+                } else if (parcelasStr && String(parcelasStr).match(/^\d+$/)) {
+                    installmentNo = 1;
+                    installments = parseInt(parcelasStr);
+                }
+                console.log(`[Reconciliação Getnet] Linha processada: Data=${date}, NSU=${nsu}, Bruto=${grossValue}, Líquido=${netValue}, Parcelas=${installmentNo}/${installments}`);
             } else {
                 // Lógica genérica (Tenta adivinhar)
                 date = getVal(['data', 'venda', 'pagamento', 'date']);
