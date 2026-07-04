@@ -253,7 +253,7 @@ export const reconciliationModule = {
                     actionBtn = `<button class="btn-icon" style="color: #F59E0B;" onclick="app.unreconcileInstallment('${sale.id}', '${inst.instKey}')" title="Desfazer Baixa Desta Parcela"><i class="fas fa-undo"></i></button>`;
                 } else {
                     statusHtml = `<span style="background:#EF4444; color:white; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:600;"><i class="fas fa-clock"></i> Pendente</span>`;
-                    actionBtn = `<button class="btn-icon" style="color: #10B981; background: #ECFDF5; border-radius: 4px; padding: 4px 8px;" onclick="app.openManualReconciliation('${sale.id}', '${inst.instKey}')" title="Dar Baixa Manual"><i class="fas fa-check"></i> Baixar</button>`;
+                    actionBtn = `<button style="background:#ECFDF5; color:#10B981; border:1px solid #10B981; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:4px;" onclick="app.openManualReconciliation('${sale.id}', '${inst.instKey}')" title="Dar Baixa Manual"><i class="fas fa-check"></i> Baixar</button>`;
                 }
             }
 
