@@ -253,7 +253,7 @@ export const reconciliationModule = {
                     actionBtn = `<button class="btn-icon" style="color: #F59E0B;" onclick="app.unreconcileInstallment('${sale.id}', '${inst.instKey}')" title="Desfazer Baixa Desta Parcela"><i class="fas fa-undo"></i></button>`;
                 } else {
                     statusHtml = `<span style="background:#EF4444; color:white; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:600;"><i class="fas fa-clock"></i> Pendente</span>`;
-                    actionBtn = `<button class="btn-icon" style="color: #10B981;" onclick="app.openManualReconciliation('${sale.id}', '${inst.instKey}')" title="Dar Baixa Manual"><i class="fas fa-check"></i></button>`;
+                    actionBtn = `<button class="btn-icon" style="color: #10B981; background: #ECFDF5; border-radius: 4px; padding: 4px 8px;" onclick="app.openManualReconciliation('${sale.id}', '${inst.instKey}')" title="Dar Baixa Manual"><i class="fas fa-check"></i> Baixar</button>`;
                 }
             }
 
@@ -1076,12 +1076,16 @@ export const reconciliationModule = {
         let instData = null;
         let pIndex = 0;
         let installmentNumber = 1;
-        for (let i = 0; i < (sale.payments || []).length; i++) {
-            let p = sale.payments[i];
+        for (let idx = 0; idx < (sale.payments || []).length; idx++) {
+            let p = sale.payments[idx];
             if (p.method === 'credit_card' || p.method === 'debit_card') {
                 let instCount = parseInt(p.installments || 1);
                 for (let j = 1; j <= instCount; j++) {
-                    if (`${i}-${j}` === instKey) {
+                    let expectedKey = String(j);
+                    if (sale.payments && sale.payments.length > 1) {
+                        expectedKey = `${p.nsu || p.id || 'card'}_${j}`;
+                    }
+                    if (expectedKey === instKey) {
                         instData = p;
                         installmentNumber = j;
                         break;
@@ -1144,14 +1148,18 @@ export const reconciliationModule = {
 
         let instData = null;
         let paymentIndex = -1;
-        for (let i = 0; i < (sale.payments || []).length; i++) {
-            let p = sale.payments[i];
+        for (let idx = 0; idx < (sale.payments || []).length; idx++) {
+            let p = sale.payments[idx];
             if (p.method === 'credit_card' || p.method === 'debit_card') {
                 let instCount = parseInt(p.installments || 1);
                 for (let j = 1; j <= instCount; j++) {
-                    if (`${i}-${j}` === instKey) {
+                    let expectedKey = String(j);
+                    if (sale.payments && sale.payments.length > 1) {
+                        expectedKey = `${p.nsu || p.id || 'card'}_${j}`;
+                    }
+                    if (expectedKey === instKey) {
                         instData = p;
-                        paymentIndex = i;
+                        paymentIndex = idx;
                         break;
                     }
                 }
