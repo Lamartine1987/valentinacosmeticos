@@ -287,10 +287,11 @@ export const reportsModule = {
             if (fStart || fEnd) {
                 const filterDatesLeads = (item) => {
                     let ts = 0;
-                    if (item.createdAt) {
-                        if (typeof item.createdAt.toDate === 'function') ts = item.createdAt.toDate().getTime();
-                        else if (item.createdAt.seconds) ts = item.createdAt.seconds * 1000;
-                        else ts = new Date(item.createdAt).getTime();
+                    const dateField = item.updatedAt || item.createdAt;
+                    if (dateField) {
+                        if (typeof dateField.toDate === 'function') ts = dateField.toDate().getTime();
+                        else if (dateField.seconds) ts = dateField.seconds * 1000;
+                        else ts = new Date(dateField).getTime();
                     } else {
                         return true;
                     }
