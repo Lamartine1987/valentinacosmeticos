@@ -42,6 +42,8 @@ const app = {
     unsubClients: null,
     unsubProducts: null,
     unsubExpenses: null,
+    loadFullHistory: false,
+    hasPromptedFullHistory: false,
     
     init() {
         this.setupNavigation();
@@ -487,10 +489,49 @@ const app = {
             }
 
             this.updateActiveViews();
-        }).catch(err => console.error("Erro ao carregar filtros admin:", err));
+        }).catch(err => console.error("Erro ao carregar configurações de API:", err));
     },
 
+    checkIfNeedsFullHistory(fStart, fEnd) {
+        if (this.loadFullHistory) return;
+        if (this.hasPromptedFullHistory) return;
+        if (!fStart && !fEnd) return;
 
+        const dCutoff = new Date();
+        dCutoff.setMonth(dCutoff.getMonth() - 4);
+        const cutoffStr = `${dCutoff.getFullYear()}-${String(dCutoff.getMonth()+1).padStart(2,'0')}-01`;
+
+        if ((fStart && fStart < cutoffStr) || (fEnd && fEnd < cutoffStr)) {
+            this.hasPromptedFullHistory = true;
+            this.confirmAction(
+                "Histórico Antigo Solicitado",
+                "O período selecionado ultrapassa o limite padrão de 4 meses na memória. Para visualizar os dados corretamente, o sistema precisa baixar todo o histórico. Isso pode demorar alguns segundos. Deseja baixar agora?",
+                () => {
+                    this.fetchFullHistory();
+                },
+                {
+                    confirmText: "Sim, Baixar Histórico",
+                    confirmColor: "#3B82F6",
+                    iconClass: "fas fa-cloud-download-alt",
+                    iconBg: "#DBEAFE",
+                    iconColor: "#2563EB"
+                }
+            );
+        }
+    },
+
+    fetchFullHistory() {
+        this.loadFullHistory = true;
+        if (this.unsubSales) {
+            this.unsubSales();
+        }
+        this.sales = [];
+        if (typeof this.showToast === 'function') {
+            this.showToast('Baixando histórico completo. Aguarde...', 'info');
+        }
+        
+        this.listenData();
+    },
 
     listenData() {
         if(!db || !this.user || !this.currentUserProfile) return;
@@ -503,10 +544,12 @@ const app = {
 
         // Filtro Inteligente: Baixar apenas os últimos 4 meses de vendas para escuta em Tempo Real
         // Isso evita baixar o histórico inteiro e ao mesmo tempo preserva as somatórias dos Dashboards recentes.
-        const dCutoff = new Date();
-        dCutoff.setMonth(dCutoff.getMonth() - 4);
-        const cutoffStr = `${dCutoff.getFullYear()}-${String(dCutoff.getMonth()+1).padStart(2,'0')}-01`;
-        salesQuery = salesQuery.where('date', '>=', cutoffStr);
+        if (!this.loadFullHistory) {
+            const dCutoff = new Date();
+            dCutoff.setMonth(dCutoff.getMonth() - 4);
+            const cutoffStr = `${dCutoff.getFullYear()}-${String(dCutoff.getMonth()+1).padStart(2,'0')}-01`;
+            salesQuery = salesQuery.where('date', '>=', cutoffStr);
+        }
 
         this.unsubSales = salesQuery.onSnapshot((snapshot) => {
             if (!this.sales) this.sales = [];
@@ -612,7 +655,12 @@ const app = {
         document.getElementById('filter-date-end').addEventListener('change', () => this.renderClientsTable());
         
         const clientFilter = document.getElementById('filter-client-name');
-        if(clientFilter) clientFilter.addEventListener('input', () => this.renderClientsList());
+        if (clientFilter) {
+            clientFilter.addEventListener('input', () => {
+                clearTimeout(this.clientSearchTimeout);
+                this.clientSearchTimeout = setTimeout(() => this.renderClientsList(), 300);
+            });
+        }
 
         const productFilter = document.getElementById('filter-product-catalog');
         if(productFilter) productFilter.addEventListener('input', () => this.renderProductsList());

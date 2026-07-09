@@ -85,6 +85,7 @@ export const dashboardModule = {
     renderDashboard() {
         const fStart = (document.getElementById('dash-filter-start') || {value:''}).value;
         const fEnd = (document.getElementById('dash-filter-end') || {value:''}).value;
+        if (typeof app.checkIfNeedsFullHistory === 'function') app.checkIfNeedsFullHistory(fStart, fEnd);
         const fType = (document.getElementById('dash-filter-type') || {value:'all'}).value;
         const fStoreSeller = (document.getElementById('dash-filter-store') || {value:'all'}).value;
 

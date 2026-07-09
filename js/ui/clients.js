@@ -364,13 +364,24 @@ export const clientsModule = {
         const filterClientStore = (document.getElementById('filter-client-store') || {value:'all'}).value;
 
         // Pre-calcula os gastos para poder filtrar e ordenar
+        const salesByPhone = {};
+        for (const s of this.sales) {
+            if (!s.phone) continue;
+            const phoneStr = s.phone.replace(/\D/g, '');
+            if (!salesByPhone[phoneStr]) {
+                salesByPhone[phoneStr] = { compras: [], totalGasto: 0 };
+            }
+            salesByPhone[phoneStr].compras.push(s);
+            salesByPhone[phoneStr].totalGasto += (parseFloat(s.value) || 0);
+        }
+
         let clientsWithStats = this.clients.map(client => {
-            const compras = this.sales.filter(s => s.phone && client.phone && s.phone.replace(/\D/g, '') === client.phone.replace(/\D/g, ''));
-            const totalGasto = compras.reduce((acc, curr) => acc + (parseFloat(curr.value) || 0), 0);
+            const phoneStr = client.phone ? client.phone.replace(/\D/g, '') : '';
+            const stats = salesByPhone[phoneStr] || { compras: [], totalGasto: 0 };
             return {
                 ...client,
-                compras: compras,
-                totalGasto: totalGasto
+                compras: stats.compras,
+                totalGasto: stats.totalGasto
             };
         });
         
@@ -619,6 +630,7 @@ export const clientsModule = {
         
         const fStart = (document.getElementById('history-filter-start') || {value:''}).value;
         const fEnd = (document.getElementById('history-filter-end') || {value:''}).value;
+        if (typeof app.checkIfNeedsFullHistory === 'function') app.checkIfNeedsFullHistory(fStart, fEnd);
 
         let compras = this.sales.filter(s => s.phone.replace(/\D/g, '') === client.phone.replace(/\D/g, ''));
         

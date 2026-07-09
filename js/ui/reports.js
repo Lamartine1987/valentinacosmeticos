@@ -70,6 +70,7 @@ export const reportsModule = {
     renderReports() {
         const fStart = (document.getElementById('report-filter-start') || {value:''}).value;
         const fEnd = (document.getElementById('report-filter-end') || {value:''}).value;
+        if (typeof app.checkIfNeedsFullHistory === 'function') app.checkIfNeedsFullHistory(fStart, fEnd);
         const fClient = (document.getElementById('report-filter-client') || {value:''}).value.trim().toLowerCase();
         const fProd = (document.getElementById('report-filter-product') || {value:''}).value.trim().toLowerCase();
         const fCity = (document.getElementById('report-filter-city') || {value:''}).value.trim().toLowerCase();

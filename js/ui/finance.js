@@ -343,6 +343,7 @@ export const financeModule = {
     renderFinanceDashboard() {
         const fStart = (document.getElementById('finance-filter-start') || {value:''}).value;
         const fEnd = (document.getElementById('finance-filter-end') || {value:''}).value;
+        if (typeof app.checkIfNeedsFullHistory === 'function') app.checkIfNeedsFullHistory(fStart, fEnd);
         const fStore = (document.getElementById('finance-filter-store') || {value:'all'}).value;
 
         let totalRevenue = 0;
