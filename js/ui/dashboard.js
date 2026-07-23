@@ -6,6 +6,17 @@ export const dashboardModule = {
         today.setHours(0,0,0,0);
         
         const actions = [];
+        
+        // PERFORMANCE: Dicionário O(1) para evitar loop dentro de loop (O(n²))
+        const clientsByPhone = new Map();
+        if (this.clients) {
+            this.clients.forEach(c => {
+                if (c.phone) {
+                    clientsByPhone.set(c.phone.replace(/\D/g, ''), c);
+                }
+            });
+        }
+
         this.sales.forEach(sale => {
             if (!sale.date) return;
             const [y, m, d] = sale.date.split('-');
@@ -14,7 +25,8 @@ export const dashboardModule = {
             const diffTime = today - saleDate;
             const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)); 
             
-            const client = this.clients.find(c => c.phone && c.phone.replace(/\D/g, '') === sale.phone.replace(/\D/g, ''));
+            const salePhoneNum = sale.phone ? sale.phone.replace(/\D/g, '') : '';
+            const client = clientsByPhone.get(salePhoneNum);
             const sName = client ? client.shortName : '';
 
             if (diffDays <= 2) {

@@ -90,8 +90,8 @@ export const apiModule = {
             }
             
             console.log("URL Final disparada:", finalUrl);
-            console.log("Headers formatados:", headers);
-            console.log("Corpo da requisição (Body):", JSON.stringify(body));
+            // console.log("Headers formatados:", headers); // SENHA OCULTADA POR SEGURANÇA
+            // console.log("Corpo da requisição (Body):", JSON.stringify(body));
 
             let reqUrl = finalUrl;
             let reqBody = JSON.stringify(body);

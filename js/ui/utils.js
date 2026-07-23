@@ -50,6 +50,77 @@ export const utilsModule = {
         if (overlay) overlay.classList.remove('active');
     },
 
+    promptAction(title, message, callback, options = {}) {
+        const {
+            confirmText = "Confirmar",
+            confirmColor = "#2563EB",
+            iconClass = "fas fa-edit",
+            iconBg = "#DBEAFE",
+            iconColor = "#2563EB",
+            inputType = "text",
+            placeholder = ""
+        } = options;
+
+        const titleEl = document.getElementById('prompt-title');
+        const msgEl = document.getElementById('prompt-message');
+        const inputEl = document.getElementById('prompt-input');
+        
+        if (titleEl) titleEl.innerText = title;
+        if (msgEl) msgEl.innerText = message;
+        if (inputEl) {
+            inputEl.type = inputType;
+            inputEl.placeholder = placeholder;
+            inputEl.value = '';
+        }
+        
+        const iconBgEl = document.getElementById('prompt-icon-bg');
+        const iconEl = document.getElementById('prompt-icon');
+        if(iconBgEl) {
+            iconBgEl.style.background = iconBg;
+            iconBgEl.style.color = iconColor;
+        }
+        if(iconEl) iconEl.className = iconClass;
+        
+        const btnYes = document.getElementById('prompt-btn-yes');
+        if (!btnYes) return;
+        
+        btnYes.style.background = confirmColor;
+        btnYes.innerText = confirmText;
+        
+        const newBtnYes = btnYes.cloneNode(true);
+        btnYes.parentNode.replaceChild(newBtnYes, btnYes);
+        
+        newBtnYes.addEventListener('click', async () => {
+            const val = inputEl ? inputEl.value.trim() : '';
+            if (!val) {
+                if (typeof window.app !== 'undefined' && typeof window.app.showToast === 'function') {
+                    window.app.showToast('Por favor, preencha o campo.', 'error');
+                }
+                return;
+            }
+            
+            const btnOriginalText = newBtnYes.innerHTML;
+            newBtnYes.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>';
+            try {
+                await callback(val);
+            } finally {
+                newBtnYes.innerHTML = btnOriginalText;
+                this.closePrompt();
+            }
+        });
+
+        const overlay = document.getElementById('prompt-overlay');
+        if (overlay) {
+            overlay.classList.add('active');
+            if (inputEl) setTimeout(() => inputEl.focus(), 100);
+        }
+    },
+
+    closePrompt() {
+        const overlay = document.getElementById('prompt-overlay');
+        if (overlay) overlay.classList.remove('active');
+    },
+
     showToast(message) {
         const toast = document.getElementById('toast');
         toast.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;

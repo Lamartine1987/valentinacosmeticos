@@ -632,19 +632,22 @@ const app = {
     },
 
     updateActiveViews() {
-        this.renderDashboard();
-        this.populateReportFilters();
-        if (document.getElementById('page-reports') && document.getElementById('page-reports').classList.contains('active')) this.renderReports();
-        if (document.getElementById('page-sales').classList.contains('active')) this.renderClientsTable();
-        if (document.getElementById('page-clients').classList.contains('active')) this.renderClientsList();
-        if (document.getElementById('page-products') && document.getElementById('page-products').classList.contains('active')) this.renderProductsList();
-        if (document.getElementById('page-birthdays') && document.getElementById('page-birthdays').classList.contains('active')) this.renderBirthdays();
-        if (document.getElementById('page-finance') && document.getElementById('page-finance').classList.contains('active') && this.renderFinanceDashboard) this.renderFinanceDashboard();
-        if (document.getElementById('page-funnel') && document.getElementById('page-funnel').classList.contains('active')) this.renderFunnelBoard();
-        if (document.getElementById('page-inbox') && document.getElementById('page-inbox').classList.contains('active') && this.renderInboxList) this.renderInboxList();
-        if (document.getElementById('page-reconciliation') && document.getElementById('page-reconciliation').classList.contains('active') && typeof this.renderReconciliationDashboard === 'function') this.renderReconciliationDashboard();
-        const historyModal = document.getElementById('history-overlay');
-        if (historyModal && historyModal.classList.contains('active')) this.renderClientHistory();
+        if (this._updateActiveViewsTimeout) clearTimeout(this._updateActiveViewsTimeout);
+        this._updateActiveViewsTimeout = setTimeout(() => {
+            this.renderDashboard();
+            this.populateReportFilters();
+            if (document.getElementById('page-reports') && document.getElementById('page-reports').classList.contains('active')) this.renderReports();
+            if (document.getElementById('page-sales').classList.contains('active')) this.renderClientsTable();
+            if (document.getElementById('page-clients').classList.contains('active')) this.renderClientsList();
+            if (document.getElementById('page-products') && document.getElementById('page-products').classList.contains('active')) this.renderProductsList();
+            if (document.getElementById('page-birthdays') && document.getElementById('page-birthdays').classList.contains('active')) this.renderBirthdays();
+            if (document.getElementById('page-finance') && document.getElementById('page-finance').classList.contains('active') && this.renderFinanceDashboard) this.renderFinanceDashboard();
+            if (document.getElementById('page-funnel') && document.getElementById('page-funnel').classList.contains('active')) this.renderFunnelBoard();
+            if (document.getElementById('page-inbox') && document.getElementById('page-inbox').classList.contains('active') && this.renderInboxList) this.renderInboxList();
+            if (document.getElementById('page-reconciliation') && document.getElementById('page-reconciliation').classList.contains('active') && typeof this.renderReconciliationDashboard === 'function') this.renderReconciliationDashboard();
+            const historyModal = document.getElementById('history-overlay');
+            if (historyModal && historyModal.classList.contains('active')) this.renderClientHistory();
+        }, 150);
     },
 
     setupFilters() {
@@ -1050,11 +1053,15 @@ const app = {
         }
     },
 
-    async loadAuditLogs() {
+    async loadAuditLogs(isLoadMore = false) {
         if (!db || !this.currentUserProfile || this.currentUserProfile.role !== 'admin') {
             const tbody = document.getElementById('audit-logs-body');
             if(tbody) tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 32px;">Sem permissão para visualizar auditorias.</td></tr>`;
             return;
+        }
+
+        if (isLoadMore !== true) {
+            this.auditVisibleCount = 30;
         }
 
         try {
@@ -1064,16 +1071,19 @@ const app = {
             let filterUser = (document.getElementById('audit-filter-user') || {value:''}).value;
             if (filterUser) filterUser = filterUser.toLowerCase().trim();
 
-            // Usando limit 300 para garantir busca sem estourar quotas do firebase
-            const snapshot = await db.collection('audit_logs').orderBy('timestamp', 'desc').limit(300).get();
+            if (!this.cachedAuditDocs || isLoadMore !== true) {
+                // Usando limit 300 para garantir busca sem estourar quotas do firebase
+                const snapshot = await db.collection('audit_logs').orderBy('timestamp', 'desc').limit(300).get();
+                this.cachedAuditDocs = [];
+                snapshot.forEach(doc => this.cachedAuditDocs.push(doc.data()));
+            }
+
             const tbody = document.getElementById('audit-logs-body');
             if(!tbody) return;
             
-            let html = '';
-            let count = 0;
+            const filteredDocs = [];
 
-            snapshot.forEach(doc => {
-                const data = doc.data();
+            this.cachedAuditDocs.forEach(data => {
                 const d = new Date(data.timestamp);
                 
                 // Application of Filters
@@ -1092,7 +1102,14 @@ const app = {
                 if (filterResource !== 'all' && data.resource !== filterResource) return;
                 if (filterUser && data.userName && !data.userName.toLowerCase().includes(filterUser)) return;
 
-                count++;
+                filteredDocs.push({ data, d });
+            });
+
+            const visibleDocs = filteredDocs.slice(0, this.auditVisibleCount);
+            
+            let html = '';
+
+            visibleDocs.forEach(({data, d}) => {
                 
                 let actionBadge = `<span style="background:#E2E8F0; color:#475569; padding:2px 6px; border-radius:4px; font-size:11px; font-weight:600;"><i class="fas fa-pen"></i> Edição</span>`;
                 if(data.action === 'delete') {
@@ -1132,10 +1149,36 @@ const app = {
                 `;
             });
             
-            if (count === 0) {
+            // PERFORMANCE: Preservar scroll atual
+            const scrollContainer = tbody.closest('.table-responsive') || document.documentElement;
+            const currentScroll = scrollContainer.scrollTop || 0;
+
+            if (filteredDocs.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 32px;">Nenhuma alteração encontrada para os filtros aplicados.</td></tr>`;
             } else {
                 tbody.innerHTML = html;
+                
+                if (filteredDocs.length > this.auditVisibleCount) {
+                    const sentinelRow = document.createElement('tr');
+                    sentinelRow.innerHTML = `<td colspan="4" style="text-align:center; padding: 20px; color: var(--text-muted);"><i class="fas fa-circle-notch fa-spin"></i> Carregando mais registros...</td>`;
+                    tbody.appendChild(sentinelRow);
+
+                    if (this.auditObserver) this.auditObserver.disconnect();
+                    this.auditObserver = new IntersectionObserver((entries) => {
+                        if (entries[0].isIntersecting) {
+                            if (this.auditObserver) this.auditObserver.disconnect();
+                            this.auditVisibleCount += 30;
+                            this.loadAuditLogs(true);
+                        }
+                    }, { rootMargin: '0px 0px 300px 0px' });
+                    this.auditObserver.observe(sentinelRow);
+                } else {
+                    if (this.auditObserver) this.auditObserver.disconnect();
+                }
+            }
+
+            if (isLoadMore === true && currentScroll > 0) {
+                scrollContainer.scrollTop = currentScroll;
             }
         } catch(e) {
             console.error("Erro ao carregar logs", e);

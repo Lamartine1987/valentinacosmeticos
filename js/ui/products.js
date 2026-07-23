@@ -155,6 +155,8 @@ export const productsModule = {
         if (btnCombo) btnCombo.style.display = count > 1 ? 'flex' : 'none';
         
         if (isAdmin) {
+            const btnBulkPrice = document.getElementById('btn-bulk-price');
+            if (btnBulkPrice) btnBulkPrice.style.display = count > 0 ? 'flex' : 'none';
             if (btnDelete) btnDelete.style.display = count > 0 ? 'flex' : 'none';
             if (btnInactivate) btnInactivate.style.display = count > 0 ? 'flex' : 'none';
             if (btnActivate) btnActivate.style.display = count > 0 ? 'flex' : 'none';
@@ -679,5 +681,58 @@ export const productsModule = {
         const selectAllCb = document.querySelector('.page.active th input[type="checkbox"]');
         if (selectAllCb) selectAllCb.checked = false;
         this.renderProductsList();
+    },
+
+    updateSelectedProductsPrice() {
+        if (this.selectedProductIds.size === 0) {
+            if (typeof window.app !== 'undefined' && typeof window.app.showToast === 'function') {
+                window.app.showToast('Selecione pelo menos um produto.', 'error');
+            }
+            return;
+        }
+
+        if (typeof window.app !== 'undefined' && typeof window.app.promptAction === 'function') {
+            window.app.promptAction(
+                "Alterar Preço em Lote",
+                `Você selecionou ${this.selectedProductIds.size} produto(s).\nDigite o novo preço para todos eles:`,
+                async (newVal) => {
+                    let parsedPrice = parseFloat(newVal.replace(',', '.'));
+                    if (isNaN(parsedPrice) || parsedPrice < 0) {
+                        window.app.showToast("Preço inválido. Use formato como 49,90", "error");
+                        throw new Error("Invalid price");
+                    }
+                    
+                    try {
+                        const batch = db.batch();
+                        this.selectedProductIds.forEach(id => {
+                            const ref = db.collection('products').doc(id);
+                            batch.update(ref, { 
+                                price: parsedPrice,
+                                updatedAt: new Date().toISOString()
+                            });
+                        });
+                        
+                        await batch.commit();
+                        window.app.showToast(`${this.selectedProductIds.size} produto(s) atualizado(s) com sucesso!`, 'success');
+                        
+                        this.selectedProductIds.clear();
+                        this.updateProductsSelectedCount();
+                        this.renderProductsList();
+                    } catch (error) {
+                        console.error('Erro ao atualizar preços:', error);
+                        window.app.showToast('Erro ao atualizar os preços.', 'error');
+                    }
+                },
+                {
+                    confirmText: "Salvar Preços",
+                    confirmColor: "#10B981",
+                    iconClass: "fas fa-tag",
+                    iconBg: "#D1FAE5",
+                    iconColor: "#10B981",
+                    inputType: "text",
+                    placeholder: "Ex: 49,90"
+                }
+            );
+        }
     }
 };

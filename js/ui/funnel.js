@@ -139,14 +139,25 @@ export const funnelModule = {
         const listContainers = {};
         const counters = {};
         
+        // PERFORMANCE: Initial limits per column for Infinite Scroll
+        this.funnelLimits = this.funnelLimits || { inbox: 20, negotiation: 20, waiting: 20, won: 20, lost: 20 };
+        this.funnelObservers = this.funnelObservers || {};
+        
+        // Save scrolls to prevent jumping
+        const currentScrolls = {};
+        
         columns.forEach(col => {
             listContainers[col] = document.getElementById(`list-${col}`);
             counters[col] = document.getElementById(`count-${col}`);
-            if(listContainers[col]) listContainers[col].innerHTML = '';
+            if(listContainers[col]) {
+                currentScrolls[col] = listContainers[col].scrollTop || 0;
+                listContainers[col].innerHTML = '';
+            }
             if(counters[col]) counters[col].textContent = '0';
         });
 
         const counts = { inbox: 0, negotiation: 0, waiting: 0, won: 0, lost: 0 };
+        const renderedCounts = { inbox: 0, negotiation: 0, waiting: 0, won: 0, lost: 0 };
         const searchInput = document.getElementById('filter-funnel-search');
         const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
         const storeFilterEl = document.getElementById('filter-funnel-store');
@@ -187,6 +198,12 @@ export const funnelModule = {
             }
 
             counts[status]++;
+
+            // PERFORMANCE: Limit rendering per column
+            if (renderedCounts[status] >= this.funnelLimits[status]) {
+                return; // Skip DOM rendering, wait for scroll
+            }
+            renderedCounts[status]++;
 
             const card = document.createElement('div');
             card.className = 'k-card';
@@ -249,6 +266,33 @@ export const funnelModule = {
 
         columns.forEach(col => {
             if(counters[col]) counters[col].textContent = counts[col];
+            
+            if(listContainers[col]) {
+                // Sentinel for Infinite Scroll
+                if (counts[col] > this.funnelLimits[col]) {
+                    const sentinel = document.createElement('div');
+                    sentinel.style.cssText = 'height: 40px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 12px;';
+                    sentinel.innerHTML = '<i class="fas fa-circle-notch fa-spin" style="margin-right: 8px;"></i> Carregando...';
+                    listContainers[col].appendChild(sentinel);
+
+                    if (this.funnelObservers[col]) this.funnelObservers[col].disconnect();
+                    this.funnelObservers[col] = new IntersectionObserver((entries) => {
+                        if (entries[0].isIntersecting) {
+                            if (this.funnelObservers[col]) this.funnelObservers[col].disconnect();
+                            this.funnelLimits[col] += 20;
+                            this.renderFunnelBoard();
+                        }
+                    }, { root: listContainers[col], rootMargin: '0px 0px 150px 0px' });
+                    this.funnelObservers[col].observe(sentinel);
+                } else {
+                    if (this.funnelObservers[col]) this.funnelObservers[col].disconnect();
+                }
+
+                // Restore scroll
+                if (currentScrolls[col] > 0) {
+                    listContainers[col].scrollTop = currentScrolls[col];
+                }
+            }
         });
         
         // Aplica exibição de administrador aos checkboxes do funil sem disparar loop de recarga
@@ -655,6 +699,8 @@ ${groupSenderHtml}${displayHtml}
         const listContainer = document.getElementById('inbox-leads-list');
         if (!listContainer) return;
         
+        // PERFORMANCE: Salvar scroll para restaurar em caso de Infinite Scroll ou re-render
+        const currentScroll = listContainer.scrollTop || 0;
         listContainer.innerHTML = '';
         
         const searchInput = document.getElementById('inbox-search');
@@ -715,15 +761,25 @@ ${groupSenderHtml}${displayHtml}
         };
         filteredLeads.sort((a, b) => getTime(b.updatedAt) - getTime(a.updatedAt));
 
-        if (filteredLeads.length === 0) {
+        // PERFORMANCE: Paginação local para a Caixa de Entrada
+        this.inboxVisibleCount = this.inboxVisibleCount || 40;
+        const visibleLeads = filteredLeads.slice(0, this.inboxVisibleCount);
+
+        if (visibleLeads.length === 0) {
             listContainer.innerHTML = `<div style="padding: 24px; text-align: center; color: var(--text-muted); font-size: 13px;">Nenhuma conversa encontrada nesta etapa.</div>`;
         } else {
-            filteredLeads.forEach(lead => {
+            visibleLeads.forEach(lead => {
                 const item = document.createElement('div');
+                item.className = 'inbox-lead-item';
+                item.dataset.id = lead.id;
             item.style.cssText = `padding: 12px 16px; border-bottom: 1px solid var(--border); cursor: pointer; transition: 0.2s; background: ${this.activeLeadId === lead.id ? '#F1F5F9' : 'white'}; display: flex; flex-direction: column; gap: 4px; position: relative;`;
-            item.onclick = () => {
+            item.onclick = (e) => {
                 this.openLeadSidebar(lead);
-                this.renderInboxList(); // re-render to highlight active
+                // HIGHLIGHT INSTANTÂNEO EM VEZ DE RE-RENDERIZAR TUDO
+                document.querySelectorAll('.inbox-lead-item').forEach(el => {
+                    el.style.background = 'white';
+                });
+                e.currentTarget.style.background = '#F1F5F9';
             };
             
             // Hover effect
@@ -758,6 +814,30 @@ ${groupSenderHtml}${displayHtml}
             `;
             listContainer.appendChild(item);
             });
+            
+            if (filteredLeads.length > this.inboxVisibleCount) {
+                const sentinel = document.createElement('div');
+                sentinel.style.cssText = 'height: 50px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 13px;';
+                sentinel.innerHTML = '<i class="fas fa-circle-notch fa-spin" style="margin-right: 8px;"></i> Carregando mais...';
+                listContainer.appendChild(sentinel);
+
+                if (this.inboxObserver) this.inboxObserver.disconnect();
+                this.inboxObserver = new IntersectionObserver((entries) => {
+                    if (entries[0].isIntersecting) {
+                        if (this.inboxObserver) this.inboxObserver.disconnect();
+                        this.inboxVisibleCount += 40;
+                        this.renderInboxList();
+                    }
+                }, { root: listContainer, rootMargin: '0px 0px 200px 0px' });
+                this.inboxObserver.observe(sentinel);
+            } else {
+                if (this.inboxObserver) this.inboxObserver.disconnect();
+            }
+        }
+
+        // Restaurar scroll após redesenhar
+        if (currentScroll > 0) {
+            listContainer.scrollTop = currentScroll;
         }
 
         const cSent = document.getElementById('inbox-count-sent');
@@ -772,6 +852,9 @@ ${groupSenderHtml}${displayHtml}
         } else if(typeof this.navigateTo === 'function') {
             this.navigateTo('inbox');
         }
+        
+        // Reset count upon navigation
+        this.inboxVisibleCount = 40;
         this.setInboxTab(status || 'inbox');
         if (leadId) {
             const lead = this.leadsList.find(l => l.id === leadId);

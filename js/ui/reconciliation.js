@@ -17,7 +17,10 @@ export const reconciliationModule = {
         }
     },
 
-    renderReconciliationDashboard() {
+    renderReconciliationDashboard(isLoadMore = false) {
+        if (isLoadMore !== true) {
+            this.recVisibleCount = 50;
+        }
         const tbody = document.getElementById('reconciliation-dashboard-body');
         if (!tbody) return;
 
@@ -202,12 +205,13 @@ export const reconciliationModule = {
             
             renderInstallments = Object.values(grouped);
             renderInstallments.sort((a, b) => new Date(a.originalDate) - new Date(b.originalDate));
-        } else {
             renderInstallments.sort((a, b) => new Date(a.projectedDate) - new Date(b.projectedDate));
         }
 
+        const visibleInstallments = renderInstallments.slice(0, this.recVisibleCount);
+
         let html = '';
-        renderInstallments.forEach(inst => {
+        visibleInstallments.forEach(inst => {
             const sale = inst.sale;
             
             const pDateParts = inst.projectedDate.split('-');
@@ -283,7 +287,34 @@ export const reconciliationModule = {
             `;
         });
 
+        // PERFORMANCE: Preservar scroll atual
+        const scrollContainer = tbody.closest('.table-responsive') || document.documentElement;
+        const currentScroll = scrollContainer.scrollTop || 0;
+
         tbody.innerHTML = html;
+
+        // Adicionar sentinela para Infinite Scroll no fim da tabela
+        if (renderInstallments.length > this.recVisibleCount) {
+            const sentinelRow = document.createElement('tr');
+            sentinelRow.innerHTML = `<td colspan="9" style="text-align:center; padding: 20px; color: var(--text-muted);"><i class="fas fa-circle-notch fa-spin"></i> Carregando mais parcelas...</td>`;
+            tbody.appendChild(sentinelRow);
+
+            if (this.recObserver) this.recObserver.disconnect();
+            this.recObserver = new IntersectionObserver((entries) => {
+                if (entries[0].isIntersecting) {
+                    if (this.recObserver) this.recObserver.disconnect();
+                    this.recVisibleCount += 50;
+                    this.renderReconciliationDashboard(true);
+                }
+            }, { rootMargin: '0px 0px 300px 0px' });
+            this.recObserver.observe(sentinelRow);
+        } else {
+            if (this.recObserver) this.recObserver.disconnect();
+        }
+
+        if (isLoadMore === true && currentScroll > 0) {
+            scrollContainer.scrollTop = currentScroll;
+        }
     },
 
     sortReconciliationData(column) {
