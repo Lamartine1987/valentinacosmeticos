@@ -199,7 +199,20 @@ export const clientsModule = {
             const saleDate = new Date(y, m-1, d);
             const diffDays = Math.floor((today - saleDate) / (1000 * 60 * 60 * 24));
             
-            if (filterName && !sale.name.toLowerCase().includes(filterName)) return false;
+            if (filterName) {
+                const nameMatch = sale.name && sale.name.toLowerCase().includes(filterName);
+                
+                let allNsus = (sale.nsu || '') + ' ';
+                if (sale.payments && sale.payments.length > 0) {
+                    allNsus += sale.payments.map(p => p.nsu || '').join(' ');
+                }
+                const cleanTerm = filterName.replace(/\D/g, '');
+                const cleanNsus = allNsus.replace(/\D/g, '');
+                
+                const nsuMatch = allNsus.toLowerCase().includes(filterName) || (cleanTerm.length >= 3 && cleanNsus.includes(cleanTerm));
+                
+                if (!nameMatch && !nsuMatch) return false;
+            }
             
             if (filterProduct) {
                 let match = false;
@@ -313,6 +326,18 @@ export const clientsModule = {
                 storeBadge = `<br><span style="font-size: 11px; color: #64748B;" title="Loja do Fechamento"><i class="fas fa-store" style="font-size:10px; margin-right:2px;"></i> ${sName}</span>`;
             }
 
+            let nsuBadge = '';
+            let nsuList = [];
+            if (sale.nsu) nsuList.push(sale.nsu);
+            if (sale.payments && sale.payments.length > 0) {
+                sale.payments.forEach(p => {
+                    if (p.nsu && !nsuList.includes(p.nsu)) nsuList.push(p.nsu);
+                });
+            }
+            if (nsuList.length > 0) {
+                nsuBadge = `<div style="font-size: 11px; color: var(--text-muted); margin-top: 4px; font-weight: 500; display: flex; align-items: center; gap: 4px;" title="NSU da Transação"><i class="fas fa-receipt" style="font-size:10px;"></i> <span>${nsuList.join(', ')}</span></div>`;
+            }
+
             const isChecked = this.selectedSaleIds && this.selectedSaleIds.has(sale.id) ? 'checked' : '';
             const row = document.createElement('tr');
             row.innerHTML = `
@@ -324,7 +349,10 @@ export const clientsModule = {
                 <td>${saleDate.toLocaleDateString('pt-BR')}${storeBadge}</td>
                 <td><span style="color:var(--text-muted); font-weight:500;">R$ ${subtotalGeral.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span></td>
                 <td><span style="color:#EF4444; font-weight:500;">${discountVal > 0 ? '-R$ '+discountVal.toLocaleString('pt-BR', {minimumFractionDigits: 2}) : '-'}</span></td>
-                <td><strong style="color:var(--text-main);">R$ ${parseFloat(sale.value || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong></td>
+                <td>
+                    <strong style="color:var(--text-main);">R$ ${parseFloat(sale.value || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong>
+                    ${nsuBadge}
+                </td>
                 <td>${timeStatus}</td>
                 <td>${commHtml}</td>
                 <td class="admin-only" style="${this.currentUserProfile && this.currentUserProfile.role === 'admin' ? '' : 'display:none;'} color:var(--text-muted); font-size:12px; text-transform:capitalize;">${sale.sellerName || 'Sistema'}</td>

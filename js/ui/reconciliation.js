@@ -620,28 +620,38 @@ export const reconciliationModule = {
     matchWithCRM(extratoData) {
         this.reconciliationData = [];
         
-        // Busca todas as vendas que ainda não estão totalmente conciliadas
-        const pendingSales = this.sales.filter(s => !s.reconciled);
-
         extratoData.forEach(item => {
             let match = null;
             let status = 'not_found';
 
-            // 1. Tenta match exato por NSU
-            if (item.nsu && item.nsu.length > 3) {
-                match = pendingSales.find(s => {
+            const extratoNsu = String(item.nsu || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+            // 1. Tenta match exato por NSU em TODAS as vendas (inclusive já conciliadas)
+            if (extratoNsu) {
+                match = this.sales.find(s => {
                     if (s.payments && s.payments.length > 0) {
-                        return s.payments.some(p => p.nsu === item.nsu);
+                        return s.payments.some(p => String(p.nsu || '').toUpperCase().replace(/[^A-Z0-9]/g, '') === extratoNsu);
                     }
-                    return s.nsu === item.nsu;
+                    return String(s.nsu || '').toUpperCase().replace(/[^A-Z0-9]/g, '') === extratoNsu;
                 });
             }
 
             let allMatches = [];
             // 2. Se não achou, tenta match por Data + Valor Bruto
             if (!match) {
+                // Para busca por valor, priorizamos apenas as vendas pendentes
+                const pendingSales = this.sales.filter(s => !s.reconciled);
                 const possibleMatches = pendingSales.filter(s => {
-                    const sameDate = s.date === item.date;
+                    const sDateRaw = String(s.date || '').split('T')[0];
+                    const extratoDateRaw = String(item.date || '').split('T')[0];
+                    
+                    // Tolerância de 1 dia na data (ajuste de fechamento de lote na madrugada)
+                    const sDateObj = new Date(sDateRaw);
+                    const extratoDateObj = new Date(extratoDateRaw);
+                    const diffTime = Math.abs(extratoDateObj - sDateObj);
+                    const diffDays = diffTime / (1000 * 60 * 60 * 24);
+                    const sameDate = diffDays <= 1; 
+
                     let expectedValue = 0;
                     if (s.payments && s.payments.length > 0) {
                         s.payments.forEach(p => {
@@ -651,12 +661,16 @@ export const reconciliationModule = {
                         expectedValue = parseFloat(s.value) || 0;
                     }
                     
+                    // Tratamento matemático. Máquinas exportam Valor Bruto total OU Valor Bruto da parcela.
+                    const isTotalMatch = Math.abs(expectedValue - item.grossValue) < 0.1;
+                    
+                    let isInstallmentMatch = false;
                     if (item.installments > 1) {
-                        expectedValue = expectedValue / item.installments;
+                        const expectedInstallmentValue = expectedValue / item.installments;
+                        isInstallmentMatch = Math.abs(expectedInstallmentValue - item.grossValue) < 0.1;
                     }
-                    // Tolerância de centavos
-                    const sameValue = Math.abs(expectedValue - item.grossValue) < 0.1;
-                    return sameDate && sameValue;
+                    
+                    return sameDate && (isTotalMatch || isInstallmentMatch);
                 });
 
                 if (possibleMatches.length === 1) {
