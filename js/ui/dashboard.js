@@ -1,10 +1,11 @@
 import { db } from '../config/firebase.js';
 
 export const dashboardModule = {
-    getActions() {
+    getActions(fStart, fEnd) {
         const today = new Date();
         today.setHours(0,0,0,0);
         
+        const hasDateFilter = fStart || fEnd;
         const actions = [];
         
         // PERFORMANCE: Dicionário O(1) para evitar loop dentro de loop (O(n²))
@@ -29,31 +30,66 @@ export const dashboardModule = {
             const client = clientsByPhone.get(salePhoneNum);
             const sName = client ? client.shortName : '';
 
-            if (diffDays <= 2) {
-                actions.push({ ...sale, type: 'thanks', days: diffDays, label: 'Agradecimento', colorClass: 'tag-thanks',
-                    msg: this.parseTemplate('thanks', sale.name, sName, sale.product),
-                    status: sale.msg_thanks_status || 'pending'
-                });
-            } else if (diffDays >= 15 && diffDays < 30) {
-                actions.push({ ...sale, type: 'd15', days: diffDays, label: 'Acompanhamento', colorClass: 'tag-promo',
-                    msg: this.parseTemplate('d15', sale.name, sName, sale.product),
-                    status: sale.msg_d15_status || 'pending'
-                });
-            } else if (diffDays >= 30 && diffDays <= 45) {
-                actions.push({ ...sale, type: 'restock', days: diffDays, label: 'Reposição', colorClass: 'tag-restock',
-                    msg: this.parseTemplate('restock', sale.name, sName, sale.product),
-                    status: sale.msg_restock_status || 'pending'
-                });
-            } else if (diffDays >= 46 && diffDays <= 120) {
-                 actions.push({ ...sale, type: 'dormant', days: diffDays, label: 'Saudades', colorClass: 'tag-dormant',
-                    msg: this.parseTemplate('dormant', sale.name, sName, sale.product),
-                    status: sale.msg_dormant_status || 'pending'
-                });
-            } else if (diffDays >= 121) {
-                 actions.push({ ...sale, type: 'lost', days: diffDays, label: 'Ex-cliente', colorClass: 'tag-lost',
-                    msg: this.parseTemplate('lost', sale.name, sName, sale.product),
-                    status: sale.msg_lost_status || 'pending'
-                });
+            if (!hasDateFilter) {
+                // Lógica de Janela Ativa (Hoje)
+                if (diffDays <= 2) {
+                    actions.push({ ...sale, type: 'thanks', days: diffDays, label: 'Agradecimento', colorClass: 'tag-thanks',
+                        msg: this.parseTemplate('thanks', sale.name, sName, sale.product),
+                        status: sale.msg_thanks_status || 'pending'
+                    });
+                } else if (diffDays >= 15 && diffDays < 30) {
+                    actions.push({ ...sale, type: 'd15', days: diffDays, label: 'Acompanhamento', colorClass: 'tag-promo',
+                        msg: this.parseTemplate('d15', sale.name, sName, sale.product),
+                        status: sale.msg_d15_status || 'pending'
+                    });
+                } else if (diffDays >= 30 && diffDays <= 45) {
+                    actions.push({ ...sale, type: 'restock', days: diffDays, label: 'Reposição', colorClass: 'tag-restock',
+                        msg: this.parseTemplate('restock', sale.name, sName, sale.product),
+                        status: sale.msg_restock_status || 'pending'
+                    });
+                } else if (diffDays >= 46 && diffDays <= 120) {
+                     actions.push({ ...sale, type: 'dormant', days: diffDays, label: 'Saudades', colorClass: 'tag-dormant',
+                        msg: this.parseTemplate('dormant', sale.name, sName, sale.product),
+                        status: sale.msg_dormant_status || 'pending'
+                    });
+                } else if (diffDays >= 121) {
+                     actions.push({ ...sale, type: 'lost', days: diffDays, label: 'Ex-cliente', colorClass: 'tag-lost',
+                        msg: this.parseTemplate('lost', sale.name, sName, sale.product),
+                        status: sale.msg_lost_status || 'pending'
+                    });
+                }
+            } else {
+                // Lógica de Histórico (Mostra todas as tarefas pelas quais a venda já passou)
+                if (diffDays >= 0) {
+                    actions.push({ ...sale, type: 'thanks', days: diffDays, label: 'Agradecimento', colorClass: 'tag-thanks',
+                        msg: this.parseTemplate('thanks', sale.name, sName, sale.product),
+                        status: sale.msg_thanks_status || 'pending'
+                    });
+                }
+                if (diffDays >= 15) {
+                    actions.push({ ...sale, type: 'd15', days: diffDays, label: 'Acompanhamento', colorClass: 'tag-promo',
+                        msg: this.parseTemplate('d15', sale.name, sName, sale.product),
+                        status: sale.msg_d15_status || 'pending'
+                    });
+                }
+                if (diffDays >= 30) {
+                    actions.push({ ...sale, type: 'restock', days: diffDays, label: 'Reposição', colorClass: 'tag-restock',
+                        msg: this.parseTemplate('restock', sale.name, sName, sale.product),
+                        status: sale.msg_restock_status || 'pending'
+                    });
+                }
+                if (diffDays >= 46) {
+                    actions.push({ ...sale, type: 'dormant', days: diffDays, label: 'Saudades', colorClass: 'tag-dormant',
+                        msg: this.parseTemplate('dormant', sale.name, sName, sale.product),
+                        status: sale.msg_dormant_status || 'pending'
+                    });
+                }
+                if (diffDays >= 121) {
+                    actions.push({ ...sale, type: 'lost', days: diffDays, label: 'Ex-cliente', colorClass: 'tag-lost',
+                        msg: this.parseTemplate('lost', sale.name, sName, sale.product),
+                        status: sale.msg_lost_status || 'pending'
+                    });
+                }
             }
         });
         
@@ -102,7 +138,16 @@ export const dashboardModule = {
         const fStoreSeller = (document.getElementById('dash-filter-store') || {value:'all'}).value;
 
         let filteredSales = [...this.sales];
-        let actions = this.getActions();
+        let actions = this.getActions(fStart, fEnd);
+
+        const titleEl = document.querySelector('.action-list-card .card-header h3');
+        if (titleEl) {
+            if (fStart || fEnd) {
+                titleEl.innerHTML = `<i class="fab fa-whatsapp" style="color:#25D366; margin-right: 8px;"></i> Histórico de Ações da Data Filtrada`;
+            } else {
+                titleEl.innerHTML = `<i class="fab fa-whatsapp" style="color:#25D366; margin-right: 8px;"></i> Ações de Relacionamento Recomendadas Hoje`;
+            }
+        }
 
         if (fStoreSeller !== 'all') {
             filteredSales = filteredSales.filter(sale => sale.sellerId === fStoreSeller || sale.storeId === fStoreSeller);
