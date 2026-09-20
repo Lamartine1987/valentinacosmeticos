@@ -116,6 +116,11 @@ export const reconciliationModule = {
                     }
 
                     let isPaid = !!paidInfo;
+                    
+                    // Se já foi pago e temos a data real de recebimento, substituímos a projeção matemática
+                    if (isPaid && paidInfo.date) {
+                        projectedDateStr = paidInfo.date;
+                    }
 
                     virtualInstallments.push({
                         sale: sale,
@@ -506,10 +511,11 @@ export const reconciliationModule = {
                 return str; 
             };
 
-            let date, nsu, grossValue, netValue, brand, product, installments, installmentNo, fees;
+            let date, paymentDate, nsu, grossValue, netValue, brand, product, installments, installmentNo, fees;
 
             if (operator === 'stone') {
                 date = getVal(['data da venda', 'data de venda', 'data transacao']);
+                paymentDate = getVal(['data do recebimento', 'data de pagamento', 'data prevista', 'data do pagamento', 'data de vencimento', 'data original de vencimento', 'previsao de pagamento']);
                 nsu = getVal(['stone id']) || getVal(['documento']);
                 brand = getVal(['bandeira']);
                 product = getVal(['produto']);
@@ -539,6 +545,7 @@ export const reconciliationModule = {
                 };
                 
                 date = getExact(['data original da venda']);
+                paymentDate = getExact(['data do recebimento', 'data de pagamento', 'data prevista', 'data do pagamento', 'data original de vencimento', 'data de vencimento', 'previsao de pagamento']);
                 nsu = getExact(['nsu/cv', 'numero da autorizacao', 'número da autorização']);
                 brand = getExact(['bandeira']);
                 product = getExact(['modalidade']);
@@ -552,6 +559,7 @@ export const reconciliationModule = {
                 }
             } else if (operator === 'getnet') {
                 date = getVal(['data da venda', 'data de venda', 'data original da venda']);
+                paymentDate = getVal(['data do recebimento', 'data de pagamento', 'data prevista', 'data do pagamento', 'data de vencimento', 'data original de vencimento', 'previsao de pagamento']);
                 nsu = getVal(['número comprovante de venda (nsu)', 'numero comprovante de venda (nsu)', 'comprovante de venda (nsu)', 'nsu']);
                 brand = getVal(['bandeira / modalidade', 'bandeira']);
                 product = getVal(['lançamento', 'lancamento', 'tipo de lançamento']);
@@ -576,7 +584,8 @@ export const reconciliationModule = {
                 console.log(`[Reconciliação Getnet] Linha processada: Data=${date}, NSU=${nsu}, Bruto=${grossValue}, Líquido=${netValue}, Parcelas=${installmentNo}/${installments}`);
             } else {
                 // Lógica genérica (Tenta adivinhar)
-                date = getVal(['data', 'venda', 'pagamento', 'date']);
+                date = getVal(['data da venda', 'venda', 'date']);
+                paymentDate = getVal(['data do recebimento', 'pagamento', 'data prevista', 'data do pagamento', 'data de vencimento', 'data original de vencimento', 'previsao de pagamento']);
                 nsu = getVal(['nsu', 'autorização', 'cv', 'transação', 'autorizacao', 'doc']);
                 grossValue = getVal(['bruto', 'valor da venda', 'valor total']);
                 netValue = getVal(['líquido', 'valor líquido', 'recebido', 'liquido']);
@@ -600,6 +609,7 @@ export const reconciliationModule = {
 
                 normalizedData.push({
                     date: cleanDate(date),
+                    paymentDate: paymentDate ? cleanDate(paymentDate) : null,
                     nsu: String(nsu || '').trim(),
                     brand: String(brand || '-').trim(),
                     product: String(product || '-').trim(),
@@ -959,7 +969,7 @@ export const reconciliationModule = {
                 }
                 
                 paidInstallments[instKey] = {
-                    date: item.extrato.date,
+                    date: item.extrato.paymentDate || item.extrato.date,
                     grossValue: item.extrato.grossValue,
                     netValue: item.extrato.netValue,
                     fees: item.extrato.fees > 0 ? item.extrato.fees : (item.extrato.grossValue - item.extrato.netValue),
