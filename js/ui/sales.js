@@ -270,7 +270,13 @@ export const salesModule = {
             </div>
             <div>
                 <label style="font-size:12px; color:var(--text-muted); margin-bottom:4px; display:block;">NSU / ID transação <small>(Opcional)</small></label>
-                <input type="text" class="sale-payment-nsu" placeholder="Ex: 175161" style="padding:10px; border:1px solid var(--border); border-radius:6px; width:100%; outline:none; font-size:13px;">
+                <div style="display:flex; gap:8px;">
+                    <input type="text" class="sale-payment-nsu" placeholder="Ex: 175161" style="padding:10px; border:1px solid var(--border); border-radius:6px; width:100%; outline:none; font-size:13px;">
+                    <button type="button" class="sale-payment-camera-btn" onclick="this.nextElementSibling.click()" title="Anexar Comprovante" style="height:39px; width:39px; border:1px solid var(--border); background:#F8FAFC; color:var(--text-muted); border-radius:6px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                        <i class="fas fa-camera"></i>
+                    </button>
+                    <input type="file" class="sale-payment-receipt" accept="image/*" capture="environment" style="display:none;">
+                </div>
             </div>
             <div style="flex: 0 0 auto; display:flex; align-items:flex-end;">
                 <button type="button" onclick="app.removeSalePayment(this)" title="Remover Pagamento" style="height:39px; width:39px; border:none; background:#FEE2E2; color:#EF4444; border-radius:6px; cursor:pointer; display:flex; align-items:center; justify-content:center;">
@@ -286,6 +292,19 @@ export const salesModule = {
         const instInput = row.querySelector('.sale-payment-installments');
         const brandInput = row.querySelector('.sale-payment-brand');
         const nsuInput = row.querySelector('.sale-payment-nsu');
+        const receiptInput = row.querySelector('.sale-payment-receipt');
+        const cameraBtn = row.querySelector('.sale-payment-camera-btn');
+
+        if (receiptInput && cameraBtn) {
+            receiptInput.addEventListener('change', (e) => {
+                if (e.target.files && e.target.files.length > 0) {
+                    cameraBtn.style.color = 'white';
+                    cameraBtn.style.background = '#10B981';
+                    cameraBtn.style.borderColor = '#10B981';
+                    cameraBtn.innerHTML = '<i class="fas fa-check"></i>';
+                }
+            });
+        }
 
         methodSelect.addEventListener('change', () => {
             const isCard = methodSelect.value === 'credit_card' || methodSelect.value === 'debit_card';

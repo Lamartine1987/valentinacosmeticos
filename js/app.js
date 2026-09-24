@@ -1,4 +1,4 @@
-import { firebase, db } from './config/firebase.js';
+import { firebase, db, storage } from './config/firebase.js';
 import { apiModule } from './services/api.js';
 import { dashboardModule } from './ui/dashboard.js';
 import { clientsModule } from './ui/clients.js';
@@ -787,6 +787,12 @@ const app = {
             cont.innerHTML = ''; 
             if(typeof this.addSaleItem === 'function') this.addSaleItem(); 
         }
+        
+        const paymentsCont = document.getElementById('sale-payments-container');
+        if (paymentsCont) {
+            paymentsCont.innerHTML = '';
+            if(typeof this.addSalePayment === 'function') this.addSalePayment();
+        }
 
         const storeAssigned = document.getElementById('r-store-assigned');
         if (storeAssigned && this.currentUserProfile) {
@@ -1352,6 +1358,8 @@ const app = {
                 const pInst = parseInt(row.querySelector('.sale-payment-installments').value) || 1;
                 const pBrand = row.querySelector('.sale-payment-brand').value;
                 const pNsu = row.querySelector('.sale-payment-nsu').value.trim();
+                const pReceiptInput = row.querySelector('.sale-payment-receipt');
+                const file = pReceiptInput && pReceiptInput.files && pReceiptInput.files.length > 0 ? pReceiptInput.files[0] : null;
 
                 if (pValue > 0) {
                     payments.push({
@@ -1359,7 +1367,8 @@ const app = {
                         value: pValue,
                         installments: (pMethod === 'credit_card') ? pInst : 1,
                         nsu: pNsu,
-                        cardBrand: (pMethod === 'credit_card' || pMethod === 'debit_card') ? pBrand : ''
+                        cardBrand: (pMethod === 'credit_card' || pMethod === 'debit_card') ? pBrand : '',
+                        _tempFile: file
                     });
                 }
             });
@@ -1435,16 +1444,49 @@ const app = {
                 if (existingClient && !associatedClientShortName) associatedClientShortName = existingClient.shortName;
             }
 
-            if (this.editingSaleId) {
+            // Extract temp files before sending to Firebase
+            const tempFiles = [];
+            if (newSale.payments) {
+                newSale.payments.forEach((p, index) => {
+                    tempFiles[index] = p._tempFile || null;
+                    delete p._tempFile; // remove from object before saving to Firebase
+                });
+            }
+
+            let finalSaleId = this.editingSaleId;
+            let isEdit = !!this.editingSaleId;
+
+            if (isEdit) {
                 await this.updateSale(this.editingSaleId, newSale);
                 
                 if (typeof this.saveAuditLog === 'function') {
                     this.saveAuditLog('sale', 'edit', this.editingSaleId, `Venda editada para o cliente ${newSale.name} no valor de ${newSale.value}`);
                 }
-                
+            } else {
+                finalSaleId = await this.saveSale(newSale);
+            }
+
+            // --- PHOTO UPLOADS ---
+            let needsUpdate = false;
+            for (let i = 0; i < newSale.payments.length; i++) {
+                if (tempFiles[i]) {
+                    try {
+                        const dlUrl = await this.uploadReceipt(tempFiles[i], finalSaleId, i);
+                        newSale.payments[i].receiptUrl = dlUrl;
+                        needsUpdate = true;
+                    } catch(e) {
+                        console.warn("Falha ao subir foto do pgto " + i, e);
+                    }
+                }
+            }
+            if (needsUpdate) {
+                await db.collection('sales').doc(finalSaleId).update({ payments: newSale.payments });
+            }
+            // ----------------------
+
+            if (isEdit) {
                 btn.innerHTML = originalText;
                 btn.disabled = false;
-                
                 this.originLeadWonId = null;
                 this.editingSaleId = null;
                 this.clearSaleForm();
@@ -1452,7 +1494,7 @@ const app = {
                 return;
             }
 
-            const saleId = await this.saveSale(newSale);
+            const saleId = finalSaleId;
             
             // Lógica de Baixa de Lote Crítico
             try {
@@ -2396,6 +2438,125 @@ const app = {
             console.error(e);
             this.showToast('Erro ao excluir aviso.', 'error');
         }
+    },
+
+    // --- Image Upload & Compression Utilities ---
+    compressImage(file, maxWidth = 800, maxHeight = 800, quality = 0.7) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = event => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    let width = img.width;
+                    let height = img.height;
+                    
+                    if (width > maxWidth || height > maxHeight) {
+                        const ratio = Math.min(maxWidth / width, maxHeight / height);
+                        width = width * ratio;
+                        height = height * ratio;
+                    }
+                    
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    canvas.toBlob(blob => {
+                        resolve(blob);
+                    }, 'image/jpeg', quality);
+                };
+                img.onerror = error => reject(error);
+            };
+            reader.onerror = error => reject(error);
+        });
+    },
+
+    async uploadReceipt(file, saleId, paymentId) {
+        if (!storage) throw new Error("Firebase Storage não configurado");
+        try {
+            const compressedBlob = await this.compressImage(file);
+            const fileName = `receipts/${saleId}_${paymentId}_${Date.now()}.jpg`;
+            const storageRef = storage.ref();
+            const receiptRef = storageRef.child(fileName);
+            
+            const snapshot = await receiptRef.put(compressedBlob);
+            const downloadURL = await snapshot.ref.getDownloadURL();
+            return downloadURL;
+        } catch (error) {
+            console.error("Erro no upload do comprovante:", error);
+            throw error;
+        }
+    },
+
+    openQuickPhotoUpload(saleId) {
+        const input = document.getElementById('global-camera-input');
+        if (input) {
+            input.dataset.saleId = saleId;
+            input.click();
+        }
+    },
+
+    async handleQuickPhotoUpload(event) {
+        const file = event.target.files[0];
+        const saleId = event.target.dataset.saleId;
+        if (!file || !saleId) return;
+
+        const sale = this.sales.find(s => s.id === saleId);
+        if (!sale) return;
+
+        try {
+            this.showToast('Enviando foto, por favor aguarde...', 'info');
+            
+            let targetPaymentIdx = 0;
+            if (sale.payments && sale.payments.length > 0) {
+                const idx = sale.payments.findIndex(p => !p.receiptUrl && (p.method === 'credit_card' || p.method === 'debit_card'));
+                if (idx > -1) targetPaymentIdx = idx;
+            }
+
+            const downloadURL = await this.uploadReceipt(file, saleId, targetPaymentIdx);
+            
+            if (sale.payments && sale.payments.length > 0) {
+                sale.payments[targetPaymentIdx].receiptUrl = downloadURL;
+            } else {
+                sale.receiptUrl = downloadURL;
+            }
+            
+            const updateData = {};
+            if (sale.payments) {
+                updateData.payments = sale.payments;
+            } else {
+                updateData.receiptUrl = downloadURL;
+            }
+            
+            await db.collection('sales').doc(saleId).update(updateData);
+            this.showToast('Comprovante anexado com sucesso!', 'success');
+            
+            if (typeof this.renderClientsTable === 'function') this.renderClientsTable();
+        } catch (e) {
+            this.showToast('Erro ao enviar foto: ' + e.message, 'error');
+        } finally {
+            event.target.value = ''; // Reset input
+        }
+    },
+
+    viewReceipt(url) {
+        const modal = document.getElementById('receipt-viewer-modal');
+        const img = document.getElementById('receipt-viewer-img');
+        const loading = document.getElementById('receipt-viewer-loading');
+        
+        if (!modal || !img || !loading) return;
+        
+        img.style.display = 'none';
+        loading.style.display = 'block';
+        img.onload = () => {
+            loading.style.display = 'none';
+            img.style.display = 'block';
+        };
+        img.src = url;
+        modal.classList.add('active');
     },
 
     ...apiModule,

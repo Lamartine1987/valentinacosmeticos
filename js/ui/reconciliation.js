@@ -117,8 +117,10 @@ export const reconciliationModule = {
 
                     let isPaid = !!paidInfo;
                     
-                    // Se já foi pago e temos a data real de recebimento, substituímos a projeção matemática
-                    if (isPaid && paidInfo.date) {
+                    // Se já foi pago e temos a data real de recebimento, substituímos a projeção matemática.
+                    // TRAVA DE SEGURANÇA: Se a data salva no banco for idêntica à data da venda, é o formato antigo 
+                    // (que apenas copiava a data da venda). Neste caso, ignoramos o banco e mantemos a matemática D+30.
+                    if (isPaid && paidInfo.date && paidInfo.date !== sale.date) {
                         projectedDateStr = paidInfo.date;
                     }
 
@@ -268,6 +270,13 @@ export const reconciliationModule = {
 
             const sellerName = sale.sellerName || 'Sistema';
 
+            let nsuDisplay = inst.payment.nsu || '-';
+            if (inst.payment.receiptUrl) {
+                nsuDisplay += `<div style="margin-top: 4px;"><button class="btn-icon" style="color: #64748B; font-size: 11px; padding: 2px 6px; border: 1px solid #E2E8F0; border-radius: 4px; width: auto; height: auto; display: inline-flex; align-items: center; gap: 4px; font-weight: 500;" onclick="app.viewReceipt('${inst.payment.receiptUrl}')" title="Ver Comprovante Anexado"><i class="fas fa-image"></i> Ver Foto</button></div>`;
+            } else if (sale.receiptUrl) {
+                nsuDisplay += `<div style="margin-top: 4px;"><button class="btn-icon" style="color: #64748B; font-size: 11px; padding: 2px 6px; border: 1px solid #E2E8F0; border-radius: 4px; width: auto; height: auto; display: inline-flex; align-items: center; gap: 4px; font-weight: 500;" onclick="app.viewReceipt('${sale.receiptUrl}')" title="Ver Comprovante Anexado"><i class="fas fa-image"></i> Ver Foto</button></div>`;
+            }
+
             html += `
                 <tr>
                     <td>
@@ -281,7 +290,7 @@ export const reconciliationModule = {
                         <strong style="color: var(--primary);">${displayDate}</strong>
                         <div style="font-size: 11px; color: var(--text-muted);">Venda: ${displayOrigDate}</div>
                     </td>
-                    <td>${inst.payment.nsu || '-'}</td>
+                    <td>${nsuDisplay}</td>
                     <td style="text-align: center;">${instHtml}</td>
                     <td><strong style="color:var(--text-main);">R$ ${saleValueStr}</strong></td>
                     <td><strong style="color:#10B981;">R$ ${paidValueDisplay}</strong></td>
@@ -584,7 +593,15 @@ export const reconciliationModule = {
                 console.log(`[Reconciliação Getnet] Linha processada: Data=${date}, NSU=${nsu}, Bruto=${grossValue}, Líquido=${netValue}, Parcelas=${installmentNo}/${installments}`);
             } else {
                 // Lógica genérica (Tenta adivinhar)
-                date = getVal(['data da venda', 'venda', 'date']);
+                const getExactGen = (possibleKeys) => {
+                    for (const key of Object.keys(row)) {
+                        const cleanKey = key.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                        if (possibleKeys.includes(cleanKey)) return row[key];
+                    }
+                    return null;
+                };
+
+                date = getExactGen(['data', 'date']) || getVal(['data da venda', 'venda', 'data original da venda', 'data transacao']);
                 paymentDate = getVal(['data do recebimento', 'pagamento', 'data prevista', 'data do pagamento', 'data de vencimento', 'data original de vencimento', 'previsao de pagamento']);
                 nsu = getVal(['nsu', 'autorização', 'cv', 'transação', 'autorizacao', 'doc']);
                 grossValue = getVal(['bruto', 'valor da venda', 'valor total']);

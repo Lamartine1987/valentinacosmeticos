@@ -338,6 +338,25 @@ export const clientsModule = {
                 nsuBadge = `<div style="font-size: 11px; color: var(--text-muted); margin-top: 4px; font-weight: 500; display: flex; align-items: center; gap: 4px;" title="NSU da Transação"><i class="fas fa-receipt" style="font-size:10px;"></i> <span>${nsuList.join(', ')}</span></div>`;
             }
 
+            let hasMissingReceipt = false;
+            let existingReceiptUrl = sale.receiptUrl || null;
+            if (sale.payments && sale.payments.length > 0) {
+                const missing = sale.payments.find(p => !p.receiptUrl && (p.method === 'credit_card' || p.method === 'debit_card'));
+                if (missing) hasMissingReceipt = true;
+                
+                const existing = sale.payments.find(p => p.receiptUrl);
+                if (existing) existingReceiptUrl = existing.receiptUrl;
+            } else if (!sale.receiptUrl && (sale.paymentMethod === 'credit_card' || sale.paymentMethod === 'debit_card')) {
+                hasMissingReceipt = true;
+            }
+
+            let photoBtn = '';
+            if (hasMissingReceipt) {
+                photoBtn = `<div style="margin-top: 4px;"><button class="btn-icon" style="color: #10B981; font-size: 11px; padding: 2px 6px; border: 1px solid #10B981; border-radius: 4px; width: auto; height: auto; display: inline-flex; align-items: center; gap: 4px; font-weight: 500;" onclick="app.openQuickPhotoUpload('${sale.id}')" title="Anexar Comprovante"><i class="fas fa-camera"></i> Anexar Foto</button></div>`;
+            } else if (existingReceiptUrl) {
+                photoBtn = `<div style="margin-top: 4px;"><button class="btn-icon" style="color: #64748B; font-size: 11px; padding: 2px 6px; border: 1px solid #E2E8F0; border-radius: 4px; width: auto; height: auto; display: inline-flex; align-items: center; gap: 4px; font-weight: 500;" onclick="app.viewReceipt('${existingReceiptUrl}')" title="Ver Comprovante"><i class="fas fa-image"></i> Ver Foto</button></div>`;
+            }
+
             const isChecked = this.selectedSaleIds && this.selectedSaleIds.has(sale.id) ? 'checked' : '';
             const row = document.createElement('tr');
             row.innerHTML = `
@@ -352,11 +371,12 @@ export const clientsModule = {
                 <td>
                     <strong style="color:var(--text-main);">R$ ${parseFloat(sale.value || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong>
                     ${nsuBadge}
+                    ${photoBtn}
                 </td>
                 <td>${timeStatus}</td>
                 <td>${commHtml}</td>
                 <td class="admin-only" style="${this.currentUserProfile && this.currentUserProfile.role === 'admin' ? '' : 'display:none;'} color:var(--text-muted); font-size:12px; text-transform:capitalize;">${sale.sellerName || 'Sistema'}</td>
-                <td style="text-align: center;">
+                <td style="text-align: center; white-space: nowrap;">
                     <div style="display: flex; justify-content: center; gap: 8px;">
                         <button class="btn-icon" style="color: #3B82F6;" onclick="app.editSale('${sale.id}')" title="Editar Venda">
                             <i class="fas fa-edit"></i>
