@@ -607,11 +607,23 @@ const app = {
         
         if (this.currentUserProfile.role === 'admin' || this.currentUserProfile.role === 'manager') {
             let expensesQuery = db.collection("expenses");
-            this.unsubExpenses = expensesQuery.orderBy("createdAt", "desc").limit(100).onSnapshot((snapshot) => {
+            
+            if (!this.loadFullHistory) {
+                const dCutoff = new Date();
+                dCutoff.setMonth(dCutoff.getMonth() - 4);
+                const cutoffStr = `${dCutoff.getFullYear()}-${String(dCutoff.getMonth()+1).padStart(2,'0')}-01`;
+                // Se precisar de índice, talvez seja melhor remover apenas o limit(100)
+                // mas para manter padronizado, vamos filtrar por date.
+                expensesQuery = expensesQuery.where('date', '>=', cutoffStr);
+            }
+            
+            this.unsubExpenses = expensesQuery.onSnapshot((snapshot) => {
                 this.expenses = [];
                 snapshot.forEach((doc) => {
                     this.expenses.push({ id: doc.id, ...doc.data() });
                 });
+                // Sort client-side
+                this.expenses.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
                 this.updateActiveViews();
             }, (error) => console.log(error));
         }
